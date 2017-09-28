@@ -15,6 +15,8 @@ RUN apk -U --no-cache add \
     && ln -s /usr/bin/vim /usr/bin/vi
 
 COPY src/ /scripts/
+COPY samples/ /samples/ 
+COPY test/ /test/
 COPY .bashrc /root/
 
 ENTRYPOINT ["/bin/bash"]
