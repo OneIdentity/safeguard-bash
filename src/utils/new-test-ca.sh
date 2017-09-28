@@ -108,7 +108,7 @@ commonName                      = Common Name
 countryName_default             = US
 stateOrProvinceName_default     = Utah
 localityName_default            = Lindon
-0.organizationName_default      = One Identity, Inc.
+0.organizationName_default      = One Identity LLC
 organizationalUnitName_default  = PAM
 commonName_default              = $CaName
 
@@ -257,7 +257,7 @@ commonName                      = Common Name
 countryName_default             = US
 stateOrProvinceName_default     = Utah
 localityName_default            = Lindon
-0.organizationName_default      = One Identity, Inc.
+0.organizationName_default      = One Identity LLC
 organizationalUnitName_default  = PAM
 commonName_default              = $IntermediateCaName
 

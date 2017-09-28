@@ -9,13 +9,14 @@ RUN apk -U --no-cache add \
         coreutils \
         util-linux \
         bash \
+        openssl \
         openssh \
     && rm /usr/bin/vi \
     && ln -s /usr/bin/vim /usr/bin/vi
 
-COPY scripts/ /scripts/
+COPY src/ /scripts/
 COPY .bashrc /root/
 
 ENTRYPOINT ["/bin/bash"]
-CMD ["-c","exec /bin/bash --rcfile <(echo '. /root/.bashrc; /scripts/login-safeguard.sh')"]
+CMD ["-c","exec /bin/bash --rcfile <(echo '. /root/.bashrc; /scripts/connect-safeguard.sh')"]
 
