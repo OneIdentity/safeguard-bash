@@ -32,7 +32,7 @@ AccessToken=
 Version=2
 LicenseFile=
 
-. "$ScriptDir/loginfile-utils.sh"
+. "$ScriptDir/utils/loginfile.sh"
 
 require_args()
 {

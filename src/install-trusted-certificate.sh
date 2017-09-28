@@ -29,7 +29,7 @@ AccessToken=
 Version=2
 RootCertificateFile=
 
-. "$ScriptDir/loginfile-utils.sh"
+. "$ScriptDir/utils/loginfile.sh"
 
 require_args()
 {

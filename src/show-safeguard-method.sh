@@ -32,7 +32,7 @@ Accept="application/json"
 ContentType="application/json"
 FilterNulls=true
 
-. "$ScriptDir/loginfile-utils.sh"
+. "$ScriptDir/utils/loginfile.sh"
 
 Appliance=$(read_from_login_file Appliance)
 

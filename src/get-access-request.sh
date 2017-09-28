@@ -31,7 +31,7 @@ Version=2
 Id=
 FullOutput=false
 
-. "$ScriptDir/loginfile-utils.sh"
+. "$ScriptDir/utils/loginfile.sh"
 
 require_args()
 {

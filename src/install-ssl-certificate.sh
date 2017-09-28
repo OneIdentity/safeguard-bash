@@ -34,7 +34,7 @@ Version=2
 SSLCertificateFile=
 SSLCertificatePassword=
 
-. "$ScriptDir/loginfile-utils.sh"
+. "$ScriptDir/utils/loginfile.sh"
 
 require_args()
 {
