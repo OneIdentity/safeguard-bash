@@ -3,16 +3,16 @@
 print_usage()
 {
     cat <<EOF
-USAGE: listen-for-safeguard-events.sh [-h]
-       listen-for-safegaurd-events.sh
-       listen-for-safeguard-events.sh [-a appliance] [-t accesstoken]
+USAGE: listen-for-events.sh [-h]
+       listen-for-events.sh
+       listen-for-events.sh [-a appliance] [-t accesstoken]
 
   -h  Show help and exit
   -a  Network address of the appliance
   -t  Safeguard access token
 
-By default listen-for-safeguard-events.sh will look for a login file. If one
-doesn't exist login-safeguard.sh will be called to create one. Alternately,
+By default listen-for-events.sh will look for a login file. If one
+doesn't exist connect-safeguard.sh will be called to create one. Alternately,
 you may pass an appliance address and an access token.
 
 NOTE: Install jq to get pretty-printed JSON output.

@@ -3,9 +3,9 @@
 print_usage()
 {
     cat <<EOF
-USAGE: download-support-bundle.sh [-h]
-       download-support-bundle.sh [-v version] [-e] [-s]
-       download-support-bundle.sh [-a appliance] [-t accesstoken] [-v version] [-e] [-s]
+USAGE: get-support-bundle.sh [-h]
+       get-support-bundle.sh [-v version] [-e] [-s]
+       get-support-bundle.sh [-a appliance] [-t accesstoken] [-v version] [-e] [-s]
 
   -h  Show help and exit
   -a  Network address of the appliance

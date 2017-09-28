@@ -3,8 +3,8 @@
 print_usage()
 {
     cat <<EOF
-USAGE: logout-safeguard.sh [-h]
-       logout-safeguard.sh [-v version]
+USAGE: disconnect-safeguard.sh [-h]
+       disconnect-safeguard.sh [-v version]
 
   -h  Show help and exit
   -v  Web API Version: 2 is default

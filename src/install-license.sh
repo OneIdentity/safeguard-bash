@@ -3,9 +3,9 @@
 print_usage()
 {
     cat <<EOF
-USAGE: upload-license.sh [-h]
-       upload-license.sh [-v version] [-L licensefile]
-       upload-license.sh [-a appliance] [-t accesstoken] [-v version] [-L licensefile]
+USAGE: install-license.sh [-h]
+       install-license.sh [-v version] [-L licensefile]
+       install-license.sh [-a appliance] [-t accesstoken] [-v version] [-L licensefile]
 
   -h  Show help and exit
   -a  Network address of the appliance

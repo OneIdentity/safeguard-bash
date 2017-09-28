@@ -3,9 +3,9 @@
 print_usage()
 {
     cat <<EOF
-USAGE: get-actionable-requests.sh [-h]
-       get-actionable-requests.sh [-v version] [-r requestrole] [-F]
-       get-actionable-requests.sh [-a appliance] [-t accesstoken] [-v version] [-r requestrole] [-F]
+USAGE: get-actionable-request.sh [-h]
+       get-actionable-request.sh [-v version] [-r requestrole] [-F]
+       get-actionable-request.sh [-a appliance] [-t accesstoken] [-v version] [-r requestrole] [-F]
 
   -h  Show help and exit
   -a  Network address of the appliance
@@ -14,7 +14,8 @@ USAGE: get-actionable-requests.sh [-h]
   -r  Request role (e.g. Admin, Approver, Requester, Reviewer) 
   -F  Full JSON output
 
-Get an access request or all access requests via the Web API.
+Get an access request or all access requests via the Web API that are open that
+the user can interact with using edit-access-request.sh.
 
 NOTE: Install jq to get pretty-printed JSON output.
 

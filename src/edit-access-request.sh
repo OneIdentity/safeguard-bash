@@ -3,10 +3,10 @@
 print_usage()
 {
     cat <<EOF
-USAGE: update-access-request.sh [-h]
-       update-access-request.sh [-v version] [-i requestid] [-m method] [-c comment] [-F]
-       update-access-request.sh [-a appliance] [-t accesstoken] [-v version]
-                                [-i requestid] [-m method] [-c comment] [-F]
+USAGE: edit-access-request.sh [-h]
+       edit-access-request.sh [-v version] [-i requestid] [-m method] [-c comment] [-F]
+       edit-access-request.sh [-a appliance] [-t accesstoken] [-v version]
+                              [-i requestid] [-m method] [-c comment] [-F]
 
   -h  Show help and exit
   -a  Network address of the appliance

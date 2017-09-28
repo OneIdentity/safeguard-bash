@@ -3,9 +3,9 @@
 print_usage()
 {
     cat <<EOF
-USAGE: get-requestable-accounts.sh [-h]
-       get-requestable-accounts.sh [-v version]
-       get-requestable-accounts.sh [-a appliance] [-t accesstoken] [-v version]
+USAGE: get-requestable-account.sh [-h]
+       get-requestable-account.sh [-v version]
+       get-requestable-account.sh [-a appliance] [-t accesstoken] [-v version]
 
   -h  Show help and exit
   -a  Network address of the appliance

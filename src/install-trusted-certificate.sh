@@ -3,9 +3,9 @@
 print_usage()
 {
     cat <<EOF
-USAGE: upload-trusted-certificate.sh [-h]
-       upload-trusted-certificate.sh [-v version] [-C certificatefile] [-P password]
-       upload-trusted-certificate.sh [-a appliance] [-t accesstoken] [-v version] [-C certificatefile]
+USAGE: install-trusted-certificate.sh [-h]
+       install-trusted-certificate.sh [-v version] [-C certificatefile] [-P password]
+       install-trusted-certificate.sh [-a appliance] [-t accesstoken] [-v version] [-C certificatefile]
 
   -h  Show help and exit
   -a  Network address of the appliance

@@ -3,16 +3,16 @@
 print_usage()
 {
     cat <<EOF
-USAGE: get-linked-accounts.sh [-h]
-       get-linked-accounts.sh [-v version]
-       get-linked-accounts.sh [-a appliance] [-t accesstoken] [-v version]
+USAGE: get-request-favorite.sh [-h]
+       get-request-favorite.sh [-v version]
+       get-request-favorite.sh [-a appliance] [-t accesstoken] [-v version]
 
   -h  Show help and exit
   -a  Network address of the appliance
   -t  Safeguard access token
   -v  Web API Version: 2 is default
 
-Get all linked accounts for this user via the Web API.
+Get all access request favorites for this user via the Web API.
 
 NOTE: Install jq to get pretty-printed JSON output.
 
@@ -54,5 +54,5 @@ done
 
 require_args
 
-$ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -t "$AccessToken" -v $Version -s core -m GET -U "Me/LinkedPolicyAccounts" -N
+$ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -t "$AccessToken" -v $Version -s core -m GET -U "Me/RequestFavorites" -N
 

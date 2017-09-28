@@ -3,9 +3,9 @@
 print_usage()
 {
     cat <<EOF
-USAGE: upload-ssl-certificate.sh [-h]
-       upload-ssl-certificate.sh [-v version] [-C certificatefile] [-P password]
-       upload-ssl-certificate.sh [-a appliance] [-t accesstoken] [-v version] [-C certificatefile] [-P password]
+USAGE: install-ssl-certificate.sh [-h]
+       install-ssl-certificate.sh [-v version] [-C certificatefile] [-P password]
+       install-ssl-certificate.sh [-a appliance] [-t accesstoken] [-v version] [-C certificatefile] [-P password]
 
   -h  Show help and exit
   -a  Network address of the appliance

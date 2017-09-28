@@ -3,9 +3,9 @@
 print_usage()
 {
     cat <<EOF
-USAGE: get-access-requests.sh [-h]
-       get-access-requests.sh [-v version] [-i id] [-F]
-       get-access-requests.sh [-a appliance] [-t accesstoken] [-v version] [-i id] [-F]
+USAGE: get-access-request.sh [-h]
+       get-access-request.sh [-v version] [-i id] [-F]
+       get-access-request.sh [-a appliance] [-t accesstoken] [-v version] [-i id] [-F]
 
   -h  Show help and exit
   -a  Network address of the appliance
