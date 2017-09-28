@@ -1,9 +1,15 @@
 #!/bin/bash
 
 # This script is meant to be run from within a fresh safeguard-bash Docker container
+if test -t 1; then
+    YELLOW='\033[1;33m'
+    NC='\033[0m'
+fi
 
-#/scripts/utils/new-test-ca.sh
-#/scripts/utils/new-test-cert.sh
+echo -e "${YELLOW}Creating new test CA...${NC}"
+/scripts/utils/new-test-ca.sh
+echo -e "${YELLOW}Creating new client cert...${NC}"
+/scripts/utils/new-test-cert.sh
 
 CaDir=$(find /scripts/utils -maxdepth 1 ! -path /scripts/utils -type d | xargs readlink -f)
 IssuingName="issuing-$(basename "$CaDir")"
@@ -15,13 +21,14 @@ ClientCertFile=$(find "$ClientCertDir" ! -path "$ClientCertDir" | grep -v $Issui
 ClientKeyFile=$(find "$ClientKeyDir" ! -path "$ClientKeyDir" | grep -v $IssuingName.key.pem)
 
 UserName=$(basename $ClientCertDir | cut -d. -f1)
-Thumbprint=$(openssl x509 -in $ClientCertFile -sha1 -noout -fingerprint)
+Thumbprint=$(openssl x509 -in $ClientCertFile -sha1 -noout -fingerprint | cut -d= -f2 | tr -d :)
 
 echo "UserName=$UserName"
+echo "Thumbprint=$Thumbprint"
 echo "ClientCertFile=$ClientCertFile"
 echo "ClientKeyFile=$ClientKeyFile"
 
-echo -e "\nLogging into Safeguard as administrator that can create users..."
+echo -e "${YELLOW}\nLogging into Safeguard as administrator that can create users...${NC}"
 connect-safeguard.sh
 
 invoke-safeguard-method.sh -s core -m POST -U Users -b "{
