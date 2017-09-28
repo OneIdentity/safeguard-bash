@@ -15,7 +15,7 @@ if [ ! -z "$(which docker)" ]; then
     echo -e "${YELLOW}Running the safeguard-bash container.\n" \
             "You can specify an alternate startup command using arguments to this script.\n" \
             "The default entrypoint is bash, so use the -c argument.\n" \
-            "  e.g. run.sh -c /bin/sh${NC}"
+            "  e.g. run.sh -c /bin/bash${NC}"
     docker run -it safeguard-bash "$@"
 else
     >&2 echo "You must install docker to use this script"
