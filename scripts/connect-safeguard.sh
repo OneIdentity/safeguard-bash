@@ -3,10 +3,10 @@
 print_usage()
 {
     cat <<EOF
-USAGE: login-safeguard.sh [-h]
-       login-safeguard.sh [-a appliance] [-v version] [-q]
-       login-safeguard.sh [-a appliance] [-v version] [-i provider] [-u user] [-p] [-X]
-       login-safeguard.sh [-a appliance] [-v version] -i certificate [-c file] [-k file] [-p] [-X]
+USAGE: connect-safeguard.sh [-h]
+       connect-safeguard.sh [-a appliance] [-v version] [-q]
+       connect-safeguard.sh [-a appliance] [-v version] [-i provider] [-u user] [-p] [-X]
+       connect-safeguard.sh [-a appliance] [-v version] -i certificate [-c file] [-k file] [-p] [-X]
 
   -h  Show help and exit
   -q  Query list of primary identity providers for appliance

@@ -25,9 +25,9 @@ USAGE: invoke-safeguard-method.sh [-h]
   -b  Body as JSON string
   -N  Filter out null values (up to three levels--requires jq)
 
-Create a login file using login-safeguard.sh for convenience. A login file is
+Create a login file using connect-safeguard.sh for convenience. A login file is
 required in order to use certificate authentication. If a login file is not used
-login-safeguard.sh will be called to create one. You may also use the -n option for 
+connect-safeguard.sh will be called to create one. You may also use the -n option for 
 anonymous authentication or the -a and -t options to specify an access token.
 
 NOTE: Install jq to get pretty-printed JSON output.
@@ -69,7 +69,7 @@ require_args()
         fi
         if ! $Anonymous; then
             if [ -z "$AccessToken" ]; then
-                AccessToken=$($ScriptDir/login-safeguard.sh -a $Appliance -X)
+                AccessToken=$($ScriptDir/connect-safeguard.sh -a $Appliance -X)
             fi
         fi
     fi
