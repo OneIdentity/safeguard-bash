@@ -101,7 +101,7 @@ require_auth_args()
 get_rsts_token()
 {
     if [ "$Provider" = "certificate" ]; then
-        StsResponse=$(curl -s -S -k --key $PKey --cert $Cert --pass $Pass -X POST -H 'Accept: application/json' \
+        StsResponse=$(curl -s -k --key $PKey --cert $Cert --pass $Pass -X POST -H 'Accept: application/json' \
                           -H 'Content-type: application/json' -d @- "https://$Appliance/RSTS/oauth2/token" <<EOF
 {
     "grant_type": "client_credentials",

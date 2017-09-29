@@ -4,7 +4,7 @@ print_usage()
 {
     cat <<EOF
 USAGE: install-trusted-certificate.sh [-h]
-       install-trusted-certificate.sh [-v version] [-C certificatefile] [-P password]
+       install-trusted-certificate.sh [-v version] [-C certificatefile]
        install-trusted-certificate.sh [-a appliance] [-t accesstoken] [-v version] [-C certificatefile]
 
   -h  Show help and exit
