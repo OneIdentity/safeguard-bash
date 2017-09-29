@@ -3,7 +3,7 @@
 print_usage()
 {
     cat <<EOF
-USAGE: get-appliance-status.sh [-h] [-a appliance] [-v version]
+USAGE: get-appliance-verification.sh [-h] [-a appliance] [-v version]
   -h  Show help and exit
   -a  Network address of the appliance
   -v  Web API Version: 2 is default

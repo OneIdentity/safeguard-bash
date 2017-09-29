@@ -3,9 +3,9 @@
 print_usage()
 {
     cat <<EOF
-USAGE: get-logged-in-user-info.sh [-h]
-       get-logged-in-user-info.sh [-v version]
-       get-logged-in-user-info.sh [-a appliance] [-t accesstoken] [-v version]
+USAGE: get-logged-in-user.sh [-h]
+       get-logged-in-user.sh [-v version]
+       get-logged-in-user.sh [-a appliance] [-t accesstoken] [-v version]
 
   -h  Show help and exit
   -a  Network address of the appliance
