@@ -72,6 +72,25 @@ fi
 
 require_args
 
+# this could easily be extended--it makes sense to use "Other" versions
+PlatformMapping="{
+\"Linux\": \"$($SgBashDir/get-platform.sh 'Other Linux Other')\",
+\"Windows Desktop\": \"$($SgBashDir/get-platform.sh 'Windows Other')\",
+\"Windows\": \"$($SgBashDir/get-platform.sh 'Windows Other')\",
+\"MacOSX\": \"$($SgBashDir/get-platform.sh 'OS X Other')\",
+\"AIX\": \"$($SgBashDir/get-platform.sh 'AIX Other')\",
+\"HP-UX\": \"$($SgBashDir/get-platform.sh 'HP-UX Other')\"
+}"
+
+PlatformFilter="select( $(echo $PlatformMapping | jq -r 'to_entries[] | "(.PlatformId | has(\"" + .key +  "\")) or"' | tr '\n' ' ' | sed 's/...$//'))"
+
+echo "PlatformFilter=$PlatformFilter"
+
+migrate_platform_id()
+{
+    echo $1 | jq "$PlatformFilter" 
+}
+
 >&2 echo "Fetching systems from TPAM..."
 Output=$(ssh -i $TpamKey $Tpam ListSystems -MaxRows 0)
 TpamJson=$(while read -r OutputLine; do echo "$OutputLine" | sed 's/\r//' | jq -R 'split("\t")'; done <<< "$Output" | jq -s -f "$ScriptDir/csv2json-helper.jq")
@@ -91,4 +110,5 @@ SgJsonPre=$(echo $TpamJsonFiltered \
                  elif (.key == "ConnectionProperties") then
                      .value |= { ServiceAccountCredentialType: "None", Port: .value }
                  else . end )' | jq -s .)
-echo $SgJsonPre | jq .
+>&2 echo "Found $(echo $SgJsonPre | jq '. | length') records"
+SgJson=$(migrate_platform_id $SgJsonPre)
