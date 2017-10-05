@@ -55,7 +55,7 @@ you will be presented with an error message saying authorization is
 required.
 
 ```Bash
-# invoke-safeguard-method.sh -s core -m GET -U Assets
+$ invoke-safeguard-method.sh -s core -m GET -U Assets
 {
   "Code": 60108,
   "Message": "Authorization is required for this request.",
