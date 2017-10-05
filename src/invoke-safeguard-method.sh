@@ -164,7 +164,6 @@ fi
 require_args
 
 Url="https://$Appliance/service/$Service/v$Version/$RelativeUrl"
->&2 echo "Url=$Url"
 case $Method in
     GET|DELETE)
         curl -s -k -X $Method "${ExtraHeader[@]}" -H "Accept: $Accept" -H "Authorization: Bearer $AccessToken" "$Url" | $PRETTYPRINT
