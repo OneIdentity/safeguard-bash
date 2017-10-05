@@ -3,9 +3,9 @@
 print_usage()
 {
     cat <<EOF
-USAGE: get-request-favorite.sh [-h]
-       get-request-favorite.sh [-v version]
-       get-request-favorite.sh [-a appliance] [-t accesstoken] [-v version]
+USAGE: get-access-request-favorite.sh [-h]
+       get-access-request-favorite.sh [-v version]
+       get-access-request-favorite.sh [-a appliance] [-t accesstoken] [-v version]
 
   -h  Show help and exit
   -a  Network address of the appliance
@@ -26,7 +26,6 @@ ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 Appliance=
 AccessToken=
 Version=2
-LicenseFile=
 
 . "$ScriptDir/utils/loginfile.sh"
 
