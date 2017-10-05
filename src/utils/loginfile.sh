@@ -12,7 +12,7 @@ read_from_login_file()
 use_login_file()
 {
     if ! [[ -r "$LoginFile" && -f "$LoginFile" ]]; then
-        $ScriptDir/login-safeguard.sh
+        $ScriptDir/connect-safeguard.sh
     fi
     Appliance=$(read_from_login_file Appliance)
     Provider=$(read_from_login_file Provider)
@@ -33,7 +33,7 @@ require_login_args()
             read -p "Appliance network address: " Appliance
         fi
         if [ -z "$AccessToken" ]; then
-            AccessToken=$($ScriptDir/login-safeguard.sh -a $Appliance -X)
+            AccessToken=$($ScriptDir/connect-safeguard.sh -a $Appliance -X)
         fi
     fi
 }

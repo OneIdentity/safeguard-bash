@@ -16,5 +16,5 @@ problems.
   import of TPAM systems into Safeguard as new assets. This script makes use
   of the batch endpoint.
 
-  The Dockerfile in the directory also shows how to create a docker image
-  based on safeguard-bash with additional components.
+  The Dockerfile in the directory also shows how to a docker image could be
+  created based on safeguard-bash with additional components.

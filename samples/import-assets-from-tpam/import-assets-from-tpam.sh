@@ -21,6 +21,8 @@ EOF
     exit 0
 }
 
+set -e
+
 ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 SgBashDir="$(dirname $(which connect-safeguard.sh))"
 
@@ -106,7 +108,7 @@ migrate_platform_id()
 }
 
 >&2 echo -e "${YELLOW}Fetching systems from TPAM...${NC}"
-Output=$(ssh -i $TpamKey $Tpam ListSystems -MaxRows 0)
+Output=$(ssh -i $TpamKey -oStrictHostKeyChecking=no $Tpam ListSystems -MaxRows 0)
 TpamJson=$(while read -r OutputLine; do echo "$OutputLine" | sed 's/\r//' | jq -R 'split("\t")'; done <<< "$Output" | jq -s -f "$ScriptDir/csv2json-helper.jq")
 TpamJsonFiltered=$(echo $TpamJson \
            | jq '.[] | {SystemName,NetworkAddress,PlatformName,PortNumber,Description}' \
