@@ -16,7 +16,7 @@ USAGE: connect-safeguard.sh [-h]
   -u  Safeguard user to use
   -c  File containing client certificate
   -k  File containing client private key
-  -p  Read Safeguard password from stdin
+  -p  Read Safeguard or certificate password from stdin
   -X  Do NOT generate login file for use in other scripts
 
 The invoke-safeguard-method.sh and listen-for-safeguard-events.sh scripts will attempt
@@ -47,7 +47,7 @@ LoginFile="$HOME/.safeguard_login"
 require_args()
 {
     if [ -z "$Appliance" ]; then
-        read -p "Appliance network address: " Appliance
+        read -p "Appliance Network Address: " Appliance
     fi
 }
 
