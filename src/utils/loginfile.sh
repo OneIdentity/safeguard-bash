@@ -20,7 +20,6 @@ use_login_file()
     if [ "$Provider" = "certificate" ]; then
         Cert=$(read_from_login_file Cert)
         PKey=$(read_from_login_file PKey)
-        Pass=$(read_from_login_file Pass)
     fi
 }
 
