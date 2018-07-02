@@ -114,17 +114,16 @@ EOF
              # There is a bug in some Debian-based platforms with curl linked to GnuTLS where it doesn't properly
              # ignore certificate errors when using client certificate authentication. This works around that
              # problem by calling OpenSSL directly and manually formulating an HTTP request.
-             StsResponse=$(cat <<EOF | openssl s_client -connect $Appliance:443 -ign_eof -key $PKey -cert $Cert -pass pass:$Pass 2>&1
+             StsResponse=$(cat <<EOF | openssl s_client -connect $Appliance:443 -quiet -crlf -key $PKey -cert $Cert -pass pass:$Pass 2>&1
 POST /RSTS/oauth2/token HTTP/1.1
 Host: $Appliance
 User-Agent: curl/7.47.0
 Accept: application/json
+Connection: close
 Content-type: application/json
 Content-Length: 84
 
 {"grant_type":"client_credentials","scope":"rsts:sts:primaryproviderid:certificate"}
-
-Q
 EOF
           )
         fi

@@ -81,4 +81,19 @@ done
 
 require_args
 
-invoke_a2a_method "$Appliance" "$Cert" "$PKey" "$Pass" "$ApiKey" GET "Credentials?type=Password" $Version "$Body"
+
+
+ATTRFILTER='cat'
+ERRORFILTER='cat'
+if [ ! -z "$(which jq)" ]; then
+    ERRORFILTER='jq .'
+    ATTRFILTER='jq .'
+fi
+
+Result=$(invoke_a2a_method "$Appliance" "$Cert" "$PKey" "$Pass" "$ApiKey" GET "Credentials?type=Password" $Version "$Body")
+Error=$(echo $Result | jq .Code 2> /dev/null)
+if [ "$Error" = "null" ]; then
+    echo $Result | $ATTRFILTER
+else
+    echo $Result | $ERRORFILTER
+fi

@@ -23,19 +23,17 @@ invoke_a2a_method()
             # There is a bug in some Debian-based platforms with curl linked to GnuTLS where it doesn't properly
             # ignore certificate errors when using client certificate authentication. This works around that
             # problem by calling OpenSSL directly and manually formulating an HTTP request.
-            response=$(cat <<EOF | openssl s_client -connect $appliance:443 -ign_eof -key $pkeyfile -cert $certfile -pass pass:$pass 2>&1
+            response=$(cat <<EOF | openssl s_client -connect $appliance:443 -quiet -crlf -key $pkeyfile -cert $certfile -pass pass:$pass 2>&1
 $method /service/a2a/v$version/$relurl HTTP/1.1
 Host: $appliance
 User-Agent: curl/7.47.0
 Authorization: A2A $apikey
 Accept: application/json
-Content-Length: 6
- 
-ignore
+Connection: close
 
-Q
 EOF
-        )
+            )
+            echo "$response" | sed -n '/read:errno/,$p' | sed -e 's/\(.*\)read\:errno\=.*/\1/'
         fi
     else
         local response=$(curl -s -k --key $pkeyfile --cert $certfile --pass $pass -X $method -H 'Accept: application/json' \
@@ -50,20 +48,20 @@ EOF
             # There is a bug in some Debian-based platforms with curl linked to GnuTLS where it doesn't properly
             # ignore certificate errors when using client certificate authentication. This works around that
             # problem by calling OpenSSL directly and manually formulating an HTTP request.
-            response=$(cat <<EOF | openssl s_client -connect $appliance:443 -ign_eof -key $pkeyfile -cert $certfile -pass pass:$pass 2>&1
+            response=$(cat <<EOF | openssl s_client -connect $appliance:443 -quiet -crlf -key $pkeyfile -cert $certfile -pass pass:$pass 2>&1
 POST /service/a2a/v$version/$relurl HTTP/1.1
 Host: $appliance
 User-Agent: curl/7.47.0
 Authorization: A2A $apikey
 Accept: application/json
+Connection: close
 Content-type: application/json
 Content-Length: $bodylen
 
 $body
-
-Q
 EOF
-              )
+            )
+            echo "$response" | sed -n '/read:errno/,$p' | sed -e 's/\(.*\)read\:errno\=.*/\1/'
         fi
     fi
 }
