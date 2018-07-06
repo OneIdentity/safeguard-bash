@@ -16,7 +16,7 @@ USAGE: connect-safeguard.sh [-h]
   -u  Safeguard user to use
   -c  File containing client certificate
   -k  File containing client private key
-  -p  Read Safeguard password from stdin
+  -p  Read Safeguard or certificate password from stdin
   -X  Do NOT generate login file for use in other scripts
 
 The invoke-safeguard-method.sh and listen-for-safeguard-events.sh scripts will attempt
@@ -47,7 +47,7 @@ LoginFile="$HOME/.safeguard_login"
 require_args()
 {
     if [ -z "$Appliance" ]; then
-        read -p "Appliance network address: " Appliance
+        read -p "Appliance Network Address: " Appliance
     fi
 }
 
@@ -102,8 +102,11 @@ require_auth_args()
 get_rsts_token()
 {
     if [ "$Provider" = "certificate" ]; then
-        StsResponse=$(curl -s -k --key $PKey --cert $Cert --pass $Pass -X POST -H 'Accept: application/json' \
-                          -H 'Content-type: application/json' -d @- "https://$Appliance/RSTS/oauth2/token" <<EOF
+        if [ $(curl --version | grep "libcurl" | sed -e 's,curl [0-9]*\.\([0-9]*\).* (.*,\1,') -ge 33 ]; then
+            http11flag='--http1.1'
+        fi
+        StsResponse=$(curl -s -k --key $PKey --cert $Cert --pass $Pass $http11flag -X POST -H 'Accept: application/json' \
+                           -H 'Content-type: application/json' -d @- "https://$Appliance/RSTS/oauth2/token" <<EOF
 {
     "grant_type": "client_credentials",
     "scope": "$Scope"
@@ -111,22 +114,21 @@ get_rsts_token()
 EOF
         )
         if [ -z "$StsResponse" ]; then
-             # There is a bug in some Debian-based platforms with curl linked to GnuTLS where it doesn't properly
-             # ignore certificate errors when using client certificate authentication. This works around that
-             # problem by calling OpenSSL directly and manually formulating an HTTP request.
-             StsResponse=$(cat <<EOF | openssl s_client -connect $Appliance:443 -ign_eof -key $PKey -cert $Cert -pass pass:$Pass 2>&1
+            # There is a bug in some Debian-based platforms with curl linked to GnuTLS where it doesn't properly
+            # ignore certificate errors when using client certificate authentication. This works around that
+            # problem by calling OpenSSL directly and manually formulating an HTTP request.
+            StsResponse=$(cat <<EOF | openssl s_client -connect $Appliance:443 -quiet -crlf -key $PKey -cert $Cert -pass pass:$Pass 2>&1
 POST /RSTS/oauth2/token HTTP/1.1
 Host: $Appliance
 User-Agent: curl/7.47.0
 Accept: application/json
+Connection: close
 Content-type: application/json
 Content-Length: 84
 
 {"grant_type":"client_credentials","scope":"rsts:sts:primaryproviderid:certificate"}
-
-Q
 EOF
-          )
+            )
         fi
         if [ $? -ne 0 ]; then
             >&2 echo "Failed to get access token from appliance token service"
@@ -150,12 +152,11 @@ EOF
             exit 1
         fi
     fi
-    TokenLine=$(echo $StsResponse | grep -Po '"access_token":.*?[^\\]",')
-    if [ $? -ne 0 ]; then
+    StsAccessToken=$(echo $StsResponse | sed -n 's/.*"access_token":"\([-0-9A-Za-z_\.]*\)",.*/\1/p')
+    if [ -z "$StsAccessToken" ]; then
         >&2 echo -e "Failed to get access token from appliance\n$StsResponse"
         exit 1
     fi
-    StsAccessToken=$(echo $TokenLine | sed -e 's/^.*:.*"\(.*\)",/\1/')
 }
 
 get_safeguard_token()
@@ -172,18 +173,17 @@ EOF
             >&2 echo -e "Failed to get login response from appliance:\n$LoginResponse"
             exit 1
         fi
-        Status=$(echo $LoginResponse | grep -Po '"Status":.*?[^\\]",')
-        if [ $? -ne 0 ]; then
+        Status=$(echo $LoginResponse | sed -n 's/.*"Status":"\([A-Za-z]*\)",.*/\1/p')
+        if [ -z "$Status" ]; then
             >&2 echo -e "Failed to get status from login response:\n$LoginResponse"
             exit 1
         fi
         if [[ $Status =~ .*Success* ]]; then
-            TokenLine=$(echo $LoginResponse | grep -Po '"UserToken":.*?[^\\]",')
-            if [ $? -ne 0 ]; then
+            AccessToken=$(echo $LoginResponse | sed -n 's/.*"UserToken":"\([-0-9A-Za-z_\.]*\)",.*/\1/p')
+            if [ -z "$AccessToken" ]; then
                 >&2 echo -e "Failed to get user token from appliance:\n$LoginResponse"
                 exit 1
             fi
-            AccessToken=$(echo $TokenLine | sed -e 's/^.*:.*"\(.*\)",/\1/')
         elif [[ $Status =~ .*Unauthorized* ]]; then
             >&2 echo -e "Failure result from login response:\n$LoginResponse"
             exit 1
@@ -268,7 +268,6 @@ EOF
         cat <<EOF >> $LoginFile
 Cert=$Cert
 PKey=$PKey
-Pass=$Pass
 EOF
     fi
     umask $OldUmask
