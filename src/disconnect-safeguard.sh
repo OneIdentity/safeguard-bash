@@ -39,7 +39,6 @@ if [[ -r "$LoginFile" && -f "$LoginFile" ]]; then
     if [ "$Provider" = "certificate" ]; then
         Cert=$(read_from_login_file Cert)
         PKey=$(read_from_login_file PKey)
-        Pass=$(read_from_login_file Pass)
     fi
 else
     >&2 echo "A login file was not found or is not readable!"
@@ -51,11 +50,6 @@ rm -f $LoginFile
 
 >&2 echo "Calling logout service on appliance."
 ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-if [ "$Provider" = "certificate" ]; then
-    curl -s -S -k -H 'Accept: application/json' -H "Authorization: Bearer $AccessToken" \
-        --key $PKey --cert $Cert --pass $Pass "https://$Appliance/service/core/v$Version/Token/Logout" -d ""
-else
-    curl -s -S -k -H 'Accept: application/json' -H "Authorization: Bearer $AccessToken" \
-        "https://$Appliance/service/core/v$Version/Token/Logout" -d ""
-fi
+curl -s -S -k -H 'Accept: application/json' -H "Authorization: Bearer $AccessToken" \
+     "https://$Appliance/service/core/v$Version/Token/Logout" -d ""
 

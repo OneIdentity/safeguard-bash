@@ -102,8 +102,11 @@ require_auth_args()
 get_rsts_token()
 {
     if [ "$Provider" = "certificate" ]; then
-        StsResponse=$(curl -s -k --key $PKey --cert $Cert --pass $Pass -X POST -H 'Accept: application/json' \
-                          -H 'Content-type: application/json' -d @- "https://$Appliance/RSTS/oauth2/token" <<EOF
+        if [ $(curl --version | grep "libcurl" | sed -e 's,curl [0-9]*\.\([0-9]*\).* (.*,\1,') -ge 33 ]; then
+            http11flag='--http1.1'
+        fi
+        StsResponse=$(curl -s -k --key $PKey --cert $Cert --pass $Pass $http11flag -X POST -H 'Accept: application/json' \
+                           -H 'Content-type: application/json' -d @- "https://$Appliance/RSTS/oauth2/token" <<EOF
 {
     "grant_type": "client_credentials",
     "scope": "$Scope"
@@ -265,7 +268,6 @@ EOF
         cat <<EOF >> $LoginFile
 Cert=$Cert
 PKey=$PKey
-Pass=$Pass
 EOF
     fi
     umask $OldUmask
