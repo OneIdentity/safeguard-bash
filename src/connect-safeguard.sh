@@ -149,12 +149,11 @@ EOF
             exit 1
         fi
     fi
-    TokenLine=$(echo $StsResponse | grep -Po '"access_token":.*?[^\\]",')
-    if [ $? -ne 0 ]; then
+    StsAccessToken=$(echo $StsResponse | sed -n 's/.*"access_token":"\([-0-9A-Za-z_\.]*\)",.*/\1/p')
+    if [ -z "$StsAccessToken" ]; then
         >&2 echo -e "Failed to get access token from appliance\n$StsResponse"
         exit 1
     fi
-    StsAccessToken=$(echo $TokenLine | sed -e 's/^.*:.*"\(.*\)",/\1/')
 }
 
 get_safeguard_token()
@@ -171,18 +170,17 @@ EOF
             >&2 echo -e "Failed to get login response from appliance:\n$LoginResponse"
             exit 1
         fi
-        Status=$(echo $LoginResponse | grep -Po '"Status":.*?[^\\]",')
-        if [ $? -ne 0 ]; then
+        Status=$(echo $LoginResponse | sed -n 's/.*"Status":"\([A-Za-z]*\)",.*/\1/p')
+        if [ -z "$Status" ]; then
             >&2 echo -e "Failed to get status from login response:\n$LoginResponse"
             exit 1
         fi
         if [[ $Status =~ .*Success* ]]; then
-            TokenLine=$(echo $LoginResponse | grep -Po '"UserToken":.*?[^\\]",')
-            if [ $? -ne 0 ]; then
+            AccessToken=$(echo $LoginResponse | sed -n 's/.*"UserToken":"\([-0-9A-Za-z_\.]*\)",.*/\1/p')
+            if [ -z "$AccessToken" ]; then
                 >&2 echo -e "Failed to get user token from appliance:\n$LoginResponse"
                 exit 1
             fi
-            AccessToken=$(echo $TokenLine | sed -e 's/^.*:.*"\(.*\)",/\1/')
         elif [[ $Status =~ .*Unauthorized* ]]; then
             >&2 echo -e "Failure result from login response:\n$LoginResponse"
             exit 1
