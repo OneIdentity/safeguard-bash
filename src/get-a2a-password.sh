@@ -3,8 +3,8 @@
 print_usage()
 {
     cat <<EOF
-USAGE: get-a2a-password.sh [-h]
-       get-a2a-password.sh [-a appliance] [-v version] [-c file] [-k file] [-A apikey] [-p]
+USAGE: $1 [-h]
+       $1 [-a appliance] [-v version] [-c file] [-k file] [-A apikey] [-p]
 
   -h  Show help and exit
   -a  Network address of the appliance
@@ -74,7 +74,7 @@ while getopts ":a:v:c:k:A:ph" opt; do
         ApiKey=$OPTARG
         ;;
     h)
-        print_usage
+        print_usage $0
         ;;
     esac
 done
