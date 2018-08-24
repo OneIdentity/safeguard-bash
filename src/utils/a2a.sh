@@ -22,7 +22,7 @@ invoke_a2a_method()
         local response=$(curl -s -k --key $pkeyfile --cert $certfile --pass $pass -X $method $http11flag -H 'Accept: application/json' \
                               -H "Authorization: A2A $apikey" "https://$appliance/service/a2a/v$version/$relurl"
         )
-        if [ ! -z "$response" ]; then
+        if [ ! -z "$response" -a ! -z "$(echo $response | jq '.Codes // empty')" ]; then
             echo "$response"
         else
             # There is a bug in some Debian-based platforms with curl linked to GnuTLS where it doesn't properly
