@@ -25,9 +25,6 @@ ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 Appliance=
 AccessToken=
-Cert=
-PKey=
-Pass=
 
 . "$ScriptDir/utils/loginfile.sh"
 
