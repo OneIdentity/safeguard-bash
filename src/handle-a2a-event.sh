@@ -34,7 +34,7 @@ HandlerScript=
 PassStdin=
 Pass=
 
-#. "$ScriptDir/utils/a2a.sh"
+. "$ScriptDir/utils/a2a.sh"
 
 require_args()
 {
@@ -77,12 +77,10 @@ require_prereqs()
 
 cleanup()
 {
-    if [ -z "$listener_PID" ] || kill -0 $listener_PID 2> /dev/null; then
+    if [ ! -z "$listener_PID" ] && kill -0 $listener_PID 2> /dev/null; then
         >&2 echo "Killing coprocess $listener_PID"
         kill $listener_PID
         wait $listener_PID 2> /dev/null
-    else
-        >&2 echo "Nothing to clean up"
     fi
 }
 
@@ -121,7 +119,7 @@ require_args
 require_prereqs
 
 while true; do
-    if [ -z "$listener_PID" ] || kill -0 $listener_PID 2> /dev/null; then
+    if [ -z "$listener_PID" ] || ! kill -0 $listener_PID 2> /dev/null; then
         if [ ! -z "$listener_PID" ]; then
             wait $listener_PID
             unset listener_PID
@@ -133,7 +131,9 @@ while true; do
     fi
     unset Output
     IFS= read -t 5 Temp <&"${listener[0]}" && Output="$Temp"
-    echo "$Output"
+    if [ ! -z "$Output" ]; then
+        echo "$Output"
+    fi
 done
 
 
