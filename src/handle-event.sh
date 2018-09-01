@@ -105,6 +105,6 @@ while true; do
     unset Output
     IFS= read -t 5 Temp <&"${listener[0]}" && Output="$Temp"
     if [ ! -z "$Output" ]; then
-        echo "$Output"
+        $HandlerScript <<< "$Output"
     fi
 done
