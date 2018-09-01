@@ -90,12 +90,15 @@ while true; do
             unset listener_PID
         fi
         coproc listener { 
-            "$ScriptDir/listen-for-event.sh" -a $Appliance -t $AccessToken
+            "$ScriptDir/listen-for-event.sh" -a $Appliance -t $AccessToken | \
+                jq -r '.M[]?.A[]? | select(.Name=="AssetAccountPasswordUpdated") | .Data? | "\(.AssetName),\(.AccountName)"'
         }
     fi
     unset Output
     IFS= read -t 5 Temp <&"${listener[0]}" && Output="$Temp"
     if [ ! -z "$Output" ]; then
-        echo "$Output"
+        Asset=$(echo "$Output" | cut -d, -f1)
+        Account=$(echo "$Output" | cut -d, -f1)
+        echo "Asset=$Asset Account=$Account"
     fi
 done
