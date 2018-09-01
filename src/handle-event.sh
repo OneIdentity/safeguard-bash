@@ -4,16 +4,17 @@ print_usage()
 {
     cat <<EOF
 USAGE: $1 [-h]
-       $1 [-a appliance] [-t accesstoken] [-S script]
+       $1 [-a appliance] [-t accesstoken] [-E eventname] [-S script]
 
   -h  Show help and exit
   -a  Network address of the appliance
   -t  Safeguard access token
+  -E  Event name to process
   -S  Script to execute when the password changes
 
 Connect to SignalR using the Safeguard event service via a Safeguard access token
-and execute a provided script each time a password changes passing the asset network
-address and the account name in as args, and the password into stdin
+and execute a provided script each time an event occurs passing the details of the
+event as an object stdin
 
 EOF
     exit 0
@@ -24,6 +25,7 @@ ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 Appliance=
 AccessToken=
+EventName=
 HandlerScript=
 
 . "$ScriptDir/utils/loginfile.sh"
@@ -31,8 +33,11 @@ HandlerScript=
 require_args()
 {
     require_login_args
+    if [ -z "$EventName" ]; then
+        read "Event Name: " EventName
+    fi
     if [ -z "$HandlerScript" ]; then
-        read -p "Handler Script: " HandlerScript
+        read "Handler Script: " HandlerScript
     fi
 }
 
@@ -63,13 +68,16 @@ cleanup()
 
 trap cleanup EXIT
 
-while getopts ":a:t:S:ph" opt; do
+while getopts ":a:t:E:S:ph" opt; do
     case $opt in
     a)
         Appliance=$OPTARG
         ;;
     t)
         AccessToken=$OPTARG
+        ;;
+    E)
+        EventName=$OPTARG
         ;;
     S)
         HandlerScript=$OPTARG
@@ -91,14 +99,12 @@ while true; do
         fi
         coproc listener { 
             "$ScriptDir/listen-for-event.sh" -a $Appliance -t $AccessToken | \
-                jq --unbuffered -r '.M[]?.A[]? | select(.Name=="AssetAccountPasswordUpdated") | .Data? | "\(.AssetName),\(.AccountName)"'
+                jq --unbuffered -c ".M[]?.A[]? | select(.Name==\"$EventName\") | .Data?"
         }
     fi
     unset Output
     IFS= read -t 5 Temp <&"${listener[0]}" && Output="$Temp"
     if [ ! -z "$Output" ]; then
-        Asset=$(echo "$Output" | cut -d, -f1)
-        Account=$(echo "$Output" | cut -d, -f1)
-        echo "Asset=$Asset Account=$Account"
+        echo "$Output"
     fi
 done
