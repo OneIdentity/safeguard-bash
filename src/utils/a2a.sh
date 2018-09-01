@@ -70,3 +70,10 @@ EOF
         fi
     fi
 }
+
+get_a2a_connection_token()
+{
+    curl -s -k --key $PKey --cert $Cert --pass $Pass -H "Authorization: Bearer $AccessToken" \
+            "https://$Appliance/service/event/signalr/negotiate?_=$NUM" \
+            | sed -n -e 's/\+/%2B/g;s/\//%2F/g;s/.*"ConnectionToken":"\([^"]*\)".*/\1/p'
+}
