@@ -91,7 +91,7 @@ while true; do
         fi
         coproc listener { 
             "$ScriptDir/listen-for-event.sh" -a $Appliance -t $AccessToken | \
-                jq -r '.M[]?.A[]? | select(.Name=="AssetAccountPasswordUpdated") | .Data? | "\(.AssetName),\(.AccountName)"'
+                jq --unbuffered -r '.M[]?.A[]? | select(.Name=="AssetAccountPasswordUpdated") | .Data? | "\(.AssetName),\(.AccountName)"'
         }
     fi
     unset Output
