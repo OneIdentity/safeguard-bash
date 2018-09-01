@@ -24,7 +24,6 @@ EOF
 ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 Appliance=
-Provider=
 AccessToken=
 Cert=
 PKey=
@@ -40,15 +39,9 @@ require_args()
 get_connection_token()
 {
     NUM=`echo $(( ( RANDOM % 1000000000 )  + 1 ))`
-    if [ "$Provider" = "certificate" ]; then
-        curl -s -k --key $PKey --cert $Cert --pass $Pass -H "Authorization: Bearer $AccessToken" \
-            "https://$Appliance/service/event/signalr/negotiate?_=$NUM" \
-            | sed -n -e 's/\+/%2B/g;s/\//%2F/g;s/.*"ConnectionToken":"\([^"]*\)".*/\1/p'
-    else
-        curl -s -k -H "Authorization: Bearer $AccessToken" \
-            "https://$Appliance/service/event/signalr/negotiate?_=$NUM" \
-            | sed -n -e 's/\+/%2B/g;s/\//%2F/g;s/.*"ConnectionToken":"\([^"]*\)".*/\1/p'
-    fi
+    curl -s -k -H "Authorization: Bearer $AccessToken" \
+        "https://$Appliance/service/event/signalr/negotiate?_=$NUM" \
+        | sed -n -e 's/\+/%2B/g;s/\//%2F/g;s/.*"ConnectionToken":"\([^"]*\)".*/\1/p'
 }
 
 
@@ -78,11 +71,6 @@ ConnectionToken=`get_connection_token`
 TID=`echo $(( ( RANDOM % 1000 )  + 1 ))`
 Url="https://$Appliance/service/event/signalr/connect"
 Params="?transport=serverSentEvents&connectionToken=$ConnectionToken&connectionData=%5b%7b%22name%22%3a%22notificationHub%22%7d%5d&tid=$TID"
-if [ "$Provider" = "certificate" ]; then
-    stdbuf -o0 -e0 curl -s -k --key $PKey --cert $Cert --pass $Pass -H "Authorization: Bearer $AccessToken" "$Url$Params" \
-        | sed -u -e '/^data: initialized/d;/^\s*$/d;s/^data: \(.*\)$/\1/g' | while read line; do echo $line | $PRETTYPRINT ; done
-else
-    stdbuf -o0 -e0 curl -s -k -H "Authorization: Bearer $AccessToken" "$Url$Params" \
-        | sed -u -e '/^data: initialized/d;/^\s*$/d;s/^data: \(.*\)$/\1/g' | while read line; do echo $line | $PRETTYPRINT ; done
-fi
+stdbuf -o0 -e0 curl -s -k -H "Authorization: Bearer $AccessToken" "$Url$Params" \
+    | sed -u -e '/^data: initialized/d;/^\s*$/d;s/^data: \(.*\)$/\1/g' | while read line; do echo $line | $PRETTYPRINT ; done
 
