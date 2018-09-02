@@ -19,10 +19,13 @@ USAGE: connect-safeguard.sh [-h]
   -p  Read Safeguard or certificate password from stdin
   -X  Do NOT generate login file for use in other scripts
 
-The invoke-safeguard-method.sh and listen-for-safeguard-events.sh scripts will attempt
+The invoke-safeguard-method.sh and listen-for--events.sh scripts will attempt
 to use a login file by default. If one is not found this script will be called to
 generate one. Subsequent invocations will use that login file until it is removed by
 calling logout-safeguard.sh which will also call the logout service on the appliance.
+
+If using -p option make sure you provide all the data you need to run this command or
+you will be prompted interactively anyway.
 
 EOF
     exit 0
@@ -38,66 +41,12 @@ Provider=
 User=
 Cert=
 PKey=
-PassStdin=
+Pass=
 StsAccessToken=
 AccessToken=
 StoreLoginFile=true
-LoginFile="$HOME/.safeguard_login"
 
-require_args()
-{
-    if [ -z "$Appliance" ]; then
-        read -p "Appliance Network Address: " Appliance
-    fi
-}
-
-query_providers()
-{
-    if [ ! -z "$(which jq)" ]; then
-        GetPrimaryProvidersRelativeURL="RSTS/UserLogin/LoginController?response_type=token&redirect_uri=urn:InstalledApplication&loginRequestStep=1"
-        # certificate provider not returned by default because it is marked as not supporting HTML forms login
-        Providers=$(curl -s -k -X POST -H 'Accept: application/x-www-form-urlencoded' "https://$Appliance/$GetPrimaryProvidersRelativeURL" \
-                         -d 'RelayState=' | jq '.Providers|.[].Id' | xargs echo -n)
-        if [ -z "$Providers" ]; then
-            >&2 echo "Unable to obtain list of identity providers, does $Appliance exist?"
-            exit 1
-        fi
-        Providers=$(echo certificate $Providers)
-    fi
-}
-
-require_auth_args()
-{
-    query_providers
-    if [ -z "$Provider" ]; then
-        if [ ! -z "$Providers" ]; then
-            read -p "Identity Provider ($Providers): " Provider
-        else
-            read -p "Identity Provider: " Provider
-        fi
-    fi
-    if [ ! -z "$Providers" ]; then
-        if ! [[ $Providers =~ (^|[[:space:]])$Provider($|[[:space:]]) ]]; then
-            >&2 echo "Specified provider '$Provider' must be one of: $Providers!"; print_usage
-        fi
-    fi
-    if [ "$Provider" = "certificate" ]; then
-        if [ -z "$Cert" ]; then
-            read -p "Client Certificate File: " Cert
-        fi
-        if [ -z "$PKey" ]; then
-            read -p "Client Private Key File: " PKey
-        fi
-    else
-        if [ -z "$User" ]; then
-            read -p "Appliance Login: " User
-        fi
-    fi
-    if [ -z "$Pass" ]; then
-        read -s -p "Password: " Pass
-        >&2 echo
-    fi 
-}
+. "$ScriptDir/utils/loginfile.sh"
 
 get_rsts_token()
 {
@@ -216,7 +165,8 @@ while getopts ":a:v:i:u:c:k:pqhX" opt; do
         PKey=$OPTARG
         ;;
     p)
-        PassStdin="-p"
+        # read password from stdin before doing anything
+        read -s Pass
         ;;
     q)
         QueryProviders=true
@@ -230,20 +180,7 @@ while getopts ":a:v:i:u:c:k:pqhX" opt; do
     esac
 done
 
-require_args
-
-if $QueryProviders; then
-    if [ ! -z "$(which jq)" ]; then
-        query_providers
-        echo $Providers
-        exit 0
-    else
-        >&2 echo "You must install jq to query providers"
-        exit 1
-    fi
-fi
-
-require_auth_args
+require_connect_args
 
 Scope="rsts:sts:primaryproviderid:$Provider"
 
