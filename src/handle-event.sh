@@ -140,9 +140,9 @@ connect()
 cleanup()
 {
     if [ ! -z "$listener_PID" ] && kill -0 $listener_PID 2> /dev/null; then
-        >&2 echo "[$(date '+%x %X')] Killing listener coprocess PID=$listener_PID"
-        kill $listener_PID
+        kill $listener_PID 2> /dev/null
         wait $listener_PID 2> /dev/null
+        >&2 echo "[$(date '+%x %X')] Killed listener coprocess PID=$listener_PID"
     fi
 }
 
