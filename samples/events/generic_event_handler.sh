@@ -10,6 +10,12 @@ if test -t 1; then
     NC='\033[0m'
 fi
 
-read line
+read -t 0.5 Appliance
+read -t 0.5 AccessToken
+read -t 0.5 EventData
+
+echo -e "${YELLOW}$0 received Appliance:${NC} $Appliance"
+echo -e "${YELLOW}$0 received AccessToken:${NC} $AccessToken"
 echo -e "${YELLOW}$0 received the following object...${NC}"
-echo $line | jq .
+echo $EventData | jq .
+

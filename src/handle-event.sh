@@ -36,6 +36,8 @@ ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 LoginType=
 TokenIsValid=false
+TokenIsExpiring=false
+TokenExpirationThreshold=0
 Appliance=
 Version=2
 AccessToken=
@@ -81,7 +83,7 @@ require_prereqs()
         exit 1
     fi
     if [ ! -x "$HandlerScript" ]; then
-        >&2 echo "The handler script passed to -S option must be executable and receive password as stdin"
+        >&2 echo "The handler script passed to -S option must be executable"
         exit 1
     fi
 }
@@ -91,9 +93,17 @@ check_access_token()
     local Url="https://$Appliance/service/core/v$Version/LoginMessage"
     local ResponseCode=$(curl -s -k -o /dev/null -w "%{http_code}" -X GET -H "Accept: application/json" -H "Authorization: Bearer $AccessToken" "$Url")
     if [ $ResponseCode -eq 200 ]; then
+        >&2 echo "[$(date '+%x %X')] Access token is still valid."
         TokenIsValid=true
+        local Now=$(date +%s)
+        local MinutesRemaining=$(curl -s -k -i -X GET -H "Accept: application/json" -H "X-TokenLifetimeRemaining" -H "Authorization: Bearer $AccessToken" "$Url" \
+                                     | grep X-TokenLifetimeRemaining | cut -d' ' -f2 | tr -d '\r')
+        TokenExpirationThreshold=$(($MinutesRemaining*60+$Now-120))
+        >&2 echo "[$(date '+%x %X')] Access token timeout / refresh is set to $((TokenExpirationThreshold-Now)) seconds from now."
     else
+        >&2 echo "[$(date '+%x %X')] Access token is NOT valid!"
         TokenIsValid=false
+        TokenExpirationThreshold=0
     fi
 }
 
@@ -101,15 +111,28 @@ connect()
 {
     case $LoginType in
     Token)
-        # can't reconnect
-        >&2 echo "Initial login was using an access token.  Cannot reconnect if access token is no longer valid."
-        exit 1
-        ;;
-    Certificate)
-        AccessToken=$("$ScriptDir/connect-safeguard.sh" -a "$Appliance" -i "$Provider" -u "$User" -p -X <<< "$Pass")
+        check_access_token
+        if ! $AccessTokenIsValid; then
+            # can't reconnect
+            >&2 echo "[$(date '+%x %X')] Initial login was using an access token.  Cannot reconnect if access token is no longer valid."
+            exit 1
+        fi
         ;;
     Password)
+        AccessToken=$("$ScriptDir/connect-safeguard.sh" -a "$Appliance" -i "$Provider" -u "$User" -p -X <<< "$Pass")
+        check_access_token
+        if ! $AccessTokenIsValid; then
+            >&2 echo "[$(date '+%x %X')] Unable to establish access token using certificate."
+            exit 1
+        fi
+        ;;
+    Certificate)
         AccessToken=$("$ScriptDir/connect-safeguard.sh" -a "$Appliance" -i certificate -c "$Cert" -k "$PKey" -p -X <<< "$Pass")
+        check_access_token
+        if ! $AccessTokenIsValid; then
+            >&2 echo "[$(date '+%x %X')] Unable to establish access token using username and password."
+            exit 1
+        fi
         ;;
     esac
 }
@@ -117,7 +140,7 @@ connect()
 cleanup()
 {
     if [ ! -z "$listener_PID" ] && kill -0 $listener_PID 2> /dev/null; then
-        >&2 echo "Killing coprocess $listener_PID"
+        >&2 echo "[$(date '+%x %X')] Killing listener coprocess PID=$listener_PID"
         kill $listener_PID
         wait $listener_PID 2> /dev/null
     fi
@@ -164,25 +187,24 @@ done
 require_args
 require_prereqs
 
+StartTime=$(date +%s)
 while true; do
+    Now=$(date +%s)
+    if ! $AccessTokenIsValid || [ $Now -gt $TokenExpirationThreshold ]; then
+        connect
+    fi
     if [ -z "$listener_PID" ] || ! kill -0 $listener_PID 2> /dev/null; then
         if [ ! -z "$listener_PID" ]; then
             wait $listener_PID
             unset listener_PID
         fi
-        if [ -z "$AccessToken" ]; then
-            check_access_token
-        fi
-        if ! $AccessTokenIsValid; then
-            connect
-        fi
         coproc listener { 
             "$ScriptDir/listen-for-event.sh" -a $Appliance -t $AccessToken | \
                 jq --unbuffered -c ".M[]?.A[]? | select(.Name==\"$EventName\") | .Data?"
         }
+        >&2 echo "[$(date '+%x %X')] Started listener coprocess PID=$listener_PID."
     fi
 # TODO: handle timeouts of not reading anything for a long period and restart coproc
-# TODO: check the access token and fetch a new one if it is running out of time
     unset Output
     IFS= read -t 5 Temp <&"${listener[0]}" && Output="$Temp"
     if [ ! -z "$Output" ]; then
