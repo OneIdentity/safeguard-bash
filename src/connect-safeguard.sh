@@ -19,10 +19,10 @@ USAGE: connect-safeguard.sh [-h]
   -p  Read Safeguard or certificate password from stdin
   -X  Do NOT generate login file for use in other scripts
 
-The invoke-safeguard-method.sh and listen-for--events.sh scripts will attempt
-to use a login file by default. If one is not found this script will be called to
-generate one. Subsequent invocations will use that login file until it is removed by
-calling logout-safeguard.sh which will also call the logout service on the appliance.
+The invoke-safeguard-method.sh and listen-for-event.sh scripts will attempt to use
+a login file by default. If one is not found this script will be called to generate
+one. Subsequent invocations will use that login file until it is removed by calling
+logout-safeguard.sh which will also call the logout service on the appliance.
 
 If using -p option make sure you provide all the data you need to run this command or
 you will be prompted interactively anyway.
