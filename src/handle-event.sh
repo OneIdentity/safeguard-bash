@@ -36,7 +36,6 @@ ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 LoginType=
 TokenIsValid=false
-TokenIsExpiring=false
 TokenExpirationThreshold=0
 Appliance=
 Version=2
@@ -65,10 +64,10 @@ require_args()
         require_connect_args
     fi
     if [ -z "$EventName" ]; then
-        read "Event Name: " EventName
+        read -p "Event Name: " EventName
     fi
     if [ -z "$HandlerScript" ]; then
-        read "Handler Script: " HandlerScript
+        read -p "Handler Script: " HandlerScript
     fi
 }
 
@@ -120,7 +119,7 @@ connect()
     case $LoginType in
     Token)
         check_access_token
-        if ! $AccessTokenIsValid; then
+        if ! $TokenIsValid; then
             # can't reconnect
             >&2 echo "[$(date '+%x %X')] Initial login was using an access token.  Cannot reconnect if access token is no longer valid."
             exit 1
@@ -130,7 +129,7 @@ connect()
         >&2 echo "[$(date '+%x %X')] Connecting to $Appliance with $Provider\\$User and password."
         AccessToken=$("$ScriptDir/connect-safeguard.sh" -a "$Appliance" -i "$Provider" -u "$User" -p -X <<< "$Pass")
         check_access_token
-        if ! $AccessTokenIsValid; then
+        if ! $TokenIsValid; then
             >&2 echo "[$(date '+%x %X')] Unable to establish access token using certificate."
             exit 1
         fi
@@ -139,7 +138,7 @@ connect()
         >&2 echo "[$(date '+%x %X')] Connecting to $Appliance using certificate ($Cert)"
         AccessToken=$("$ScriptDir/connect-safeguard.sh" -a "$Appliance" -i certificate -c "$Cert" -k "$PKey" -p -X <<< "$Pass")
         check_access_token
-        if ! $AccessTokenIsValid; then
+        if ! $TokenIsValid; then
             >&2 echo "[$(date '+%x %X')] Unable to establish access token using username and password."
             exit 1
         fi
@@ -205,7 +204,7 @@ while true; do
         check_access_token silent
         LastCheck=$(date +%s)
     fi
-    if ! $AccessTokenIsValid || [ $Now -gt $TokenExpirationThreshold ]; then
+    if ! $TokenIsValid || [ $Now -gt $TokenExpirationThreshold ]; then
         connect
     fi
     if [ -z "$listener_PID" ] || ! kill -0 $listener_PID 2> /dev/null; then
