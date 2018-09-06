@@ -90,16 +90,24 @@ require_prereqs()
 
 check_access_token()
 {
+    local Silent=false
+    if [ "$1" = "silent" ]; then
+        Silent=true
+    fi
     local Url="https://$Appliance/service/core/v$Version/LoginMessage"
     local ResponseCode=$(curl -s -k -o /dev/null -w "%{http_code}" -X GET -H "Accept: application/json" -H "Authorization: Bearer $AccessToken" "$Url")
     if [ $ResponseCode -eq 200 ]; then
-        >&2 echo "[$(date '+%x %X')] Access token is still valid."
+        if ! $Silent; then
+            >&2 echo "[$(date '+%x %X')] Access token is still valid."
+        fi
         TokenIsValid=true
         local Now=$(date +%s)
         local MinutesRemaining=$(curl -s -k -i -X GET -H "Accept: application/json" -H "X-TokenLifetimeRemaining" -H "Authorization: Bearer $AccessToken" "$Url" \
                                      | grep X-TokenLifetimeRemaining | cut -d' ' -f2 | tr -d '\r')
         TokenExpirationThreshold=$(($MinutesRemaining*60+$Now-120))
-        >&2 echo "[$(date '+%x %X')] Access token timeout / refresh is set to $((TokenExpirationThreshold-Now)) seconds from now."
+        if ! $Silent; then
+            >&2 echo "[$(date '+%x %X')] Access token timeout / refresh is set to $((TokenExpirationThreshold-Now)) seconds from now."
+        fi
     else
         >&2 echo "[$(date '+%x %X')] Access token is NOT valid!"
         TokenIsValid=false
@@ -119,6 +127,7 @@ connect()
         fi
         ;;
     Password)
+        >&2 echo "[$(date '+%x %X')] Connecting to $Appliance with $Provider\\$User and password."
         AccessToken=$("$ScriptDir/connect-safeguard.sh" -a "$Appliance" -i "$Provider" -u "$User" -p -X <<< "$Pass")
         check_access_token
         if ! $AccessTokenIsValid; then
@@ -127,6 +136,7 @@ connect()
         fi
         ;;
     Certificate)
+        >&2 echo "[$(date '+%x %X')] Connecting to $Appliance using certificate ($Cert)"
         AccessToken=$("$ScriptDir/connect-safeguard.sh" -a "$Appliance" -i certificate -c "$Cert" -k "$PKey" -p -X <<< "$Pass")
         check_access_token
         if ! $AccessTokenIsValid; then
@@ -187,9 +197,14 @@ done
 require_args
 require_prereqs
 
-StartTime=$(date +%s)
+LastCheck=$(date +%s)
 while true; do
     Now=$(date +%s)
+    Elapsed=$(($Now-$LastCheck))
+    if [ $Elapsed -gt 300 ]; then
+        check_access_token silent
+        LastCheck=$(date +%s)
+    fi
     if ! $AccessTokenIsValid || [ $Now -gt $TokenExpirationThreshold ]; then
         connect
     fi
