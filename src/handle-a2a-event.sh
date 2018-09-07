@@ -4,19 +4,22 @@ print_usage()
 {
     cat <<EOF
 USAGE: $1 [-h]
-       $1 [-a appliance] [-v version] [-c file] [-k file] [-A apikey] [-S script] [-p]
+       $1 [-a appliance] [-c file] [-k file] [-A apikey] [-p] [-S script]
 
   -h  Show help and exit
   -a  Network address of the appliance
-  -v  Web API Version: 2 is default
   -c  File containing client certificate
   -k  File containing client private key
   -A  A2A API token identifying the account
-  -S  Script to execute when the password changes
   -p  Read certificate password from stdin
+  -S  Script to execute when the password changes
 
-Connect to SignalR using the Safeguard A2A service for a particular account via the apikey
-and execute a provided script each time the password changes passing it into stdin
+Connect to SignalR using the Safeguard a2a service via a client certificate and
+private key and execute a provided script (handler script) each time a password
+changes, passing the new password via stdin.  The handler script will be passed
+only one line of text:
+
+    <New Password>
 
 EOF
     exit 0
@@ -24,17 +27,17 @@ EOF
 
 ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-
 Appliance=
-Version=2
 Cert=
 PKey=
 ApiKey=
-HandlerScript=
-PassStdin=
 Pass=
+HandlerScript=
+if [ $(curl --version | grep "libcurl" | sed -e 's,curl [0-9]*\.\([0-9]*\).* (.*,\1,') -ge 33 ]; then
+    http11flag='--http1.1'
+fi
 
-. "$ScriptDir/utils/a2a.sh"
+. "$ScriptDir/utils/loginfile.sh"
 
 require_args()
 {
@@ -47,12 +50,12 @@ require_args()
     if [ -z "$PKey" ]; then
         read -p "Client Private Key File: " PKey
     fi
-    if [ -z "$Pass" ]; then
-        read -s -p "Private Key Password: " Pass
-        >&2 echo
-    fi
     if [ -z "$ApiKey" ]; then
         read -p "A2A API Key: " ApiKey
+    fi
+    if [ -z "$Pass" ]; then
+        read -s -p "Password: " Pass
+        >&2 echo
     fi
     if [ -z "$HandlerScript" ]; then
         read -p "Handler Script: " HandlerScript
@@ -70,7 +73,7 @@ require_prereqs()
         exit 1
     fi
     if [ ! -x "$HandlerScript" ]; then
-        >&2 echo "The handler script passed to -S option must be executable and receive password as stdin"
+        >&2 echo "The handler script passed to -S option must be executable"
         exit 1
     fi
 }
@@ -78,21 +81,18 @@ require_prereqs()
 cleanup()
 {
     if [ ! -z "$listener_PID" ] && kill -0 $listener_PID 2> /dev/null; then
-        >&2 echo "Killing coprocess $listener_PID"
-        kill $listener_PID
+        >&2 echo "[$(date '+%x %X')] Killing listener coprocess PID=$listener_PID"
+        kill $listener_PID 2> /dev/null
         wait $listener_PID 2> /dev/null
     fi
 }
 
 trap cleanup EXIT
 
-while getopts ":a:v:c:k:A:S:ph" opt; do
+while getopts ":a:c:k:A:S:ph" opt; do
     case $opt in
     a)
         Appliance=$OPTARG
-        ;;
-    v)
-        Version=$OPTARG
         ;;
     c)
         Cert=$OPTARG
@@ -100,11 +100,12 @@ while getopts ":a:v:c:k:A:S:ph" opt; do
     k)
         PKey=$OPTARG
         ;;
-    p)
-        PassStdin="-p"
-        ;;
     A)
         ApiKey=$OPTARG
+        ;;
+    p)
+        # read password from stdin before doing anything
+        read -s Pass
         ;;
     S)
         HandlerScript=$OPTARG
@@ -118,6 +119,18 @@ done
 require_args
 require_prereqs
 
+
+AcctPass=$("$ScriptDir/get-a2a-password.sh" -a $Appliance -c $Cert -k $PKey -A $ApiKey -p <<< $Pass | jq -r .)
+if [ -z "$AcctPass" ]; then
+    >&2 echo "Unable to fetch initial password from A2A service"
+    exit 1
+fi
+>&2 echo "[$(date '+%x %X')] Calling $HandlerScript with initial password"
+$HandlerScript <<EOF
+$AcctPass
+EOF
+unset AcctPass
+
 while true; do
     if [ -z "$listener_PID" ] || ! kill -0 $listener_PID 2> /dev/null; then
         if [ ! -z "$listener_PID" ]; then
@@ -125,22 +138,20 @@ while true; do
             unset listener_PID
         fi
         coproc listener { 
-            echo "listener script is running..."
-            sleep 1
+            "$ScriptDir/listen-for-a2a-event.sh" -a $Appliance -c $Cert -k $PKey -A $ApiKey -p <<< $Pass | \
+                jq --unbuffered -c ".M[]?.A[]? | select(.Name==\"AssetAccountPasswordUpdated\") | .Data?"
         }
+        >&2 echo "[$(date '+%x %X')] Started listener coprocess PID=$listener_PID."
     fi
+# TODO: handle timeouts of not reading anything for a long period and restart coproc
     unset Output
     IFS= read -t 5 Temp <&"${listener[0]}" && Output="$Temp"
     if [ ! -z "$Output" ]; then
-        echo "$Output"
+        AcctPass=$("$ScriptDir/get-a2a-password.sh" -a $Appliance -c $Cert -k $PKey -A $ApiKey -p <<< $Pass | jq -r .)
+        >&2 echo "[$(date '+%x %X')] Calling $HandlerScript with new password"
+        $HandlerScript <<EOF
+$AcctPass
+EOF
+        unset AcctPass
     fi
 done
-
-
-#Result=$(invoke_a2a_method "$Appliance" "$Cert" "$PKey" "$Pass" "$ApiKey" GET "Credentials?type=Password" $Version "$Body")
-#Error=$(echo $Result | jq .Code 2> /dev/null)
-#if [ "$Error" = "null" ]; then
-    #echo $Result | $ATTRFILTER
-#else
-    #echo $Result | $ERRORFILTER
-#fi
