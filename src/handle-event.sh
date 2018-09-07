@@ -94,15 +94,32 @@ check_access_token()
         Silent=true
     fi
     local Url="https://$Appliance/service/core/v$Version/LoginMessage"
-    local ResponseCode=$(curl -s -k -o /dev/null -w "%{http_code}" -X GET -H "Accept: application/json" -H "Authorization: Bearer $AccessToken" "$Url")
+    local ResponseCode=$(curl -K <(cat <<EOF
+-s
+-k
+-o /dev/null
+-w "%{http_code}"
+-X GET
+-H "Accept: application/json"
+-H "Authorization: Bearer $AccessToken"
+EOF
+) "$Url")
     if [ $ResponseCode -eq 200 ]; then
         if ! $Silent; then
             >&2 echo "[$(date '+%x %X')] Access token is still valid."
         fi
         TokenIsValid=true
         local Now=$(date +%s)
-        local MinutesRemaining=$(curl -s -k -i -X GET -H "Accept: application/json" -H "X-TokenLifetimeRemaining" -H "Authorization: Bearer $AccessToken" "$Url" \
-                                     | grep X-TokenLifetimeRemaining | cut -d' ' -f2 | tr -d '\r')
+        local MinutesRemaining=$(curl -K <(cat <<EOF
+-s
+-k
+-i
+-X GET
+-H "Accept: application/json"
+-H "X-TokenLifetimeRemaining"
+-H "Authorization: Bearer $AccessToken"
+EOF
+) "$Url" | grep X-TokenLifetimeRemaining | cut -d' ' -f2 | tr -d '\r')
         TokenExpirationThreshold=$(($MinutesRemaining*60+$Now-120))
         if ! $Silent; then
             >&2 echo "[$(date '+%x %X')] Access token timeout / refresh is set to $((TokenExpirationThreshold-Now)) seconds from now."
