@@ -5,11 +5,12 @@ print_usage()
     cat <<EOF
 USAGE: listen-for-events.sh [-h]
        listen-for-events.sh
-       listen-for-events.sh [-a appliance] [-t accesstoken]
+       listen-for-events.sh [-a appliance] [-t accesstoken] [-T]
 
   -h  Show help and exit
   -a  Network address of the appliance
   -t  Safeguard access token
+  -T  Read Safeguard access token from stdin
 
 By default listen-for-events.sh will look for a login file. If one
 doesn't exist connect-safeguard.sh will be called to create one. Alternately,
@@ -48,13 +49,17 @@ else
     PRETTYPRINT="cat"
 fi
 
-while getopts ":t:a:h" opt; do
+while getopts ":t:a:Th" opt; do
     case $opt in
     t)
         AccessToken=$OPTARG
         ;;
     a)
         Appliance=$OPTARG
+        ;;
+    T)
+        # read AccessToken from stdin before doing anything
+        read -s AccessToken
         ;;
     h)
         print_usage
