@@ -78,7 +78,14 @@ else
 fi
 
 >&2 echo "Generating and downloading support bundle..."
-curl -# -k -X GET -H "Accept: application/octet-stream" -H "Authorization: Bearer $AccessToken" $Url > $BundleFile
+curl -K <(cat <<EOF
+-#
+-k
+-X GET
+-H "Accept: application/octet-stream"
+-H "Authorization: Bearer $AccessToken"
+EOF
+) $Url > $BundleFile
 if [ -r "$BundleFile" ]; then
     BundleSize=$(du "$BundleFile" | cut -f1)
     if [ $BundleSize -gt 0 ]; then

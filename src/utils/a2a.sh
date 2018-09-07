@@ -19,8 +19,18 @@ invoke_a2a_method()
         http11flag='--http1.1'
     fi
     if [ -z "$body" ]; then
-        local response=$(curl -s -k --key $pkeyfile --cert $certfile --pass $pass -X $method $http11flag -H 'Accept: application/json' \
-                              -H "Authorization: A2A $apikey" "https://$appliance/service/a2a/v$version/$relurl"
+        local response=$(curl -K <(cat <<EOF
+-s
+-k
+--key $pkeyfile
+--cert $certfile
+--pass $pass
+-X $method
+$http11flag
+-H "Accept: application/json"
+-H "Authorization: A2A $apikey"
+EOF
+) "https://$appliance/service/a2a/v$version/$relurl"
         )
         if [ ! -z "$response" -a ! -z "$(echo $response | jq '.Codes // empty')" ]; then
             echo "$response"
@@ -41,9 +51,18 @@ EOF
             echo "$response" | sed -n '/read:errno/,$p' | sed -e 's/\(.*\)read\:errno\=.*/\1/'
         fi
     else
-        local response=$(curl -s -k --key $pkeyfile --cert $certfile --pass $pass -X $method $http11flag -H 'Accept: application/json' \
-                              -H 'Content-type: application/json' -H "Authorization: A2A $apikey" \
-                              -d @- "https://$appliance/service/a2a/v$version/$relurl" <<EOF
+        local response=$(curl -K <(cat <<EOF
+-s
+-k
+--key $pkeyfile
+--cert $certfile
+--pass $pass
+-X $method
+$http11flag
+-H "Accept: application/json"
+-H "Content-type: application/json" -H "Authorization: A2A $apikey"
+EOF
+) -d @- "https://$appliance/service/a2a/v$version/$relurl" <<EOF
 $body
 EOF
         )
@@ -73,7 +92,15 @@ EOF
 
 get_a2a_connection_token()
 {
-    curl -s -k --key $PKey --cert $Cert --pass $Pass -H "Authorization: Bearer $AccessToken" \
-            "https://$Appliance/service/event/signalr/negotiate?_=$NUM" \
+    curl -K <(cat <<EOF
+-s
+-k
+--key $PKey
+--cert $Cert
+--pass $Pass
+-H "Authorization: Bearer $AccessToken"
+EOF
+) "https://$Appliance/service/event/signalr/negotiate?_=$NUM" \
             | sed -n -e 's/\+/%2B/g;s/\//%2F/g;s/.*"ConnectionToken":"\([^"]*\)".*/\1/p'
 }
+

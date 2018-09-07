@@ -54,8 +54,18 @@ get_rsts_token()
         if [ $(curl --version | grep "libcurl" | sed -e 's,curl [0-9]*\.\([0-9]*\).* (.*,\1,') -ge 33 ]; then
             http11flag='--http1.1'
         fi
-        StsResponse=$(curl -s -k --key $PKey --cert $Cert --pass $Pass $http11flag -X POST -H 'Accept: application/json' \
-                           -H 'Content-type: application/json' -d @- "https://$Appliance/RSTS/oauth2/token" <<EOF
+        StsResponse=$(curl -K <(cat <<EOF
+-s
+-k
+--key $PKey
+--cert $Cert
+--pass $Pass
+$http11flag
+-X POST
+-H "Accept: application/json"
+-H "Content-type: application/json"
+EOF
+) -d @- "https://$Appliance/RSTS/oauth2/token" <<EOF
 {
     "grant_type": "client_credentials",
     "scope": "$Scope"
@@ -85,8 +95,15 @@ EOF
             exit 1
         fi
     else
-        StsResponse=$(curl -s -S -k -X POST -H 'Accept: application/json' -H 'Content-type: application/json' \
-                          -d @- "https://$Appliance/RSTS/oauth2/token" <<EOF
+        StsResponse=$(curl -K <(cat <<EOF
+-s
+-S
+-k
+-X POST
+-H "Accept: application/json"
+-H "Content-type: application/json"
+EOF
+) -d @- "https://$Appliance/RSTS/oauth2/token" <<EOF
 {
     "grant_type": "password",
     "username": "$User",
@@ -111,8 +128,16 @@ EOF
 get_safeguard_token()
 {
     if [ ! -z "$StsAccessToken" ]; then
-        LoginResponse=$(curl -s -S -k -X POST -H 'Accept: application/json' -H 'Content-type: application/json' \
-                            -H "Authorization: Bearer $StsAccessToken" -d @- "https://$Appliance/service/core/v$Version/Token/LoginResponse" <<EOF
+        LoginResponse=$(curl -K <(cat <<EOF
+-s
+-S
+-k
+-X POST
+-H "Accept: application/json"
+-H "Content-type: application/json"
+-H "Authorization: Bearer $StsAccessToken"
+EOF
+) -d @- "https://$Appliance/service/core/v$Version/Token/LoginResponse" <<EOF
 {
     "StsAccessToken": "$StsAccessToken"
 }

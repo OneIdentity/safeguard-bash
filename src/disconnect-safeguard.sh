@@ -67,6 +67,12 @@ else
 fi
 
 >&2 echo "Calling logout service on appliance."
-curl -s -S -k -H 'Accept: application/json' -H "Authorization: Bearer $AccessToken" \
-     "https://$Appliance/service/core/v$Version/Token/Logout" -d ""
+curl -K <(cat <<EOF
+-s
+-S
+-k
+-H "Accept: application/json"
+-H "Authorization: Bearer $AccessToken"
+EOF
+) "https://$Appliance/service/core/v$Version/Token/Logout" -d ""
 

@@ -166,12 +166,29 @@ require_args
 Url="https://$Appliance/service/$Service/v$Version/$RelativeUrl"
 case $Method in
     GET|DELETE)
-        curl -s -k -X $Method "${ExtraHeader[@]}" -H "Accept: $Accept" -H "Authorization: Bearer $AccessToken" "$Url" | $PRETTYPRINT
+        curl -K <(cat <<EOF
+-s
+-k
+-X $Method
+"${ExtraHeader[@]}"
+-H "Accept: $Accept"
+-H "Authorization: Bearer $AccessToken"
+EOF
+) "$Url" | $PRETTYPRINT
     ;;
     PUT|POST)
-        curl -s -k -X $Method "${ExtraHeader[@]}" -H "Accept: $Accept" -H "Content-type: $ContentType" \
-             -H "Authorization: Bearer $AccessToken" -d @- "$Url" <<EOF | $PRETTYPRINT
+        curl -K <(cat <<EOF
+-s
+-k
+-X $Method
+"${ExtraHeader[@]}"
+-H "Accept: $Accept"
+-H "Content-type: $ContentType"
+-H "Authorization: Bearer $AccessToken"
+EOF
+) -d @- "$Url" <<EOF | $PRETTYPRINT
             $Body
 EOF
     ;;
 esac
+
