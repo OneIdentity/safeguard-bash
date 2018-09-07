@@ -37,12 +37,9 @@ require_args()
 get_connection_token()
 {
     NUM=`echo $(( ( RANDOM % 1000000000 )  + 1 ))`
-    curl -K <(cat <<EOF
--s
--k
--H "Authorization: Bearer $AccessToken"
-EOF
-) "https://$Appliance/service/event/signalr/negotiate?_=$NUM" | sed -n -e 's/\+/%2B/g;s/\//%2F/g;s/.*"ConnectionToken":"\([^"]*\)".*/\1/p'
+    # this call does not require an authorization header
+    curl -s -k "https://$Appliance/service/event/signalr/negotiate?_=$NUM" \
+        | sed -n -e 's/\+/%2B/g;s/\//%2F/g;s/.*"ConnectionToken":"\([^"]*\)".*/\1/p'
 }
 
 
