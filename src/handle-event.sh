@@ -17,7 +17,7 @@ USAGE: $1 [-h]
   -k  File containing client private key
   -p  Read Safeguard or certificate password from stdin
   -E  Event name to process
-  -S  Script to execute when the password changes
+  -S  Script to execute when the event occurs
 
 Connect to SignalR using the Safeguard event service via a Safeguard access token
 and execute a provided script (handler script) each time an event occurs passing 
