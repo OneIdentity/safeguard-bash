@@ -29,17 +29,8 @@ fi
 Appliance=
 AccessToken=
 Version=2
-LicenseFile=
 
 . "$ScriptDir/utils/loginfile.sh"
-
-require_args()
-{
-    require_login_args
-    if [ -z "$LicenseFile" ]; then
-        read -p "License file: " LicenseFile
-    fi
-}
 
 while getopts ":t:a:v:h" opt; do
     case $opt in
@@ -58,6 +49,7 @@ while getopts ":t:a:v:h" opt; do
     esac
 done
 
+require_login_args
 
 Response=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -t "$AccessToken" -v $Version -s core -m GET -U "Me/RequestableAssets" -N)
 Error=$(echo $Response | jq .Code 2> /dev/null)

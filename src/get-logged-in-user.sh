@@ -26,14 +26,8 @@ ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 Appliance=
 AccessToken=
 Version=2
-LicenseFile=
 
 . "$ScriptDir/utils/loginfile.sh"
-
-require_args()
-{
-    require_login_args
-}
 
 while getopts ":t:a:v:h" opt; do
     case $opt in
@@ -52,7 +46,7 @@ while getopts ":t:a:v:h" opt; do
     esac
 done
 
-require_args
+require_login_args
 
 $ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -t "$AccessToken" -v $Version -s core -m GET -U "Me" -N
 
