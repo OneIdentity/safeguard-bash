@@ -3,8 +3,8 @@
 print_usage()
 {
     cat <<EOF
-USAGE: $1 [-h]
-       $1 [-a appliance] [-c file] [-k file] [-A apikey] [-p] [-S script]
+USAGE: handle-a2a-password-event.sh [-h]
+       handle-a2a-password-event.sh [-a appliance] [-c file] [-k file] [-A apikey] [-p] [-S script]
 
   -h  Show help and exit
   -a  Network address of the appliance
@@ -111,7 +111,7 @@ while getopts ":a:c:k:A:S:ph" opt; do
         HandlerScript=$OPTARG
         ;;
     h)
-        print_usage $0
+        print_usage
         ;;
     esac
 done

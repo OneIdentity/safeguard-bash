@@ -3,8 +3,8 @@
 print_usage()
 {
     cat <<EOF
-USAGE: $1 [-h]
-       $1 [-a appliance] [-c file] [-k file] [-A apikey] [-p]
+USAGE: listen-for-a2a-event.sh [-h]
+       listen-for-a2a-event.sh [-a appliance] [-c file] [-k file] [-A apikey] [-p]
 
   -h  Show help and exit
   -a  Network address of the appliance
@@ -90,7 +90,7 @@ while getopts ":a:c:k:A:ph" opt; do
         read -s Pass
         ;;
     h)
-        print_usage $0
+        print_usage
         ;;
     esac
 done

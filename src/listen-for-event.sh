@@ -3,9 +3,9 @@
 print_usage()
 {
     cat <<EOF
-USAGE: listen-for-events.sh [-h]
-       listen-for-events.sh
-       listen-for-events.sh [-a appliance] [-t accesstoken] [-T]
+USAGE: listen_for_event.sh [-h]
+       listen_for_event.sh
+       listen_for_event.sh [-a appliance] [-t accesstoken] [-T]
 
   -h  Show help and exit
   -a  Network address of the appliance

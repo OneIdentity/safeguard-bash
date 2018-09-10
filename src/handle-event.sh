@@ -3,10 +3,10 @@
 print_usage()
 {
     cat <<EOF
-USAGE: $1 [-h]
-       $1 [-a appliance] [-t accesstoken] [-E eventname] [-S script]
-       $1 [-a appliance] [-i provider] [-u user] [-p] [-E eventname] [-S script]
-       $1 [-a appliance] -i certificate [-c file] [-k file] [-p] [-E eventname] [-S script]
+USAGE: handle-event.sh [-h]
+       handle-event.sh [-a appliance] [-t accesstoken] [-E eventname] [-S script]
+       handle-event.sh [-a appliance] [-i provider] [-u user] [-p] [-E eventname] [-S script]
+       handle-event.sh [-a appliance] -i certificate [-c file] [-k file] [-p] [-E eventname] [-S script]
 
   -h  Show help and exit
   -a  Network address of the appliance
@@ -205,7 +205,7 @@ while getopts ":a:t:i:u:c:k:E:S:ph" opt; do
         HandlerScript=$OPTARG
         ;;
     h)
-        print_usage $0
+        print_usage
         ;;
     esac
 done
