@@ -90,7 +90,7 @@ if [ -z "$Response" ]; then
 fi
 Thumbprint=$(echo $Response | jq -r .Thumbprint)
 
-ApplianceId=$($ScriptDir/get-safeguard-status.sh -a "$Appliance" | jq .ApplianceId)
+ApplianceId=$($ScriptDir/get-appliance-status.sh -a "$Appliance" | jq .ApplianceId)
 if [ -z "$ApplianceId" ]; then
     >&2 echo "Unable to determine appliance ID from notification service"
     exit 1
