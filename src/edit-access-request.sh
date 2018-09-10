@@ -20,14 +20,16 @@ USAGE: edit-access-request.sh [-h]
 
 Update an access request via the Web API.
 
-NOTE: Install jq to get pretty-printed JSON output.
-
 EOF
     exit 0
 }
 
 ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+if [ -z "$(which jq)" ]; then
+    >&2 echo "This script requires jq for parsing and manipulating responses."
+    exit 1
+fi
 
 Appliance=
 AccessToken=
@@ -98,20 +100,16 @@ done
 
 require_args
 
-ATTRFILTER='cat'
-ERRORFILTER='cat'
-if [ ! -z "$(which jq)" ]; then
-    ERRORFILTER='jq .'
-    if $FullOutput; then
-        ATTRFILTER='jq .'
-    else
-        ATTRFILTER='jq {Id,AssetId,AssetName,AccountId,AccountName,State}'
-    fi
-    case $Action in
-        CheckOutPassword) ATTRFILTER='jq .' ;;
-        InitializeSession) ATTRFILTER='jq .' ;;
-    esac
+ERRORFILTER='jq .'
+if $FullOutput; then
+    ATTRFILTER='jq .'
+else
+    ATTRFILTER='jq {Id,AssetId,AssetName,AccountId,AccountName,State}'
 fi
+case $Action in
+    CheckOutPassword) ATTRFILTER='jq .' ;;
+    InitializeSession) ATTRFILTER='jq .' ;;
+esac
 
 Result=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -t "$AccessToken" -v $Version -s core -m POST -U "AccessRequests/$RequestId/$Action" -N -b "$Comment")
 Error=$(echo $Result | jq .Code 2> /dev/null)
