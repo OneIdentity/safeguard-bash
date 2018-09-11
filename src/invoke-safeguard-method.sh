@@ -4,18 +4,20 @@ print_usage()
 {
     cat <<EOF
 USAGE: invoke-safeguard-method.sh [-h]
-       invoke-safeguard-method.sh [-s service] [-m method] [-v version]
+       invoke-safeguard-method.sh [-a appliance] [=B cabundle] [-n] [-s service] [-m method] [-v version]
                                   [-U relativeurl] [-C contenttype] [-A accept] [-H header] [-b body] [-N]
-       invoke-safeguard-method.sh [-a appliance] [-n] [-s service] [-m method] [-v version]
+       invoke-safeguard-method.sh [-a appliance] [=B cabundle] [-t accesstoken] [-s service] [-m method] [-v version]
                                   [-U relativeurl] [-C contenttype] [-A accept] [-H header] [-b body] [-N]
-       invoke-safeguard-method.sh [-a appliance] [-t accesstoken] [-s service] [-m method] [-v version]
+       invoke-safeguard-method.sh [-a appliance] [=B cabundle] [-T] [-s service] [-m method] [-v version]
                                   [-U relativeurl] [-C contenttype] [-A accept] [-H header] [-b body] [-N]
 
   -h  Show help and exit
   -a  Network address of the appliance
+  -B  CA bundle for SSL trust validation (no checking by default)
   -v  Web API Version: 2 is default
   -n  Anonymous authentication, don't use login file either
   -t  Safeguard access token
+  -T  Read Safeguard access token from stdin
   -s  Service: core, appliance, cluster, notification
   -m  HTTP Method: GET, PUT, POST, DELETE
   -U  Relative resource URL (e.g. AccessRequests)
@@ -39,6 +41,7 @@ EOF
 ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 Appliance=
+CABundle=
 Provider=
 AccessToken=
 Cert=
@@ -97,7 +100,7 @@ require_args()
     fi
 }
 
-while getopts ":t:na:v:s:m:U:C:A:H:b:Nh" opt; do
+while getopts ":t:nTa:B:v:s:m:U:C:A:H:b:Nh" opt; do
     case $opt in
     t)
         if $Anonymous; then
@@ -111,8 +114,15 @@ while getopts ":t:na:v:s:m:U:C:A:H:b:Nh" opt; do
         fi
         Anonymous=true
         ;;
+    T)
+        # read AccessToken from stdin before doing anything
+        read -s AccessToken
+        ;;
     a)
         Appliance=$OPTARG
+        ;;
+    B)
+        CABundle=$OPTARG
         ;;
     v)
         Version=$OPTARG
@@ -168,7 +178,7 @@ case $Method in
     GET|DELETE)
         curl -K <(cat <<EOF
 -s
--k
+$CABundleArg
 -X $Method
 "${ExtraHeader[@]}"
 -H "Accept: $Accept"
@@ -179,7 +189,7 @@ EOF
     PUT|POST)
         curl -K <(cat <<EOF
 -s
--k
+$CABundleArg
 -X $Method
 "${ExtraHeader[@]}"
 -H "Accept: $Accept"

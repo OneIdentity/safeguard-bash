@@ -4,13 +4,13 @@ print_usage()
 {
     cat <<EOF
 USAGE: connect-safeguard.sh [-h]
-       connect-safeguard.sh [-a appliance] [-v version] [-q]
-       connect-safeguard.sh [-a appliance] [-v version] [-i provider] [-u user] [-p] [-X]
-       connect-safeguard.sh [-a appliance] [-v version] -i certificate [-c file] [-k file] [-p] [-X]
+       connect-safeguard.sh [-a appliance] [-B cabundle] [-v version] [-q] [-i provider] [-u user] [-p] [-X]
+       connect-safeguard.sh [-a appliance] [-B cabundle] [-v version] -i certificate [-c file] [-k file] [-p] [-X]
 
   -h  Show help and exit
   -q  Query list of primary identity providers for appliance
   -a  Network address of the appliance
+  -B  CA bundle for SSL trust validation (no checking by default)
   -v  Web API Version: 2 is default
   -i  Safeguard identity provider, examples: certificate, local, ad<num>
   -u  Safeguard user to use
@@ -34,6 +34,8 @@ EOF
 ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 Appliance=
+CABundle=
+CABundleArg=
 Version=2
 QueryProviders=false
 Providers=
@@ -56,7 +58,7 @@ get_rsts_token()
         fi
         StsResponse=$(curl -K <(cat <<EOF
 -s
--k
+$CABundleArg
 --key $PKey
 --cert $Cert
 --pass $Pass
@@ -98,7 +100,7 @@ EOF
         StsResponse=$(curl -K <(cat <<EOF
 -s
 -S
--k
+$CABundleArg
 -X POST
 -H "Accept: application/json"
 -H "Content-type: application/json"
@@ -131,7 +133,7 @@ get_safeguard_token()
         LoginResponse=$(curl -K <(cat <<EOF
 -s
 -S
--k
+$CABundleArg
 -X POST
 -H "Accept: application/json"
 -H "Content-type: application/json"
@@ -169,10 +171,13 @@ EOF
 }
 
 
-while getopts ":a:v:i:u:c:k:pqhX" opt; do
+while getopts ":a:B:v:i:u:c:k:pqhX" opt; do
     case $opt in
     a)
         Appliance=$OPTARG
+        ;;
+    B)
+        CABundle=$OPTARG
         ;;
     v)
         Version=$OPTARG
@@ -223,6 +228,7 @@ if $StoreLoginFile; then
     umask 0077
     cat <<EOF > $LoginFile
 Appliance=$Appliance
+CABundleArg=$CABundleArg
 Provider=$Provider
 AccessToken=$AccessToken
 EOF

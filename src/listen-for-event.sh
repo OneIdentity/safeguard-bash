@@ -6,6 +6,7 @@ print_usage()
 USAGE: listen_for_event.sh [-h]
        listen_for_event.sh
        listen_for_event.sh [-a appliance] [-t accesstoken] [-T]
+       listen_for_event.sh [-a appliance] [-T]
 
   -h  Show help and exit
   -a  Network address of the appliance

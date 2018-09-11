@@ -54,6 +54,7 @@ elif [[ -r "$LoginFile" && -f "$LoginFile" ]]; then
     Appliance=$(read_from_login_file Appliance)
     Provider=$(read_from_login_file Provider)
     AccessToken=$(read_from_login_file AccessToken)
+    CABundleArg=$(read_from_login_file CABundleArg)
     if [ "$Provider" = "certificate" ]; then
         Cert=$(read_from_login_file Cert)
         PKey=$(read_from_login_file PKey)
@@ -70,7 +71,7 @@ fi
 curl -K <(cat <<EOF
 -s
 -S
--k
+$CABundleArg
 -H "Accept: application/json"
 -H "Authorization: Bearer $AccessToken"
 EOF

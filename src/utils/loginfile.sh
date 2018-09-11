@@ -9,6 +9,17 @@ read_from_login_file()
     cat $LoginFile | grep $1 | cut -d \= -f 2
 }
 
+handle_ca_bundle_arg()
+{
+    if [ -z "$CABundleArg" ]; then
+        if [ -z "$CABundle" ]; then
+            CABundleArg="-k"
+        else
+            CABundleArg="--cacert $CABundle"
+        fi
+    fi
+}
+
 use_login_file()
 {
     if ! [[ -r "$LoginFile" && -f "$LoginFile" ]]; then
@@ -17,6 +28,7 @@ use_login_file()
     Appliance=$(read_from_login_file Appliance)
     Provider=$(read_from_login_file Provider)
     AccessToken=$(read_from_login_file AccessToken)
+    CABundleArg=$(read_from_login_file CABundleArg)
     if [ "$Provider" = "certificate" ]; then
         Cert=$(read_from_login_file Cert)
         PKey=$(read_from_login_file PKey)
@@ -25,6 +37,7 @@ use_login_file()
 
 require_login_args()
 {
+    handle_ca_bundle_arg
     if [[ -z "$Appliance" && -z "$AccessToken" ]]; then
         use_login_file
     else
@@ -42,7 +55,7 @@ query_providers()
     if [ ! -z "$(which jq)" ]; then
         GetPrimaryProvidersRelativeURL="RSTS/UserLogin/LoginController?response_type=token&redirect_uri=urn:InstalledApplication&loginRequestStep=1"
         # certificate provider not returned by default because it is marked as not supporting HTML forms login
-        Providers=$(curl -s -k -X POST -H "Accept: application/x-www-form-urlencoded" "https://$Appliance/$GetPrimaryProvidersRelativeURL" \
+        Providers=$(curl -s $CABundleArg -X POST -H "Accept: application/x-www-form-urlencoded" "https://$Appliance/$GetPrimaryProvidersRelativeURL" \
                          -d 'RelayState=' | jq '.Providers|.[].Id' | xargs echo -n)
         if [ -z "$Providers" ]; then
             >&2 echo "Unable to obtain list of identity providers, does $Appliance exist?"
@@ -54,6 +67,7 @@ query_providers()
 
 require_connect_args()
 {
+    handle_ca_bundle_arg
     if [ -z "$Appliance" ]; then
         read -p "Appliance Network Address: " Appliance
     fi
