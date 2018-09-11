@@ -113,7 +113,7 @@ esac
 
 Result=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -t "$AccessToken" -v $Version -s core -m POST -U "AccessRequests/$RequestId/$Action" -N -b "$Comment")
 Error=$(echo $Result | jq .Code 2> /dev/null)
-if [ "$Error" = "null" ]; then
+if [ -z "$Error" -o "$Error" = "null" ]; then
     echo $Result | $ATTRFILTER
 else
     echo $Result | $ERRORFILTER

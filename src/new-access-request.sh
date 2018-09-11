@@ -109,8 +109,8 @@ Result=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -t "$AccessToken"
     \"AccessRequestType\": \"$AccessType\"
 }")
 
-Error=$(echo $Result | jq .Code)
-if [ "$Error" = "null" ]; then
+Error=$(echo $Result | jq .Code 2> /dev/null)
+if [ -z "$Error" -o "$Error" = "null" ]; then
     echo $Result | $ATTRFILTER
 else
     echo $Result | $ERRORFILTER

@@ -53,12 +53,12 @@ require_login_args
 
 Response=$("$ScriptDir/invoke-safeguard-method.sh" -a "$Appliance" -t "$AccessToken" -v $Version -s appliance -m GET -U "ApplianceStatus" -N)
 Error=$(echo $Response | jq .Code 2> /dev/null)
-if [ "$Error" = "null" ]; then
+if [ -z "$Error" -o "$Error" = "null" ]; then
     ApplianceId=$(echo "$Response" | jq -r .Identity)
     ApplianceName=$(echo "$Response" | jq -r .Name)
     Response=$("$ScriptDir/invoke-safeguard-method.sh" -a "$Appliance" -t "$AccessToken" -v $Version -s core -m GET -U "SslCertificates?filter=Appliances.Id%20eq%20\"$ApplianceId\"" -N)
     Error=$(echo $Response | jq .Code 2> /dev/null)
-    if [ "$Error" = "null" ]; then
+    if [ -z "$Error" -o "$Error" = "null" ]; then
         SslCert=$(echo $Response | jq -r .[].Base64CertificateData)
         IssuerCerts=$(echo $Response | jq -r '.[].IssuerCertificates | join("")')
         OutFile="$ApplianceName.ca-bundle.crt"
