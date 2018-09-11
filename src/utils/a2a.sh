@@ -5,6 +5,7 @@
 invoke_a2a_method()
 {
     local appliance=$1 ; shift 
+    local cabundlearg=$1 ; shift
     local certfile=$1 ; shift 
     local pkeyfile=$1 ; shift 
     local pass=$1 ; shift 
@@ -21,7 +22,7 @@ invoke_a2a_method()
     if [ -z "$body" ]; then
         local response=$(curl -K <(cat <<EOF
 -s
--k
+$cabundlearg
 --key $pkeyfile
 --cert $certfile
 --pass $pass
@@ -38,6 +39,7 @@ EOF
             # There is a bug in some Debian-based platforms with curl linked to GnuTLS where it doesn't properly
             # ignore certificate errors when using client certificate authentication. This works around that
             # problem by calling OpenSSL directly and manually formulating an HTTP request.
+            #   see https://github.com/curl/curl/issues/1411
             response=$(cat <<EOF | openssl s_client -connect $appliance:443 -quiet -crlf -key $pkeyfile -cert $certfile -pass pass:$pass 2>&1
 $method /service/a2a/v$version/$relurl HTTP/1.1
 Host: $appliance
@@ -53,7 +55,7 @@ EOF
     else
         local response=$(curl -K <(cat <<EOF
 -s
--k
+$cabundlearg
 --key $pkeyfile
 --cert $certfile
 --pass $pass
@@ -72,6 +74,7 @@ EOF
             # There is a bug in some Debian-based platforms with curl linked to GnuTLS where it doesn't properly
             # ignore certificate errors when using client certificate authentication. This works around that
             # problem by calling OpenSSL directly and manually formulating an HTTP request.
+            #   see https://github.com/curl/curl/issues/1411
             response=$(cat <<EOF | openssl s_client -connect $appliance:443 -quiet -crlf -key $pkeyfile -cert $certfile -pass pass:$pass 2>&1
 POST /service/a2a/v$version/$relurl HTTP/1.1
 Host: $appliance
@@ -94,11 +97,10 @@ get_a2a_connection_token()
 {
     curl -K <(cat <<EOF
 -s
--k
+$CABundleArg
 --key $PKey
 --cert $Cert
 --pass $Pass
--H "Authorization: Bearer $AccessToken"
 EOF
 ) "https://$Appliance/service/event/signalr/negotiate?_=$NUM" \
             | sed -n -e 's/\+/%2B/g;s/\//%2F/g;s/.*"ConnectionToken":"\([^"]*\)".*/\1/p'

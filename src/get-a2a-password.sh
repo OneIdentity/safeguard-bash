@@ -4,10 +4,11 @@ print_usage()
 {
     cat <<EOF
 USAGE: get-a2a-password.sh [-h]
-       get-a2a-password.sh [-a appliance] [-v version] [-c file] [-k file] [-A apikey] [-p]
+       get-a2a-password.sh [-a appliance] [-B cabundle] [-v version] [-c file] [-k file] [-A apikey] [-p]
 
   -h  Show help and exit
   -a  Network address of the appliance
+  -B  CA bundle for SSL trust validation (no checking by default)
   -v  Web API Version: 2 is default
   -c  File containing client certificate
   -k  File containing client private key
@@ -24,6 +25,8 @@ ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 
 Appliance=
+CABundleArg=
+CABundle=
 Version=2
 Cert=
 PKey=
@@ -31,10 +34,12 @@ ApiKey=
 PassStdin=
 Pass=
 
+. "$ScriptDir/utils/loginfile.sh"
 . "$ScriptDir/utils/a2a.sh"
 
 require_args()
 {
+    handle_ca_bundle_arg
     if [ -z "$Appliance" ]; then
         read -p "Appliance Network Address: " Appliance
     fi
@@ -53,10 +58,13 @@ require_args()
     fi
 }
 
-while getopts ":a:v:c:k:A:ph" opt; do
+while getopts ":a:B:v:c:k:A:ph" opt; do
     case $opt in
     a)
         Appliance=$OPTARG
+        ;;
+    B)
+        CABundle=$OPTARG
         ;;
     v)
         Version=$OPTARG
@@ -81,8 +89,6 @@ done
 
 require_args
 
-
-
 ATTRFILTER='cat'
 ERRORFILTER='cat'
 if [ ! -z "$(which jq)" ]; then
@@ -90,10 +96,11 @@ if [ ! -z "$(which jq)" ]; then
     ATTRFILTER='jq .'
 fi
 
-Result=$(invoke_a2a_method "$Appliance" "$Cert" "$PKey" "$Pass" "$ApiKey" GET "Credentials?type=Password" $Version "$Body")
+Result=$(invoke_a2a_method "$Appliance" "$CABundleArg" "$Cert" "$PKey" "$Pass" "$ApiKey" GET "Credentials?type=Password" $Version "$Body")
 Error=$(echo $Result | jq .Code 2> /dev/null)
 if [ -z "$Error" -o "$Error" = "null" ]; then
     echo $Result | $ATTRFILTER
 else
     echo $Result | $ERRORFILTER
 fi
+
