@@ -4,12 +4,11 @@ print_usage()
 {
     cat <<EOF
 USAGE: listen_for_event.sh [-h]
-       listen_for_event.sh
-       listen_for_event.sh [-a appliance] [-t accesstoken] [-T]
-       listen_for_event.sh [-a appliance] [-T]
+       listen_for_event.sh [-a appliance] [-B cabundle] [-t accesstoken] [-T]
 
   -h  Show help and exit
   -a  Network address of the appliance
+  -B  CA bundle for SSL trust validation (no checking by default)
   -t  Safeguard access token
   -T  Read Safeguard access token from stdin
 
@@ -27,19 +26,17 @@ ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 Appliance=
 AccessToken=
+CABundle=
+CABundleArg=
 
 . "$ScriptDir/utils/loginfile.sh"
 
-require_args()
-{
-    require_login_args
-}
 
 get_connection_token()
 {
     NUM=`echo $(( ( RANDOM % 1000000000 )  + 1 ))`
     # this call does not require an authorization header
-    curl -s -k "https://$Appliance/service/event/signalr/negotiate?_=$NUM" \
+    curl -s $CABundleArg "https://$Appliance/service/event/signalr/negotiate?_=$NUM" \
         | sed -n -e 's/\+/%2B/g;s/\//%2F/g;s/.*"ConnectionToken":"\([^"]*\)".*/\1/p'
 }
 
@@ -50,13 +47,16 @@ else
     PRETTYPRINT="cat"
 fi
 
-while getopts ":t:a:Th" opt; do
+while getopts ":t:a:B:Th" opt; do
     case $opt in
     t)
         AccessToken=$OPTARG
         ;;
     a)
         Appliance=$OPTARG
+        ;;
+    B)
+        CABundle=$OPTARG
         ;;
     T)
         # read AccessToken from stdin before doing anything
@@ -68,7 +68,7 @@ while getopts ":t:a:Th" opt; do
     esac
 done
 
-require_args
+require_login_args
 
 ConnectionToken=`get_connection_token`
 TID=`echo $(( ( RANDOM % 1000 )  + 1 ))`
@@ -76,7 +76,7 @@ Url="https://$Appliance/service/event/signalr/connect"
 Params="?transport=serverSentEvents&connectionToken=$ConnectionToken&connectionData=%5b%7b%22name%22%3a%22notificationHub%22%7d%5d&tid=$TID"
 stdbuf -o0 -e0 curl -K <(cat <<EOF
 -s
--k
+$CABundleArg
 -H "Authorization: Bearer $AccessToken"
 EOF
 ) "$Url$Params" | sed -u -e '/^data: initialized/d;/^\s*$/d;s/^data: \(.*\)$/\1/g' | while read line; do echo $line | $PRETTYPRINT ; done

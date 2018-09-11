@@ -4,11 +4,11 @@ print_usage()
 {
     cat <<EOF
 USAGE: invoke-safeguard-method.sh [-h]
-       invoke-safeguard-method.sh [-a appliance] [=B cabundle] [-n] [-s service] [-m method] [-v version]
+       invoke-safeguard-method.sh [-a appliance] [-B cabundle] [-n] [-s service] [-m method] [-v version]
                                   [-U relativeurl] [-C contenttype] [-A accept] [-H header] [-b body] [-N]
-       invoke-safeguard-method.sh [-a appliance] [=B cabundle] [-t accesstoken] [-s service] [-m method] [-v version]
+       invoke-safeguard-method.sh [-a appliance] [-B cabundle] [-t accesstoken] [-s service] [-m method] [-v version]
                                   [-U relativeurl] [-C contenttype] [-A accept] [-H header] [-b body] [-N]
-       invoke-safeguard-method.sh [-a appliance] [=B cabundle] [-T] [-s service] [-m method] [-v version]
+       invoke-safeguard-method.sh [-a appliance] [-B cabundle] [-T] [-s service] [-m method] [-v version]
                                   [-U relativeurl] [-C contenttype] [-A accept] [-H header] [-b body] [-N]
 
   -h  Show help and exit

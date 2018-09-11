@@ -4,12 +4,13 @@ print_usage()
 {
     cat <<EOF
 USAGE: handle-event.sh [-h]
-       handle-event.sh [-a appliance] [-t accesstoken] [-E eventname] [-S script]
-       handle-event.sh [-a appliance] [-i provider] [-u user] [-p] [-E eventname] [-S script]
-       handle-event.sh [-a appliance] -i certificate [-c file] [-k file] [-p] [-E eventname] [-S script]
+       handle-event.sh [-a appliance] [-B cabundle] [-t accesstoken] [-E eventname] [-S script]
+       handle-event.sh [-a appliance] [-B cabundle] [-i provider] [-u user] [-p] [-E eventname] [-S script]
+       handle-event.sh [-a appliance] [-B cabundle] -i certificate [-c file] [-k file] [-p] [-E eventname] [-S script]
 
   -h  Show help and exit
   -a  Network address of the appliance
+  -B  CA bundle for SSL trust validation (no checking by default)
   -t  Safeguard access token
   -i  Safeguard identity provider, examples: certificate, local, ad<num>
   -u  Safeguard user to use
@@ -38,6 +39,8 @@ LoginType=
 TokenIsValid=false
 TokenExpirationThreshold=0
 Appliance=
+CABundleArg=
+CABundle=
 Version=2
 AccessToken=
 Provider=
@@ -52,10 +55,10 @@ HandlerScript=
 
 require_args()
 {
+    require_login_args
     if [ ! -z "$AccessToken" ]; then
         LoginType="Token"
         # Use this function to make sure that -a and -t are set
-        require_login_args
     elif [ "$Provider" = "certificate" ]; then
         LoginType="Certificate"
         require_connect_args
@@ -96,7 +99,7 @@ check_access_token()
     local Url="https://$Appliance/service/core/v$Version/LoginMessage"
     local ResponseCode=$(curl -K <(cat <<EOF
 -s
--k
+$CABundleArg
 -o /dev/null
 -w "%{http_code}"
 -X GET
@@ -112,7 +115,7 @@ EOF
         local Now=$(date +%s)
         local MinutesRemaining=$(curl -K <(cat <<EOF
 -s
--k
+$CABundleArg
 -i
 -X GET
 -H "Accept: application/json"
@@ -144,7 +147,7 @@ connect()
         ;;
     Password)
         >&2 echo "[$(date '+%x %X')] Connecting to $Appliance with $Provider\\$User and password."
-        AccessToken=$("$ScriptDir/connect-safeguard.sh" -a "$Appliance" -i "$Provider" -u "$User" -p -X <<< "$Pass")
+        AccessToken=$("$ScriptDir/connect-safeguard.sh" -a "$Appliance" $CABundleArg -i "$Provider" -u "$User" -p -X <<< "$Pass")
         check_access_token
         if ! $TokenIsValid; then
             >&2 echo "[$(date '+%x %X')] Unable to establish access token using certificate."
@@ -153,7 +156,7 @@ connect()
         ;;
     Certificate)
         >&2 echo "[$(date '+%x %X')] Connecting to $Appliance using certificate ($Cert)"
-        AccessToken=$("$ScriptDir/connect-safeguard.sh" -a "$Appliance" -i certificate -c "$Cert" -k "$PKey" -p -X <<< "$Pass")
+        AccessToken=$("$ScriptDir/connect-safeguard.sh" -a "$Appliance" $CABundleArg -i certificate -c "$Cert" -k "$PKey" -p -X <<< "$Pass")
         check_access_token
         if ! $TokenIsValid; then
             >&2 echo "[$(date '+%x %X')] Unable to establish access token using username and password."
@@ -174,10 +177,13 @@ cleanup()
 
 trap cleanup EXIT
 
-while getopts ":a:t:i:u:c:k:E:S:ph" opt; do
+while getopts ":a:B:t:i:u:c:k:E:S:ph" opt; do
     case $opt in
     a)
         Appliance=$OPTARG
+        ;;
+    B)
+        CABundle=$OPTARG
         ;;
     t)
         AccessToken=$OPTARG
