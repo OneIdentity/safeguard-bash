@@ -1,8 +1,19 @@
 #!/bin/bash
 
+CurDir="$(pwd)"
 ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-for dir in $(find $ScriptDir -type d); do 
+set -e
+
+cleanup()
+{
+    cd "$CurDir"
+    set +e
+}
+
+trap cleanup EXIT
+
+for dir in $(find $CurDir -type d); do 
     if [ -d "$dir/certs" -a -d "$dir/issuing-$(basename $dir)" ]; then 
         CaName=$(basename $dir)
         break
@@ -18,8 +29,8 @@ IntermediateCaName="issuing-$(basename $CaName)"
 print_usage()
 {
     cat <<EOF
-USAGE: new-cert.sh [-h]
-       new-cert.sh [client|server]
+USAGE: new-test-cert.sh [-h]
+       new-test-cert.sh [client|server]
 
 This script is meant to be run after running new-test-ca.sh.  It should be
 run from the same directory where new-test-ca.sh created your test CA.
@@ -27,14 +38,16 @@ EOF
     exit 1
 }
 
-if [ ! -d "$ScriptDir/$CaName" ]; then
-    >&2 echo "Failed to find CA!"
+if [ ! -d "$CurDir/$CaName" ]; then
+    >&2 echo "Failed to find root CA!"
     print_usage
 fi
-if [ ! -d "$ScriptDir/$CaName/$IntermediateCaName" ]; then
-    >&2 echo "Failed to find CA!"
+if [ ! -d "$CurDir/$CaName/$IntermediateCaName" ]; then
+    >&2 echo "Failed to find intermediate CA!"
     print_usage
 fi
+
+echo -e "Using intermediate CA found at $CurDir/$CaName/$IntermediateCaName\n"
 
 Type=
 Name=
@@ -72,7 +85,7 @@ read -p "Enter all SANs, comma-delimited:" SubjAltNames
 
 read -s -p "Specify password to protect private key:" Pass
 
-cd $ScriptDir/$CaName
+cd $CurDir/$CaName
 
 echo -e "\nGenerating key..."
 openssl genrsa -aes256 -out $IntermediateCaName/private/$Name.key.pem -passout file:<(echo $Pass) 2048
@@ -116,4 +129,15 @@ case $Type in
 esac
 chmod 444 $IntermediateCaName/certs/$Name.cert.pem
 openssl verify -CAfile $IntermediateCaName/certs/ca-chain.cert.pem $IntermediateCaName/certs/$Name.cert.pem
+
+echo -e "\nCreating PKCS12 (PFX) file..."
+openssl pkcs12 -export -inkey $IntermediateCaName/private/$Name.key.pem -in $IntermediateCaName/certs/$Name.cert.pem -out $IntermediateCaName/private/$Name.p12
+echo -e "\n"
+
+read -p "Would you like to copy the PEM files and PKCS12 file to your current directory? [y/n]: " YN
+case $YN in
+    y|Y)
+         cp $IntermediateCaName/private/$Name.key.pem $IntermediateCaName/certs/$Name.cert.pem $IntermediateCaName/private/$Name.p12 $CurDir
+         ;;
+esac
 
