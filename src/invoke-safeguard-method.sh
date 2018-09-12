@@ -67,6 +67,7 @@ require_args()
     if [[ $? -ne 0 && -z "$Appliance" && -z "$AccessToken" ]]; then
         use_login_file
     else
+        handle_ca_bundle_arg
         if [ -z "$Appliance" ]; then
             read -p "Appliance network address: " Appliance
         fi
@@ -197,7 +198,7 @@ $CABundleArg
 -H "Authorization: Bearer $AccessToken"
 EOF
 ) -d @- "$Url" <<EOF | $PRETTYPRINT
-            $Body
+$Body
 EOF
     ;;
 esac
