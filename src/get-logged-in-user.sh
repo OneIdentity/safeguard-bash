@@ -48,5 +48,5 @@ done
 
 require_login_args
 
-$ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -t "$AccessToken" -v $Version -s core -m GET -U "Me" -N
+$ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -v $Version -s core -m GET -U "Me" -N <<<$AccessToken
 

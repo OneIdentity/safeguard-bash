@@ -53,5 +53,5 @@ done
 
 require_args
 
-$ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -t "$AccessToken" -v $Version -s core -m GET -U "Me/LinkedPolicyAccounts" -N
+$ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -v $Version -s core -m GET -U "Me/LinkedPolicyAccounts" -N <<<$AccessToken
 

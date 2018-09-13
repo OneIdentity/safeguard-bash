@@ -67,7 +67,7 @@ if [ ! -r "$RootCertificateFile" ]; then
 fi
 
 echo "Uploading '$RootCertificateFile'..."
-$ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -t "$AccessToken" -v $Version -s core -m POST -U TrustedCertificates -N -b "{
+$ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -v $Version -s core -m POST -U TrustedCertificates -N -b "{
     \"Base64CertificateData\": \"$(base64 "$RootCertificateFile")\"
-}"
+}" <<<$AccessToken
 

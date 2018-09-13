@@ -77,9 +77,9 @@ else
 fi
 
 if [ -z "$Id" ]; then
-    Result=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -t "$AccessToken" -v $Version -s core -m GET -U "AccessRequests" -N)
+    Result=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -v $Version -s core -m GET -U "AccessRequests" -N <<<$AccessToken)
 else
-    Result=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -t "$AccessToken" -v $Version -s core -m GET -U "AccessRequests/$Id" -N)
+    Result=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -v $Version -s core -m GET -U "AccessRequests/$Id" -N <<<$AccessToken)
 fi
 
 Error=$(echo $Result | jq .Code 2> /dev/null)

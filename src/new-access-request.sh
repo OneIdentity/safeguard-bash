@@ -103,11 +103,11 @@ else
     ATTRFILTER='jq {Id,AssetId,AssetName,AccountId,AccountName,State}'
 fi
 
-Result=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -t "$AccessToken" -v $Version -s core -m POST -U "AccessRequests" -N -b "{
+Result=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -v $Version -s core -m POST -U "AccessRequests" -N -b "{
     \"SystemId\": $AssetId,
     \"AccountId\": $AccountId,
     \"AccessRequestType\": \"$AccessType\"
-}")
+}" <<<$AccessToken)
 
 Error=$(echo $Result | jq .Code 2> /dev/null)
 if [ -z "$Error" -o "$Error" = "null" ]; then

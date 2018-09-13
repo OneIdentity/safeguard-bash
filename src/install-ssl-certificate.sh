@@ -79,10 +79,10 @@ if [ ! -r "$SSLCertificateFile" ]; then
 fi
 
 echo "Uploading '$SSLCertificateFile'..."
-Response=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -t "$AccessToken" -v $Version -s core -m POST -U SslCertificates -N -b "{
+Response=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -v $Version -s core -m POST -U SslCertificates -N -b "{
     \"Base64CertificateData\": \"$(base64 $SSLCertificateFile)\",
     \"Passphrase\": \"$SSLCertificatePassword\"
-}")
+}" <<<$AccessToken)
 echo $Response | jq .
 if [ -z "$Response" ]; then
     >&2 echo "Invalid response while trying to upload certificate file"
@@ -97,9 +97,9 @@ if [ -z "$ApplianceId" ]; then
 fi
 
 echo "Setting '$Thumbprint' as SSL certificate for '$Appliance', ID='$ApplianceId'..."
-$ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -t "$AccessToken" -s core -m PUT -U "SslCertificates/$Thumbprint/Appliances" -N -b "[
+$ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -s core -m PUT -U "SslCertificates/$Thumbprint/Appliances" -N -b "[
     {
         \"Id\": $ApplianceId
     }
-]"
+]" <<<$AccessToken
 

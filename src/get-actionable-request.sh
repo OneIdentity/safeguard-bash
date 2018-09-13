@@ -94,9 +94,9 @@ if [ ! -z "$(which jq)" ]; then
 fi
 
 if [ -z "$RequestRole" ]; then
-    Result=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -t "$AccessToken" -v $Version -s core -m GET -U "Me/ActionableRequests" -N)
+    Result=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -v $Version -s core -m GET -U "Me/ActionableRequests" -N <<<$AccessToken)
 else
-    Result=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -t "$AccessToken" -v $Version -s core -m GET -U "Me/ActionableRequests/$RequestRole" -N)
+    Result=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -v $Version -s core -m GET -U "Me/ActionableRequests/$RequestRole" -N <<<$AccessToken)
 fi
 
 Error=$(echo $Result | jq .Code 2> /dev/null)
