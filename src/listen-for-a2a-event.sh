@@ -4,17 +4,24 @@ print_usage()
 {
     cat <<EOF
 USAGE: listen-for-a2a-event.sh [-h]
-       listen-for-a2a-event.sh [-a appliance] [-c file] [-k file] [-A apikey] [-p]
+       listen-for-a2a-event.sh [-a appliance] [-B cabundle] [-c file] [-k file] [-A apikey] [-p] [-O]
 
   -h  Show help and exit
   -a  Network address of the appliance
+  -B  CA bundle for SSL trust validation (no checking by default)
   -c  File containing client certificate
   -k  File containing client private key
   -A  A2A API token identifying the account
   -p  Read certificate password from stdin
+  -O  Use openssl s_client instead of curl for GnuTLS problem
 
 This script will create a SignalR connection to the A2A service to report
 events.
+
+The -O option was added to allow this script to work in certain situations where the
+underlying TLS implementation compiled in with curl doesn't properly handle client
+certificates.  Usually this happens on Ubuntu 16.04 LTS and other Debian-based systems
+where curl is compiled against GnuTLS.
 
 NOTE: Install jq to get pretty-printed JSON output.
 
@@ -25,7 +32,8 @@ EOF
 ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 Appliance=
-AccessToken=
+CABundle=
+CABundleArg=
 Appliance=
 Cert=
 PKey=
@@ -38,6 +46,7 @@ fi
 
 require_args()
 {
+    handle_ca_bundle_arg
     if [ -z "$Appliance" ]; then
         read -p "Appliance Network Address: " Appliance
     fi
@@ -60,7 +69,7 @@ get_connection_token()
 {
     NUM=`echo $(( ( RANDOM % 1000000000 )  + 1 ))`
     # This call does not require an authorization header
-    curl -s -k "https://$Appliance/service/a2a/signalr/negotiate?_=$NUM" \
+    curl -s $CABundleArg "https://$Appliance/service/a2a/signalr/negotiate?_=$NUM" \
         | sed -n -e 's/\+/%2B/g;s/\//%2F/g;s/.*"ConnectionToken":"\([^"]*\)".*/\1/p'
 }
 
@@ -71,10 +80,13 @@ else
     PRETTYPRINT="cat"
 fi
 
-while getopts ":a:c:k:A:ph" opt; do
+while getopts ":a:B:c:k:A:ph" opt; do
     case $opt in
     a)
         Appliance=$OPTARG
+        ;;
+    B)
+        CABundle=$OPTARG
         ;;
     c)
         Cert=$OPTARG
@@ -103,7 +115,7 @@ Url="https://$Appliance/service/a2a/signalr/connect"
 Params="?transport=serverSentEvents&connectionToken=$ConnectionToken&connectionData=%5b%7b%22name%22%3a%22notificationHub%22%7d%5d&tid=$TID"
 stdbuf -o0 -e0 curl -K <(cat <<EOF
 -s
--k
+$CABundleArg
 --key $PKey
 --cert $Cert
 --pass $Pass
