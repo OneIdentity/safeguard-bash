@@ -23,10 +23,11 @@ USAGE: handle-event.sh [-h]
 Connect to SignalR using the Safeguard event service via a Safeguard access token
 and execute a provided script (handler script) each time an event occurs passing 
 the details of the event as a JSON object string to stdin.  The handler script will
-actually be passed three lines of text:
+actually be passed four lines of text:
 
     <Appliance Network Address>
     <Access Token>
+    <CA Bundle>
     <Event Data as JSON string>
 
 EOF
@@ -55,7 +56,7 @@ HandlerScript=
 
 require_args()
 {
-    require_login_args
+    handle_ca_bundle_arg
     if [ ! -z "$AccessToken" ]; then
         LoginType="Token"
         # Use this function to make sure that -a and -t are set
@@ -147,19 +148,19 @@ connect()
         ;;
     Password)
         >&2 echo "[$(date '+%x %X')] Connecting to $Appliance with $Provider\\$User and password."
-        AccessToken=$("$ScriptDir/connect-safeguard.sh" -a "$Appliance" $CABundleArg -i "$Provider" -u "$User" -p -X <<< "$Pass")
+        AccessToken=$("$ScriptDir/connect-safeguard.sh" -a "$Appliance" -B "$CABundle" -i "$Provider" -u "$User" -p -X <<< "$Pass")
         check_access_token
         if ! $TokenIsValid; then
-            >&2 echo "[$(date '+%x %X')] Unable to establish access token using certificate."
+            >&2 echo "[$(date '+%x %X')] Unable to establish access token using username and password."
             exit 1
         fi
         ;;
     Certificate)
         >&2 echo "[$(date '+%x %X')] Connecting to $Appliance using certificate ($Cert)"
-        AccessToken=$("$ScriptDir/connect-safeguard.sh" -a "$Appliance" $CABundleArg -i certificate -c "$Cert" -k "$PKey" -p -X <<< "$Pass")
+        AccessToken=$("$ScriptDir/connect-safeguard.sh" -a "$Appliance" -B "$CABundle" -i certificate -c "$Cert" -k "$PKey" -p -X <<< "$Pass")
         check_access_token
         if ! $TokenIsValid; then
-            >&2 echo "[$(date '+%x %X')] Unable to establish access token using username and password."
+            >&2 echo "[$(date '+%x %X')] Unable to establish access token using certificate."
             exit 1
         fi
         ;;
@@ -249,6 +250,7 @@ while true; do
         $HandlerScript <<EOF
 $Appliance
 $AccessToken
+$CABundle
 $Output
 EOF
     fi
