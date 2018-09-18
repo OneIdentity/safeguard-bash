@@ -4,13 +4,14 @@ print_usage()
 {
     cat <<EOF
 USAGE: handle-a2a-password-event.sh [-h]
-       handle-a2a-password-event.sh [-a appliance] [-c file] [-k file] [-A apikey] [-p] [-S script]
+       handle-a2a-password-event.sh [-a appliance] [-c file] [-k file] [-A apikey] [-O] [-p] [-S script]
 
   -h  Show help and exit
   -a  Network address of the appliance
   -c  File containing client certificate
   -k  File containing client private key
   -A  A2A API token identifying the account
+  -O  Use openssl s_client instead of curl for GnuTLS problem
   -p  Read certificate password from stdin
   -S  Script to execute when the password changes
 
@@ -20,6 +21,11 @@ changes, passing the new password via stdin.  The handler script will be passed
 only one line of text:
 
     <New Password>
+
+The -O option was added to allow this script to work in certain situations where the
+underlying TLS implementation compiled in with curl doesn't properly handle client
+certificates.  Usually this happens on Ubuntu 16.04 LTS and other Debian-based systems
+where curl is compiled against GnuTLS.
 
 EOF
     exit 0
@@ -33,6 +39,8 @@ PKey=
 ApiKey=
 Pass=
 HandlerScript=
+OpenSslSclientFlag=
+
 if [ $(curl --version | grep "libcurl" | sed -e 's,curl [0-9]*\.\([0-9]*\).* (.*,\1,') -ge 33 ]; then
     http11flag='--http1.1'
 fi
@@ -89,7 +97,7 @@ cleanup()
 
 trap cleanup EXIT
 
-while getopts ":a:c:k:A:S:ph" opt; do
+while getopts ":a:c:k:A:S:pOh" opt; do
     case $opt in
     a)
         Appliance=$OPTARG
@@ -109,6 +117,9 @@ while getopts ":a:c:k:A:S:ph" opt; do
         ;;
     S)
         HandlerScript=$OPTARG
+        ;;
+    O)
+        OpenSslSclientFlag="-O"
         ;;
     h)
         print_usage
@@ -138,8 +149,8 @@ while true; do
             unset listener_PID
         fi
         coproc listener { 
-            "$ScriptDir/listen-for-a2a-event.sh" -a $Appliance -c $Cert -k $PKey -A $ApiKey -p <<< $Pass | \
-                jq --unbuffered -c ".M[]?.A[]? | select(.Name==\"AssetAccountPasswordUpdated\") | .Data?"
+            "$ScriptDir/listen-for-a2a-event.sh" -a $Appliance -c $Cert -k $PKey -A $ApiKey -p $OpenSslSclientFlag <<< $Pass | \
+                jq --unbuffered -c ".M[]?.A[]? | select(.Data?.EventName==\"AssetAccountPasswordUpdated\") | .Data?"
         }
         >&2 echo "[$(date '+%x %X')] Started listener coprocess PID=$listener_PID."
     fi

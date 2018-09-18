@@ -120,7 +120,8 @@ TID=`echo $(( ( RANDOM % 1000 )  + 1 ))`
 Url="https://$Appliance/service/a2a/signalr/connect"
 Params="?transport=serverSentEvents&connectionToken=$ConnectionToken&connectionData=%5b%7b%22name%22%3a%22notificationHub%22%7d%5d&tid=$TID"
 if $UseOpenSslSclient; then
-    cat <<EOF | stdbuf -o0 -e0 openssl s_client -connect $Appliance:443 -crlf -quiet -key $PKey -cert $Cert -pass pass:$Pass 2>&1 | sed -u -e '/^data: /!d;/^data: initialized/d;s/^data: \(.*\)$/\1/g' | while read line; do echo $line | $PRETTYPRINT ; done
+    cat <<EOF | stdbuf -o0 -e0 openssl s_client -connect $Appliance:443 -crlf -quiet -key $PKey -cert $Cert -pass pass:$Pass 2>&1 \
+        | sed -u -e '/^data: /!d;/^data: initialized/d;s/^data: \(.*\)$/\1/g' | while read line; do echo $line | $PRETTYPRINT ; done
 GET /service/a2a/signalr/connect$Params HTTP/1.1
 Host: $Appliance
 Authorization: A2A $ApiKey
