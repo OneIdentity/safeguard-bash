@@ -39,10 +39,13 @@ Cert=
 PKey=
 ApiKey=
 Pass=
+UseOpenSslSclient=false
 
 if [ $(curl --version | grep "libcurl" | sed -e 's,curl [0-9]*\.\([0-9]*\).* (.*,\1,') -ge 33 ]; then
     http11flag='--http1.1'
 fi
+
+. "$ScriptDir/utils/loginfile.sh"
 
 require_args()
 {
@@ -80,7 +83,7 @@ else
     PRETTYPRINT="cat"
 fi
 
-while getopts ":a:B:c:k:A:ph" opt; do
+while getopts ":a:B:c:k:A:pOh" opt; do
     case $opt in
     a)
         Appliance=$OPTARG
@@ -101,6 +104,9 @@ while getopts ":a:B:c:k:A:ph" opt; do
         # read password from stdin before doing anything
         read -s Pass
         ;;
+    O)
+        UseOpenSslSclient=true
+        ;;
     h)
         print_usage
         ;;
@@ -113,7 +119,18 @@ ConnectionToken=`get_connection_token`
 TID=`echo $(( ( RANDOM % 1000 )  + 1 ))`
 Url="https://$Appliance/service/a2a/signalr/connect"
 Params="?transport=serverSentEvents&connectionToken=$ConnectionToken&connectionData=%5b%7b%22name%22%3a%22notificationHub%22%7d%5d&tid=$TID"
-stdbuf -o0 -e0 curl -K <(cat <<EOF
+if $UseOpenSslSclient; then
+    cat <<EOF | stdbuf -o0 -e0 openssl s_client -connect $Appliance:443 -crlf -quiet -key $PKey -cert $Cert -pass pass:$Pass 2>&1 | sed -u -e '/^data: /!d;/^data: initialized/d;s/^data: \(.*\)$/\1/g' | while read line; do echo $line | $PRETTYPRINT ; done
+GET /service/a2a/signalr/connect$Params HTTP/1.1
+Host: $Appliance
+Authorization: A2A $ApiKey
+User-Agent: curl/7.47.0
+Accept: application/json
+
+
+EOF
+else
+    stdbuf -o0 -e0 curl -K <(cat <<EOF
 -s
 $CABundleArg
 --key $PKey
@@ -123,4 +140,4 @@ $CABundleArg
 $http11flag
 EOF
 ) "$Url$Params" | sed -u -e '/^data: initialized/d;/^\s*$/d;s/^data: \(.*\)$/\1/g' | while read line; do echo $line | $PRETTYPRINT ; done
-
+fi
