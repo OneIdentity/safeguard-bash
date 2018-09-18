@@ -34,11 +34,6 @@ IncludeSessions=false
 
 . "$ScriptDir/utils/loginfile.sh"
 
-require_args()
-{
-    require_login_args
-}
-
 while getopts ":t:a:v:esh" opt; do
     case $opt in
     t)
@@ -62,7 +57,7 @@ while getopts ":t:a:v:esh" opt; do
     esac
 done
 
-require_args
+require_login_args
 
 BundleFile="SG-$Appliance-$(date +%Y-%m-%d-%H-%M-%S).zip"
 Url="https://$Appliance/service/appliance/v$Version/SupportBundle"
@@ -78,7 +73,14 @@ else
 fi
 
 >&2 echo "Generating and downloading support bundle..."
-curl -# -k -X GET -H "Accept: application/octet-stream" -H "Authorization: Bearer $AccessToken" $Url > $BundleFile
+curl -K <(cat <<EOF
+-#
+$CABundleArg
+-X GET
+-H "Accept: application/octet-stream"
+-H "Authorization: Bearer $AccessToken"
+EOF
+) $Url > $BundleFile
 if [ -r "$BundleFile" ]; then
     BundleSize=$(du "$BundleFile" | cut -f1)
     if [ $BundleSize -gt 0 ]; then

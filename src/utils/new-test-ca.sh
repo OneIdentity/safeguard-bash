@@ -1,6 +1,17 @@
 #!/bin/bash
 
+CurDir="$(pwd)"
 ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+set -e
+
+cleanup()
+{
+    cd "$CurDir"
+    set +e
+}
+
+trap cleanup EXIT
 
 read -p "Enter CA friendly name:" CaName
 if [ -z "$CaName" ]; then
@@ -10,19 +21,19 @@ IntermediateCaName="issuing-$CaName"
 
 echo -e "CA Name: $CaName\nIntermediate CA Name: $IntermediateCaName"
 
-if [ -d "$ScriptDir/$CaName" ]; then
-    echo "Target directory "$ScriptDir/$CaName" already exists!"
+if [ -d "$CurDir/$CaName" ]; then
+    echo "Target directory "$CurDir/$CaName" already exists!"
     read -n1 -p "Would you like to replace it? [y/n]:" Response
     >&2 echo ""
     if [[ $Response == [Yy] ]]; then
-        rm -rf $ScriptDir/$CaName
+        rm -rf $CurDir/$CaName
     else
         exit 1
     fi
 fi
-echo -e "\nCreating the directory structure ($ScriptDir/$CaName) and openssl.cnf..."
-mkdir $ScriptDir/$CaName
-cd $ScriptDir/$CaName
+echo -e "\nCreating the directory structure ($CurDir/$CaName) and openssl.cnf..."
+mkdir $CurDir/$CaName
+cd $CurDir/$CaName
 mkdir -p certs crl newcerts private
 chmod 700 private
 touch index.txt
@@ -169,9 +180,9 @@ openssl req -config openssl.cnf -key private/$CaName.key.pem -new -x509 -days 36
 chmod 444 certs/$CaName.cert.pem
 openssl verify -CAfile certs/$CaName.cert.pem certs/$CaName.cert.pem
 
-echo -e "\nCreating the directory structure ($ScriptDir/$CaName/$IntermediateCaName) and openssl.cnf..."
-mkdir $ScriptDir/$CaName/$IntermediateCaName
-cd $ScriptDir/$CaName/$IntermediateCaName
+echo -e "\nCreating the directory structure ($CurDir/$CaName/$IntermediateCaName) and openssl.cnf..."
+mkdir $CurDir/$CaName/$IntermediateCaName
+cd $CurDir/$CaName/$IntermediateCaName
 mkdir -p certs crl csr newcerts private
 chmod 700 private
 touch index.txt
@@ -309,7 +320,7 @@ extendedKeyUsage = critical, OCSPSigning
 EOF
 
 echo -e "\nGenerating Issuing CA certificate..."
-cd $ScriptDir/$CaName
+cd $CurDir/$CaName
 openssl genrsa -aes256 -out $IntermediateCaName/private/$IntermediateCaName.key.pem -passout file:<(echo $Pass) 4096
 chmod 400 $IntermediateCaName/private/$IntermediateCaName.key.pem
 openssl req -config $IntermediateCaName/openssl.cnf -new -sha256 -key $IntermediateCaName/private/$IntermediateCaName.key.pem \
@@ -322,3 +333,10 @@ openssl verify -CAfile certs/$CaName.cert.pem $IntermediateCaName/certs/$Interme
 echo -e "\nCreating certificate chain file..."
 cat $IntermediateCaName/certs/$IntermediateCaName.cert.pem  certs/$CaName.cert.pem \
     > $IntermediateCaName/certs/ca-chain.cert.pem
+
+read -p "Would you like to copy the PEM files for root and intermediate to your current directory? [y/n]: " YN
+case $YN in
+    y|Y)
+         cp certs/$CaName.cert.pem $IntermediateCaName/certs/$IntermediateCaName.cert.pem $CurDir
+         ;;
+esac

@@ -55,9 +55,9 @@ require_args
 # Need a bash function to URL encode in invoke-safeguard-method.sh
 PlatformName=$(echo $PlatformName | sed 's/ /%20/g')
 if [ -z "$PlatformName" ]; then
-    $ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -t "$AccessToken" -v $Version -s core -m GET -U "Platforms" -N
+    $ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -v $Version -s core -m GET -U "Platforms" -N <<<$AccessToken
 else
-    $ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -t "$AccessToken" -v $Version -s core -m GET \
-        -U "Platforms?filter=DisplayName%20ieq%20'$PlatformName'%20or%20Name%20ieq%20'$PlatformName'" -N
+    $ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -v $Version -s core -m GET \
+        -U "Platforms?filter=DisplayName%20ieq%20'$PlatformName'%20or%20Name%20ieq%20'$PlatformName'" -N <<<$AccessToken
 fi
 

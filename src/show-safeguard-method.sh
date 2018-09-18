@@ -4,10 +4,11 @@ print_usage()
 {
     cat <<EOF
 USAGE: show-safeguard-method.sh [-h]
-       show-safeguard-method.sh [-a appliance] [-v version] [-s service] [-m method] [-U relativeurl]
+       show-safeguard-method.sh [-a appliance] [-B cabundle] [-v version] [-s service] [-m method] [-U relativeurl]
 
   -h  Show help and exit
   -a  Network address of the appliance
+  -B  CA bundle for SSL trust validation (no checking by default)
   -v  Web API Version: 2 is default
   -s  Service: core, appliance, cluster, notification
   -m  HTTP Method: GET, PUT, POST, DELETE
@@ -35,9 +36,12 @@ FilterNulls=true
 . "$ScriptDir/utils/loginfile.sh"
 
 Appliance=$(read_from_login_file Appliance)
+CABundleArg=$(read_from_login_file CABundleArg)
+CABundle=
 
 require_args()
 {
+    handle_ca_bundle_arg
     if [ -z "$Appliance" ]; then
         read -p "Appliance network address: " Appliance
     fi
@@ -61,10 +65,13 @@ require_args()
     fi
 }
 
-while getopts ":a:v:s:m:U:h" opt; do
+while getopts ":a:B:v:s:m:U:h" opt; do
     case $opt in
     a)
         Appliance=$OPTARG
+        ;;
+    B)
+        CABundle=$OPTARG
         ;;
     v)
         Version=$OPTARG
@@ -92,7 +99,7 @@ fi
 require_args
 
 Url="https://$Appliance/service/$Service/swagger/docs/v$Version"
-Swagger=$(curl -s -k -X GET -H "Accept: $Accept" $Url)
+Swagger=$(curl -s $CABundleArg -X GET -H "Accept: $Accept" $Url)
 Paths=$(echo $Swagger | jq '.paths')
 Definitions=$(echo $Swagger | jq '.definitions')
 

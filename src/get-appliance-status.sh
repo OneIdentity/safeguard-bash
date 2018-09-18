@@ -21,6 +21,8 @@ ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 Version=2
 
+. "$ScriptDir/utils/loginfile.sh"
+
 while getopts ":a:v:h" opt; do
     case $opt in
     a)
@@ -34,6 +36,12 @@ while getopts ":a:v:h" opt; do
         ;;
     esac
 done
+
+if [ -z "$Appliance" ]; then
+    if [[ -r "$LoginFile" && -f "$LoginFile" ]]; then
+        Appliance=$(read_from_login_file Appliance)
+    fi
+fi
 
 $ScriptDir/invoke-safeguard-method.sh -n -a "$Appliance" -s notification -v $Version -m GET -U Status
 

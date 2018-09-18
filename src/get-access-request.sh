@@ -16,14 +16,16 @@ USAGE: get-access-request.sh [-h]
 
 Get an access request or all access requests via the Web API.
 
-NOTE: Install jq to get pretty-printed JSON output.
-
 EOF
     exit 0
 }
 
 ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+if [ -z "$(which jq)" ]; then
+    >&2 echo "This script requires jq for parsing and manipulating responses."
+    exit 1
+fi
 
 Appliance=
 AccessToken=
@@ -63,25 +65,21 @@ done
 
 require_args
 
-ATTRFILTER='cat'
-ERRORFILTER='cat'
-if [ ! -z "$(which jq)" ]; then
-    ERRORFILTER='jq .'
-    if $FullOutput; then
-        ATTRFILTER='jq .'
+ERRORFILTER='jq .'
+if $FullOutput; then
+    ATTRFILTER='jq .'
+else
+    if [ -z "$Id" ]; then
+        ATTRFILTER='jq [.[]|{Id,RequesterId,RequesterDisplayName,AssetId,AssetName,AccountId,AccountName,AccessRequestType,State}]'
     else
-        if [ -z "$Id" ]; then
-            ATTRFILTER='jq [.[]|{Id,RequesterId,RequesterDisplayName,AssetId,AssetName,AccountId,AccountName,AccessRequestType,State}]'
-        else
-            ATTRFILTER='jq {Id,RequesterId,RequesterDisplayName,AssetId,AssetName,AccountId,AccountName,AccessRequestType,State}'
-        fi
+        ATTRFILTER='jq {Id,RequesterId,RequesterDisplayName,AssetId,AssetName,AccountId,AccountName,AccessRequestType,State}'
     fi
 fi
 
 if [ -z "$Id" ]; then
-    Result=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -t "$AccessToken" -v $Version -s core -m GET -U "AccessRequests" -N)
+    Result=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -v $Version -s core -m GET -U "AccessRequests" -N <<<$AccessToken)
 else
-    Result=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -t "$AccessToken" -v $Version -s core -m GET -U "AccessRequests/$Id" -N)
+    Result=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -v $Version -s core -m GET -U "AccessRequests/$Id" -N <<<$AccessToken)
 fi
 
 Error=$(echo $Result | jq .Code 2> /dev/null)

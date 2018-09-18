@@ -68,9 +68,9 @@ if [ ! -r "$LicenseFile" ]; then
 fi
 
 echo "Staging license file..."
-Response=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -t "$AccessToken" -v $Version -s core -m POST -U Licenses -N -b "{
+Response=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -v $Version -s core -m POST -U Licenses -N -b "{
     \"Base64Data\": \"$(base64 $LicenseFile)\"
-}")
+}" <<<$AccessToken)
 echo $Response | jq .
 if [ -z "$Response" ]; then
     >&2 echo "Invalid response while trying to stage license file"
@@ -79,5 +79,5 @@ fi
 Key=$(echo $Response | jq -r '.Key')
 
 echo "Installing license '$Key'..."
-$ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -t "$AccessToken" -s core -m POST -U "Licenses/$Key/Install" -N -b ""
+$ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -s core -m POST -U "Licenses/$Key/Install" -N -b "" <<<$AccessToken
 

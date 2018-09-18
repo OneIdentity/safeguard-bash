@@ -29,17 +29,8 @@ fi
 Appliance=
 AccessToken=
 Version=2
-LicenseFile=
 
 . "$ScriptDir/utils/loginfile.sh"
-
-require_args()
-{
-    require_login_args
-    if [ -z "$LicenseFile" ]; then
-        read -p "License file: " LicenseFile
-    fi
-}
 
 while getopts ":t:a:v:h" opt; do
     case $opt in
@@ -58,15 +49,16 @@ while getopts ":t:a:v:h" opt; do
     esac
 done
 
+require_login_args
 
-Response=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -t "$AccessToken" -v $Version -s core -m GET -U "Me/RequestableAssets" -N)
+Response=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -v $Version -s core -m GET -U "Me/RequestableAssets" -N <<<$AccessToken)
 Error=$(echo $Response | jq .Code 2> /dev/null)
 if [ -z "$Error" -o "$Error" = "null" ]; then
     Ids=$(echo $Response |  jq ".[].Id")
     if [ ! -z "$Ids" ]; then
         Objs=""
         for Id in $Ids; do
-            Accounts=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -t "$AccessToken" -v $Version -s core -m GET -U "Me/RequestableAssets/$Id/Accounts" -N \
+            Accounts=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -v $Version -s core -m GET -U "Me/RequestableAssets/$Id/Accounts" -N <<<$AccessToken \
                        | jq '.[] | {Id,Name,AccountRequestTypes}' | jq -s .)
             Asset=$(echo $Response | jq --argjson accounts "$Accounts" \
                     ".[] | select(.Id == $Id) | {Id,Name,NetworkAddress,PlatformDisplayName,AccountRequestTypes,Accounts} | .Accounts |= \$accounts")

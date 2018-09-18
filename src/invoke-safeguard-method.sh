@@ -4,18 +4,20 @@ print_usage()
 {
     cat <<EOF
 USAGE: invoke-safeguard-method.sh [-h]
-       invoke-safeguard-method.sh [-s service] [-m method] [-v version]
+       invoke-safeguard-method.sh [-a appliance] [-B cabundle] [-n] [-s service] [-m method] [-v version]
                                   [-U relativeurl] [-C contenttype] [-A accept] [-H header] [-b body] [-N]
-       invoke-safeguard-method.sh [-a appliance] [-n] [-s service] [-m method] [-v version]
+       invoke-safeguard-method.sh [-a appliance] [-B cabundle] [-t accesstoken] [-s service] [-m method] [-v version]
                                   [-U relativeurl] [-C contenttype] [-A accept] [-H header] [-b body] [-N]
-       invoke-safeguard-method.sh [-a appliance] [-t accesstoken] [-s service] [-m method] [-v version]
+       invoke-safeguard-method.sh [-a appliance] [-B cabundle] [-T] [-s service] [-m method] [-v version]
                                   [-U relativeurl] [-C contenttype] [-A accept] [-H header] [-b body] [-N]
 
   -h  Show help and exit
   -a  Network address of the appliance
+  -B  CA bundle for SSL trust validation (no checking by default)
   -v  Web API Version: 2 is default
   -n  Anonymous authentication, don't use login file either
   -t  Safeguard access token
+  -T  Read Safeguard access token from stdin
   -s  Service: core, appliance, cluster, notification
   -m  HTTP Method: GET, PUT, POST, DELETE
   -U  Relative resource URL (e.g. AccessRequests)
@@ -39,6 +41,7 @@ EOF
 ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 Appliance=
+CABundle=
 Provider=
 AccessToken=
 Cert=
@@ -64,6 +67,7 @@ require_args()
     if [[ $? -ne 0 && -z "$Appliance" && -z "$AccessToken" ]]; then
         use_login_file
     else
+        handle_ca_bundle_arg
         if [ -z "$Appliance" ]; then
             read -p "Appliance network address: " Appliance
         fi
@@ -97,7 +101,7 @@ require_args()
     fi
 }
 
-while getopts ":t:na:v:s:m:U:C:A:H:b:Nh" opt; do
+while getopts ":t:nTa:B:v:s:m:U:C:A:H:b:Nh" opt; do
     case $opt in
     t)
         if $Anonymous; then
@@ -111,8 +115,15 @@ while getopts ":t:na:v:s:m:U:C:A:H:b:Nh" opt; do
         fi
         Anonymous=true
         ;;
+    T)
+        # read AccessToken from stdin before doing anything
+        read -s AccessToken
+        ;;
     a)
         Appliance=$OPTARG
+        ;;
+    B)
+        CABundle=$OPTARG
         ;;
     v)
         Version=$OPTARG
@@ -166,12 +177,29 @@ require_args
 Url="https://$Appliance/service/$Service/v$Version/$RelativeUrl"
 case $Method in
     GET|DELETE)
-        curl -s -k -X $Method "${ExtraHeader[@]}" -H "Accept: $Accept" -H "Authorization: Bearer $AccessToken" "$Url" | $PRETTYPRINT
+        curl -K <(cat <<EOF
+-s
+$CABundleArg
+-X $Method
+"${ExtraHeader[@]}"
+-H "Accept: $Accept"
+-H "Authorization: Bearer $AccessToken"
+EOF
+) "$Url" | $PRETTYPRINT
     ;;
     PUT|POST)
-        curl -s -k -X $Method "${ExtraHeader[@]}" -H "Accept: $Accept" -H "Content-type: $ContentType" \
-             -H "Authorization: Bearer $AccessToken" -d @- "$Url" <<EOF | $PRETTYPRINT
-            $Body
+        curl -K <(cat <<EOF
+-s
+$CABundleArg
+-X $Method
+"${ExtraHeader[@]}"
+-H "Accept: $Accept"
+-H "Content-type: $ContentType"
+-H "Authorization: Bearer $AccessToken"
+EOF
+) -d @- "$Url" <<EOF | $PRETTYPRINT
+$Body
 EOF
     ;;
 esac
+

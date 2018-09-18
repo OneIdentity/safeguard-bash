@@ -5,6 +5,7 @@
 invoke_a2a_method()
 {
     local appliance=$1 ; shift 
+    local cabundlearg=$1 ; shift
     local certfile=$1 ; shift 
     local pkeyfile=$1 ; shift 
     local pass=$1 ; shift 
@@ -19,8 +20,18 @@ invoke_a2a_method()
         http11flag='--http1.1'
     fi
     if [ -z "$body" ]; then
-        local response=$(curl -s -k --key $pkeyfile --cert $certfile --pass $pass -X $method $http11flag -H 'Accept: application/json' \
-                              -H "Authorization: A2A $apikey" "https://$appliance/service/a2a/v$version/$relurl"
+        local response=$(curl -K <(cat <<EOF
+-s
+$cabundlearg
+--key $pkeyfile
+--cert $certfile
+--pass $pass
+-X $method
+$http11flag
+-H "Accept: application/json"
+-H "Authorization: A2A $apikey"
+EOF
+) "https://$appliance/service/a2a/v$version/$relurl"
         )
         if [ ! -z "$response" -a ! -z "$(echo $response | jq '.Codes // empty')" ]; then
             echo "$response"
@@ -28,6 +39,7 @@ invoke_a2a_method()
             # There is a bug in some Debian-based platforms with curl linked to GnuTLS where it doesn't properly
             # ignore certificate errors when using client certificate authentication. This works around that
             # problem by calling OpenSSL directly and manually formulating an HTTP request.
+            #   see https://github.com/curl/curl/issues/1411
             response=$(cat <<EOF | openssl s_client -connect $appliance:443 -quiet -crlf -key $pkeyfile -cert $certfile -pass pass:$pass 2>&1
 $method /service/a2a/v$version/$relurl HTTP/1.1
 Host: $appliance
@@ -41,9 +53,18 @@ EOF
             echo "$response" | sed -n '/read:errno/,$p' | sed -e 's/\(.*\)read\:errno\=.*/\1/'
         fi
     else
-        local response=$(curl -s -k --key $pkeyfile --cert $certfile --pass $pass -X $method $http11flag -H 'Accept: application/json' \
-                              -H 'Content-type: application/json' -H "Authorization: A2A $apikey" \
-                              -d @- "https://$appliance/service/a2a/v$version/$relurl" <<EOF
+        local response=$(curl -K <(cat <<EOF
+-s
+$cabundlearg
+--key $pkeyfile
+--cert $certfile
+--pass $pass
+-X $method
+$http11flag
+-H "Accept: application/json"
+-H "Content-type: application/json" -H "Authorization: A2A $apikey"
+EOF
+) -d @- "https://$appliance/service/a2a/v$version/$relurl" <<EOF
 $body
 EOF
         )
@@ -53,6 +74,7 @@ EOF
             # There is a bug in some Debian-based platforms with curl linked to GnuTLS where it doesn't properly
             # ignore certificate errors when using client certificate authentication. This works around that
             # problem by calling OpenSSL directly and manually formulating an HTTP request.
+            #   see https://github.com/curl/curl/issues/1411
             response=$(cat <<EOF | openssl s_client -connect $appliance:443 -quiet -crlf -key $pkeyfile -cert $certfile -pass pass:$pass 2>&1
 POST /service/a2a/v$version/$relurl HTTP/1.1
 Host: $appliance
@@ -70,3 +92,17 @@ EOF
         fi
     fi
 }
+
+get_a2a_connection_token()
+{
+    curl -K <(cat <<EOF
+-s
+$CABundleArg
+--key $PKey
+--cert $Cert
+--pass $Pass
+EOF
+) "https://$Appliance/service/event/signalr/negotiate?_=$NUM" \
+            | sed -n -e 's/\+/%2B/g;s/\//%2F/g;s/.*"ConnectionToken":"\([^"]*\)".*/\1/p'
+}
+
