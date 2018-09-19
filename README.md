@@ -50,6 +50,27 @@ user.
 
 Client certificate authentication is also available in `connect-safeguard.sh`.
 
+```Bash
+$ connect-safeguard.sh -a 10.5.32.162 -i certificate -c cert.pem -k key.pem
+Password:
+A login file has been created.
+```
+
+The `invoke-safeguard-method.sh` script will facilitate a call to the Web API.
+Safeguard hosts multiple services as part of the Web API:
+
+- core -- the main Safeguard application Web API
+- appliance -- Web API for appliance-specific operations
+- event -- Connect to SignalR to receive live events (use event scripts for this)
+- a2a -- Specific Web API for application to application use cases
+
+A typical call to `invoke-safeguard-method.sh` requires `-s` to specify a service
+from the list above, `-m` for the HTTP method to use (GET, PUT, POST, DELETE), and
+`-U` for the relative URL of the endpoint.
+
+You may use `show-safeguard-method.sh` to see what methods can be called from
+which services.
+
 If you do not have rights to access a particular portion of the Web API,
 you will be presented with an error message saying authorization is
 required.
@@ -65,3 +86,28 @@ $ invoke-safeguard-method.sh -s core -m GET -U Assets
 
 When you are finished, you can call the `disconnect-safeguard.sh` script
 to invalidate and remove your access token.
+
+## Docker
+
+Linux distributions do not always provide a reliable set of components that are
+used in the safeguard-bash scripts.  The easiest way to ensure that you always
+have a properly functioning safeguard-bash environment is to run the scripts from
+a Docker container.
+
+The `run.sh` script will automatically build a local image for safeguard-bash based
+on the sources you have checked out.  This is convenient for when you are making
+changes to safeguard-bash scripts and want to test them out in a container. 
+
+If you don't want to run `connect-safeguard.sh` automatically when you enter the
+container, you can use the `run.sh` script to execute the `docker` binary to run
+a different entry point using `-c`.  `run.sh` may also be used to easily mount a
+local directory for use inside your running container using `-v`.  This is useful
+for when certificate files are need to connect to Safeguard.  For example:
+
+```Bash
+$ ./run.sh -v ~/certs -c bash
+```
+
+This will mount my `~/certs` directory inside the container at `/volume` and will
+just drop me at a Bash prompt rather than running `connect-safeguard.sh` 
+automatically.
