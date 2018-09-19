@@ -46,6 +46,7 @@ if [ $(curl --version | grep "libcurl" | sed -e 's,curl [0-9]*\.\([0-9]*\).* (.*
 fi
 
 . "$ScriptDir/utils/loginfile.sh"
+. "$ScriptDir/utils/common.sh"
 
 require_args()
 {
@@ -149,14 +150,20 @@ while true; do
             unset listener_PID
         fi
         coproc listener { 
-            "$ScriptDir/listen-for-a2a-event.sh" -a $Appliance -c $Cert -k $PKey -A $ApiKey -p $OpenSslSclientFlag <<< $Pass | \
-                jq --unbuffered -c ".M[]?.A[]? | select(.Data?.EventName==\"AssetAccountPasswordUpdated\") | .Data?"
+            "$ScriptDir/listen-for-a2a-event.sh" -a $Appliance -c $Cert -k $PKey -A $ApiKey -p $OpenSslSclientFlag <<< $Pass 2> /dev/null | \
+                jq --unbuffered -c ".M[]?.A[]? | select(.Data?.EventName==\"AssetAccountPasswordUpdated\") | .Data?" 2> /dev/null
         }
         >&2 echo "[$(date '+%x %X')] Started listener coprocess PID=$listener_PID."
     fi
 # TODO: handle timeouts of not reading anything for a long period and restart coproc
     unset Output
     IFS= read -t 5 Temp <&"${listener[0]}" && Output="$Temp"
+    if [ $? -eq 0 -o $? -gt 128 ]; then
+        reset_backoff_wait
+    else
+        >&2 echo "[$(date '+%x %X')] The connection does not appear to be working, waiting to reconnect..."
+        backoff_wait
+    fi
     if [ ! -z "$Output" ]; then
         AcctPass=$("$ScriptDir/get-a2a-password.sh" -a $Appliance -c $Cert -k $PKey -A $ApiKey -p <<< $Pass | jq -r .)
         >&2 echo "[$(date '+%x %X')] Calling $HandlerScript with new password"
