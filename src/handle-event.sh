@@ -25,9 +25,9 @@ and execute a provided script (handler script) each time an event occurs passing
 the details of the event as a JSON object string to stdin.  The handler script will
 actually be passed four lines of text:
 
-    <Appliance Network Address>
-    <Access Token>
-    <CA Bundle>
+    <Appliance Network Address as string>
+    <Access Token as string>
+    <CA Bundle as file path>
     <Event Data as JSON string>
 
 EOF
