@@ -25,9 +25,9 @@ and execute a provided script (handler script) each time an event occurs passing
 the details of the event as a JSON object string to stdin.  The handler script will
 actually be passed four lines of text:
 
-    <Appliance Network Address>
-    <Access Token>
-    <CA Bundle>
+    <Appliance Network Address as string>
+    <Access Token as string>
+    <CA Bundle as file path>
     <Event Data as JSON string>
 
 EOF
@@ -36,6 +36,7 @@ EOF
 
 ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+QueryProviders=false
 LoginType=
 TokenIsValid=false
 TokenExpirationThreshold=0
@@ -53,6 +54,7 @@ EventName=
 HandlerScript=
 
 . "$ScriptDir/utils/loginfile.sh"
+. "$ScriptDir/utils/common.sh"
 
 require_args()
 {
@@ -148,20 +150,18 @@ connect()
         ;;
     Password)
         >&2 echo "[$(date '+%x %X')] Connecting to $Appliance with $Provider\\$User and password."
-        AccessToken=$("$ScriptDir/connect-safeguard.sh" -a "$Appliance" -B "$CABundle" -i "$Provider" -u "$User" -p -X <<< "$Pass")
+        AccessToken=$("$ScriptDir/connect-safeguard.sh" -a "$Appliance" -B "$CABundle" -i "$Provider" -u "$User" -p -X <<< "$Pass" 2> /dev/null)
         check_access_token
         if ! $TokenIsValid; then
             >&2 echo "[$(date '+%x %X')] Unable to establish access token using username and password."
-            exit 1
         fi
         ;;
     Certificate)
         >&2 echo "[$(date '+%x %X')] Connecting to $Appliance using certificate ($Cert)"
-        AccessToken=$("$ScriptDir/connect-safeguard.sh" -a "$Appliance" -B "$CABundle" -i certificate -c "$Cert" -k "$PKey" -p -X <<< "$Pass")
+        AccessToken=$("$ScriptDir/connect-safeguard.sh" -a "$Appliance" -B "$CABundle" -i certificate -c "$Cert" -k "$PKey" -p -X <<< "$Pass" 2> /dev/null)
         check_access_token
         if ! $TokenIsValid; then
             >&2 echo "[$(date '+%x %X')] Unable to establish access token using certificate."
-            exit 1
         fi
         ;;
     esac
@@ -220,6 +220,15 @@ done
 require_args
 require_prereqs
 
+
+# initial connection to make sure credentials start good
+connect
+check_access_token silent
+if ! $TokenIsValid; then
+    >&2 echo "Unable to perform initial authentication, exiting..."
+    exit 1
+fi
+
 LastCheck=$(date +%s)
 while true; do
     Now=$(date +%s)
@@ -237,14 +246,20 @@ while true; do
             unset listener_PID
         fi
         coproc listener { 
-            "$ScriptDir/listen-for-event.sh" -a $Appliance -T <<< $AccessToken | \
-                jq --unbuffered -c ".M[]?.A[]? | select(.Name==\"$EventName\") | .Data?"
+            "$ScriptDir/listen-for-event.sh" -a $Appliance -T <<< $AccessToken 2> /dev/null | \
+                jq --unbuffered -c ".M[]?.A[]? | select(.Name==\"$EventName\") | .Data?" 2> /dev/null
         }
         >&2 echo "[$(date '+%x %X')] Started listener coprocess PID=$listener_PID."
     fi
 # TODO: handle timeouts of not reading anything for a long period and restart coproc
     unset Output
     IFS= read -t 5 Temp <&"${listener[0]}" && Output="$Temp"
+    if [ $? -eq 0 -o $? -gt 128 ]; then
+        reset_backoff_wait
+    else
+        >&2 echo "[$(date '+%x %X')] The connection does not appear to be working, waiting to reconnect..."
+        backoff_wait
+    fi
     if [ ! -z "$Output" ]; then
         >&2 echo "[$(date '+%x %X')] Calling $HandlerScript with $EventName"
         $HandlerScript <<EOF
