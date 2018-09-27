@@ -1,3 +1,5 @@
+[![GitHub](https://img.shields.io/github/license/OneIdentity/safeguard-bash.svg)](https://github.com/OneIdentity/safeguard-bash/blob/master/LICENSE)
+
 # safeguard-bash
 One Identity Safeguard Bash and cURL scripting resources.
 
