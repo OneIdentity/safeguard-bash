@@ -1,3 +1,4 @@
+[![Docker Hub](https://img.shields.io/badge/docker-oneidentity%2Fsafeguard--bash-blue.svg)](https://hub.docker.com/r/oneidentity/safeguard-bash/)
 [![GitHub](https://img.shields.io/github/license/OneIdentity/safeguard-bash.svg)](https://github.com/OneIdentity/safeguard-bash/blob/master/LICENSE)
 
 # safeguard-bash
