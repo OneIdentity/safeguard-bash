@@ -33,7 +33,7 @@ $http11flag
 EOF
 ) "https://$appliance/service/a2a/v$version/$relurl"
         )
-        if [ ! -z "$response" -a ! -z "$(echo $response | jq '.Codes // empty')" ]; then
+        if [ ! -z "$response" -a ! -z "$(echo $response | jq '.Code // empty')" ]; then
             echo "$response"
         else
             # There is a bug in some Debian-based platforms with curl linked to GnuTLS where it doesn't properly
