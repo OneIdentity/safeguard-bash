@@ -1,4 +1,5 @@
 FROM alpine
+MAINTAINER support@oneidentity.com
 
 RUN apk -U --no-cache add \
         vim \
