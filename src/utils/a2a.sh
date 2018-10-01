@@ -33,7 +33,8 @@ $http11flag
 EOF
 ) "https://$appliance/service/a2a/v$version/$relurl"
         )
-        if [ ! -z "$response" -a ! -z "$(echo $response | jq '.Code // empty')" ]; then
+        local error=$(echo $response | jq .Code 2> /dev/null)
+        if [ ! -z "$response" -a ! -z "$error" -a ! "$error" = "null" ]; then
             echo "$response"
         else
             # There is a bug in some Debian-based platforms with curl linked to GnuTLS where it doesn't properly
@@ -68,7 +69,8 @@ EOF
 $body
 EOF
         )
-        if [ -z "$response" ]; then
+        local error=$(echo $response | jq .Code 2> /dev/null)
+        if [ -z "$response" -o -z "$error" -o "$error" = "null" ]; then
             body="$(echo -e "${body}" | tr -d '[:space:]')"
             local bodylen=$(echo -n "${body}" | wc -m)
             # There is a bug in some Debian-based platforms with curl linked to GnuTLS where it doesn't properly
