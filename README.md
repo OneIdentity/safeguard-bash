@@ -154,3 +154,6 @@ new user is created and pass information about the event as well as some data
 to contact Safeguard using an access token to take action on the event.  See
 `handle-event.sh -h` for more details.
 
+### A2A Password Listener Sample running in Docker
+
+[![A2A Password Listener](https://img.youtube.com/vi/UQFcNgYKnTI/0.jpg)](https://www.youtube.com/watch?v=UQFcNgYKnTI)
