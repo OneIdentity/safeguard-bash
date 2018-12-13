@@ -30,7 +30,7 @@ print_usage()
 {
     cat <<EOF
 USAGE: new-test-cert.sh [-h]
-       new-test-cert.sh [client|server]
+       new-test-cert.sh [client|server|audit]
 
 This script is meant to be run after running new-test-ca.sh.  It should be
 run from the same directory where new-test-ca.sh created your test CA.
@@ -62,11 +62,11 @@ if [ ! -z "$1" ]; then
     Type=$(echo "$1" | tr '[:upper:]' '[:lower:]')
 fi
 if [ -z "$Type" ]; then
-    read -p "Certificate Type [client/server]:" Type
+    read -p "Certificate Type [client/server/audit]:" Type
 fi
 case $Type in
-    client|server) ;;
-    *) echo "Must specify type of either client or server!"; print_usage ;;
+    client|server|audit) ;;
+    *) echo "Must specify type of either client, server, or audit!"; print_usage ;;
 esac
 
 read -p "Friendly Name:" Name
@@ -75,13 +75,15 @@ if [ -z "$Name" ]; then
     exit 1
 fi
 
-echo -e "OPTIONAL: Subject Alternative Names\n  <Just enter an empty string for none>"
-if [ "$Type" = "client" ]; then
-    echo -e "  Ex. 'email:me@foo.baz,URI:http://my.url.here/\n"
-else
-    echo -e "  Ex. 'DNS:srv.domain.com,DNS:*.foo.baz,IP:1.2.3.4'\n"
+if [ "$Type" != "audit" ]; then
+    echo -e "OPTIONAL: Subject Alternative Names\n  <Just enter an empty string for none>"
+    if [ "$Type" = "client" ]; then
+        echo -e "  Ex. 'email:me@foo.baz,URI:http://my.url.here/\n"
+    else
+        echo -e "  Ex. 'DNS:srv.domain.com,DNS:*.foo.baz,IP:1.2.3.4'\n"
+    fi
+    read -p "Enter all SANs, comma-delimited:" SubjAltNames
 fi
-read -p "Enter all SANs, comma-delimited:" SubjAltNames
 
 read -s -p "Specify password to protect private key:" Pass
 
@@ -126,6 +128,11 @@ case $Type in
                 -in $IntermediateCaName/csr/$Name.csr.pem -out $IntermediateCaName/certs/$Name.cert.pem -passin file:<(echo $CaPass)
         fi
         ;;
+    audit)
+            openssl ca -extensions audit_cert -config $IntermediateCaName/openssl.cnf -days 730 -notext -md sha256 \
+                -in $IntermediateCaName/csr/$Name.csr.pem -out $IntermediateCaName/certs/$Name.cert.pem -passin file:<(echo $CaPass)
+        ;;
+
 esac
 chmod 444 $IntermediateCaName/certs/$Name.cert.pem
 openssl verify -CAfile $IntermediateCaName/certs/ca-chain.cert.pem $IntermediateCaName/certs/$Name.cert.pem
