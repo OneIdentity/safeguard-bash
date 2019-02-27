@@ -80,6 +80,7 @@ policy            = policy_strict
 # See the POLICY FORMAT section of ca manpage.
 countryName             = match
 stateOrProvinceName     = match
+localityName            = match
 organizationName        = match
 organizationalUnitName  = optional
 commonName              = supplied
@@ -229,6 +230,7 @@ policy            = policy_loose
 # See the POLICY FORMAT section of man ca.
 countryName             = match
 stateOrProvinceName     = match
+localityName            = match
 organizationName        = match
 organizationalUnitName  = optional
 commonName              = supplied
@@ -285,6 +287,14 @@ subjectKeyIdentifier = hash
 authorityKeyIdentifier = keyid:always,issuer
 basicConstraints = critical, CA:true, pathlen:0
 keyUsage = critical, digitalSignature, cRLSign, keyCertSign
+
+[ audit_cert ]
+# Extensions for audit certificate (man x509v3_config).
+basicConstraints = CA:FALSE
+nsComment = "Generated Audit Certificate from $IntermediateCaName"
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid,issuer:always
+keyUsage = critical, digitalSignature, nonRepudiation
 
 [ usr_cert ]
 # Extensions for client certificates (man x509v3_config).
