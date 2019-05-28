@@ -4,8 +4,13 @@
 # safeguard-bash
 One Identity Safeguard Bash and cURL scripting resources.
 
-Take a look at our [samples](samples/README.md) for a few ideas of what
-you can do with safeguard-bash.
+-----------
+
+<p align="center">
+<i>Check out our <a href="samples">sample projects</a> to get started with your own custom integration to Safeguard!</i>
+</p>
+
+-----------
 
 ## Installation
 The easiest way to install safeguard-bash is via Docker; however, you can
