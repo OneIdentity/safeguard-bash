@@ -156,4 +156,13 @@ to contact Safeguard using an access token to take action on the event.  See
 
 ### A2A Password Listener Sample running in Docker
 
+A 5 minute video demonstrating the use of safeguard-bash running in a Docker
+container to create a resilient A2A event listener to handle password changes
+to execute a script every time the password changes.
+
+This sample demonstrates a technique to securely use a certificate file from
+the Docker environment.  The source code is available from the samples directory.
+
+[A2A Password Listener video](https://www.youtube.com/watch?v=UQFcNgYKnTI)
+
 [![A2A Password Listener](https://img.youtube.com/vi/UQFcNgYKnTI/0.jpg)](https://www.youtube.com/watch?v=UQFcNgYKnTI)
