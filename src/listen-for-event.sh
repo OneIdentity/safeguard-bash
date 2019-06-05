@@ -12,7 +12,7 @@ USAGE: listen_for_event.sh [-h]
   -t  Safeguard access token
   -T  Read Safeguard access token from stdin
 
-By default listen-for-events.sh will look for a login file. If one
+By default listen-for-event.sh will look for a login file. If one
 doesn't exist connect-safeguard.sh will be called to create one. Alternately,
 you may pass an appliance address and an access token.
 
