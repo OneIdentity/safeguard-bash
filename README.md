@@ -151,13 +151,15 @@ through access token timeouts or connection interruptions.
 There are some examples in the sample directory.
 
 ```Bash
-$ handle-event.sh -a 10.5.32.162 -i local -u user -E UserCreated -S generic_event_handler.sh
+$ handle-event.sh -a 10.5.32.162 -i local -u user -E UserCreated -S my_event_handler.sh
 ```
 
-The above command will call the `generic_event_handler.sh` script every time a
+The above command will call the `my_event_handler.sh` script every time a
 new user is created and pass information about the event as well as some data
 to contact Safeguard using an access token to take action on the event.  See
 `handle-event.sh -h` for more details.
+
+Also see the [event-handling](samples/event-handling) samples.
 
 ### A2A Password Listener Sample running in Docker
 
