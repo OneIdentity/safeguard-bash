@@ -34,4 +34,10 @@ PKI generation:
 
 ## Docker
 
+This sample can be run inside a Docker container.  Use `run.sh` to build an image
+and run it as a container.  The `Dockerfile` in this directory has some comments
+about how the image is built.  When run from a container, the default entrypoint
+calls `certificate-login.sh` with no parameters.  You will be prompted for the
+IP address of the target appliance, and it will use the PEM files in this directory
+to set up and authenticate the certificate user.
 
