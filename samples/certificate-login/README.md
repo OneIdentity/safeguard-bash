@@ -9,7 +9,7 @@ is because certificate authentication is the preferred method for authenticating
 to Safeguard from an automated process.
 
 The steps are as follows, and `certificate-login.sh` illustrates all of these steps
-except PKI generation:
+except PKI generation (step 0):
 
 0. Generate a PKI that Safeguard can be configured to trust and issue a
    certificate for client authentication. This sample script uses the certificates
