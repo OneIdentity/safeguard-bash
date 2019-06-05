@@ -19,6 +19,9 @@ problems.
   events for all object creation, modification, deletion. There are also
   events for password automation and access request workflow.
 
+  Both of the samples below include a Dockerfile and demonstrate how to
+  run in a container.
+
   - **[a2a-event-handling](event-handling/a2a-event-handling)**
 
     Sample scripts for A2A events. A2A events are password changes, and the
