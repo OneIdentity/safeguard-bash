@@ -40,12 +40,12 @@ safeguard-bash has four utility scripts to help with events:
 
 ## Samples
 
-- **[a2a-event-handling](event-handling/a2a-event-handling)**
+- **[a2a-event-handling](a2a-event-handling)**
 
   Sample scripts for A2A events. The A2A handler will immediately pull the 
   password and call another script with the new password.
 
-- **[generic-event-handling](event-handling/generic-event-handling)**
+- **[generic-event-handling](generic-event-handling)**
 
   Generic sample script for handling normal events.
 
