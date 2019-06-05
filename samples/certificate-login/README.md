@@ -32,8 +32,8 @@ except PKI generation (step 0):
 
 4. Connect as the new certificate user via the `connect-safeguard.sh` script. You
    will notice that this sample hardcodes the certificate password which is NOT
-   what you would do in production. The A2A events sample shows secure methods
-   for dealing with passwords in automated processes.
+   what you would do in production. The [A2A event handling](/samples/a2a-event-handling)
+   sample shows secure methods for dealing with passwords in automated processes.
 
 ## Docker
 
