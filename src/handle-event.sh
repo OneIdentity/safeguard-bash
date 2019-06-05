@@ -125,7 +125,7 @@ $CABundleArg
 -H "X-TokenLifetimeRemaining"
 -H "Authorization: Bearer $AccessToken"
 EOF
-) "$Url" | grep X-TokenLifetimeRemaining | cut -d' ' -f2 | tr -d '\r')
+) "$Url" | grep -i X-TokenLifetimeRemaining | cut -d' ' -f2 | tr -d '\r')
         TokenExpirationThreshold=$(($MinutesRemaining*60+$Now-120))
         if ! $Silent; then
             >&2 echo "[$(date '+%x %X')] Access token timeout / refresh is set to $((TokenExpirationThreshold-Now)) seconds from now."
