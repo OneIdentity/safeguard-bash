@@ -8,8 +8,8 @@ in Safeguard for certificate authentication. The reason this sample is included
 is because certificate authentication is the preferred method for authenticating
 to Safeguard from an automated process.
 
-The steps are as follows, and the script illustrates all of the steps except
-PKI generation:
+The steps are as follows, and `certificate-login.sh` illustrates all of these steps
+except PKI generation:
 
 0. Generate a PKI that Safeguard can be configured to trust and issue a
    certificate for client authentication. This sample script uses the certificates
