@@ -14,7 +14,7 @@ except PKI generation:
 0. Generate a PKI that Safeguard can be configured to trust and issue a
    certificate for client authentication. This sample script uses the certificates
    that are checked in (see the PEM files in this directory), but you could use the
-   `new-test-ca.sh` and `new-test-cert.sh` scripts (from the [src/utils](../src/utils)
+   `new-test-ca.sh` and `new-test-cert.sh` scripts (from the [src/utils](/src/utils)
    directory) to create your own test PKI to experiment on your own.
 
 1. Connect to Safeguard as a user admin using the `connect-safeguard.sh` script.
