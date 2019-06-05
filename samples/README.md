@@ -6,6 +6,12 @@ to give ideas about how safeguard-bash may be used to solve
 problems.
 
 ## Sample Scripts
+- **[certificate-login](certificate-login)**
+
+  Demonstrate how to set up certificate login by adding the certificate
+  trust and creating a certificate user. Then, call connect-safeguard.sh
+  with the appropriate parameters.
+
 - **[event-handling](event-handling)**
 
   Demonstrate how to handle events using safeguard-bash. Safeguard will
@@ -22,12 +28,6 @@ problems.
   - **[generic-event-handling](event-handling/generic-event-handling)**
 
     Sample script for generic events.
-
-- **[certificate-login](certificate-login)**
-
-  Demonstrate how to set up certificate login by adding the certificate
-  trust and creating a certificate user. Then, call connect-safeguard.sh
-  with the appropriate parameters.
 
 - **[import-assets-from-tpam](import-assets-from-tpam)**
 
