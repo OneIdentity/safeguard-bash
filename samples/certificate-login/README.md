@@ -1,6 +1,8 @@
 Certificate Login Sample
 ========================
 
+`certificate-login.sh`
+
 This is a simple script that demonstrates how to set up a certificate user
 in Safeguard for certificate authentication. The reason this sample is included
 is because certificate authentication is the preferred method for authenticating
