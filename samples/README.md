@@ -20,7 +20,8 @@ problems.
   events for password automation and access request workflow.
 
   Both of the samples below include a Dockerfile and demonstrate how to
-  run in a container.
+  run in a container, but you probably want to follow the event-handling
+  link above for some background before reading through the samples.
 
   - **[a2a-event-handling](event-handling/a2a-event-handling)**
 
