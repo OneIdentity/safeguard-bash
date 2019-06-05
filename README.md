@@ -151,7 +151,7 @@ through access token timeouts or connection interruptions.
 There are some examples in the sample directory.
 
 ```Bash
-$ handle-event.sh -a 10.5.32.162 -i local -u user -E UserCreated -S samples/events/generic_event_handler.sh
+$ handle-event.sh -a 10.5.32.162 -i local -u user -E UserCreated -S generic_event_handler.sh
 ```
 
 The above command will call the `generic_event_handler.sh` script every time a
