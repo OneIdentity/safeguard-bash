@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Handle script parameters and usage
-if [ -z "$1" ]; then
+if [ "$1" = "-h" ]; then
     cat <<EOF
 USAGE: certificate-login.sh [-h] appliance provider username
   You must specify the appliance network address
@@ -11,7 +11,11 @@ USAGE: certificate-login.sh [-h] appliance provider username
 EOF
     exit 1
 fi
-Appliance=$1
+if [ -z "$1" ]; then
+    read -p "Appliance network address: " Appliance
+else
+    Appliance=$1
+fi
 if [ -z "$2" ]; then
     Provider=local
 else
@@ -76,6 +80,10 @@ echo "ClientKeyFile=$ClientKeyFile"
 
 echo -e "${YELLOW}\nLogging into Safeguard as user admin ($Provider/$AdminUser)...${NC}"
 $SafeguardDir/connect-safeguard.sh -a $Appliance -i $Provider -u $AdminUser
+if [ $? -ne 0 ]; then
+    echo "Unable to connect to $Appliance"
+    exit 1
+fi
 
 echo -e "${YELLOW}\nInstalling trusted root...${NC}"
 $SafeguardDir/install-trusted-certificate.sh -C $CaCertFile
