@@ -33,7 +33,10 @@ safeguard-bash has four utility scripts to help with events:
 
   Uses `listen-for-a2a-event.sh` and then for each password change event that occurs,
   it pulls the password and calls a handler script that can take action on the new
-  password.
+  password. This script also contains the additional logic to ensure that SignalR
+  remains connected via the A2A certificate user even when the connection may have
+  been interrupted. In most cases, `handle-a2a-password-event.sh` should be used
+  to build your integration project for A2A password retrieval.
 
 ## Samples
 
