@@ -1,6 +1,6 @@
 # This Dockerfile will create a new image based on the default safeguard-bash image
 # that is found at the root of the safeguard-bash repository. The build.sh script will
-# create an image called safeguard-dockerdemo based on this Dockerfile. The build.sh
+# create an image called safeguard-certdemo based on this Dockerfile. The build.sh
 # script is also called from run.sh.
 FROM oneidentity/safeguard-bash:latest
 MAINTAINER support@oneidentity.com
