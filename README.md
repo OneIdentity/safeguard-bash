@@ -137,7 +137,7 @@ generate an event that can be received over SignalR.  The following command line
 will give you a list of all of the possible events.
 
 ```Bash
-$ invoke-safeguard-method.sh -s core -U Events?fields=Name,Description | jq -r '.[] | "\(.Name) -- \(.Description)"' | sort
+$ get-event.sh
 ```
 
 The `listen-for-event.sh` script and the `listen-for-a2a-event.sh` script will
