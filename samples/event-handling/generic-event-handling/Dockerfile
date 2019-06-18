@@ -5,11 +5,10 @@
 FROM oneidentity/safeguard-bash:latest
 MAINTAINER support@oneidentity.com
 
-# This image adds a new script (certificate-login.sh) from this directory. This script
+# This image adds a new script (sample-event-listener.sh) from this directory. This script
 # contains the real functionality for what this container will do in production. In this
-# case, it simply run through the sample code in certificate-login.sh using bootstrap
+# case, it simply run through the sample code in sample-event-login.sh using bootstrap
 # admin.
-COPY generic-event-handler.sh /scripts/
 COPY sample-event-listener.sh /scripts/
 
 # When started using 'docker run', a container based on this image will start /bin/bash
