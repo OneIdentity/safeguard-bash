@@ -53,6 +53,12 @@ Follow these steps:
 3. Re-run `run.sh` with the following command line (including the A2A API key from
    step 1).
 
-```bash
+   ```bash
+   ```
 
-```
+4. Open the Safeguard UI and change the password for the safeguard-bash-asset\a2a
+   account.
+5. You can change the password multiple times.
+6. You can unplug the network or reboot Safeguard and the script will re-connect
+   as necessary.
+
