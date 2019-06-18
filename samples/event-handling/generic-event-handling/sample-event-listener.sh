@@ -47,8 +47,8 @@ ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # Get the directory of the rest of safeguard-bash (may be same directory)
 if [ -x "$ScriptDir/connect-safeguard.sh" ]; then
     SafeguardDir="$ScriptDir"
-elif [ -x "../../src/connect-safeguard.sh" ]; then
-    SafeguardDir="$( cd ../../src && pwd )"
+elif [ -x "../../../src/connect-safeguard.sh" ]; then
+    SafeguardDir="$( cd ../../../src && pwd )"
 else
     cat <<EOF
 Unable to find the safeguard-bash scripts.
@@ -63,8 +63,14 @@ fi
 if [ -z "$Provider" ]; then
     Provider="local"
 fi
-if [ -z "$Appliance" ]; then
+if [ -z "$User" ]; then
     User="Admin"
 fi
+if [ -z "$EventName" ]; then
+   read -p "Event name: " EventName 
+fi
 
-$SafeguardDir/handle--event.sh -a $Appliance -i $Provider -u $User -O -S /samples/events/a2a_password_event_handler.sh -p <<<$SG_KEYFILE_PASSWORD
+echo "User=$Provider\\$User"
+echo "Use Ctrl-C to quit..."
+$SafeguardDir/handle-event.sh -a $Appliance -i $Provider -u $User -E $EventName -S $SafeguardDir/../samples/event-handling/generic-event-handling/generic-event-handler.sh
+
