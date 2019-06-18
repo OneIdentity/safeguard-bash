@@ -11,6 +11,23 @@ All environment variables are not set
 EOF
     exit 1
 fi
+
+# Get the directory of this script while executing
+ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Get the directory of the rest of safeguard-bash (may be same directory)
+if [ -x "$ScriptDir/connect-safeguard.sh" ]; then
+    SafeguardDir="$ScriptDir"
+elif [ -x "../../../src/connect-safeguard.sh" ]; then
+    SafeguardDir="$( cd ../../../src && pwd )"
+else
+    cat <<EOF
+Unable to find the safeguard-bash scripts.
+The best way to run this sample is from a safeguard-bash docker container.
+EOF
+    exit 1
+fi
+
 if [ ! -r "/volume/$SG_CERTFILE" ]; then
     >&2 echo "$SG_CERTFILE certificate file not found in /volume/"
     exit 1
@@ -19,5 +36,7 @@ if [ ! -r "/volume/$SG_KEYFILE" ]; then
     >&2 echo "$SG_KEYFILE certificate file not found in /volume/"
     exit 1
 fi
+
 echo "Executing a2a event listener..."
-/scripts/handle-a2a-password-event.sh -a $SG_APPLIANCE -c /volume/$SG_CERTFILE -k /volume/$SG_KEYFILE -A $SG_APIKEY -O -S /samples/events/a2a_password_event_handler.sh -p <<<$SG_KEYFILE_PASSWORD
+$SafeguardDir/handle-a2a-password-event.sh -a $SG_APPLIANCE -c /volume/$SG_CERTFILE -k /volume/$SG_KEYFILE -A $SG_APIKEY -O -S /samples/events/a2a-password-event-handler.sh -p <<<$SG_KEYFILE_PASSWORD
+

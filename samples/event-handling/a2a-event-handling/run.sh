@@ -54,14 +54,14 @@ fi
 
 # Make sure they have docker installed
 if [ ! -z "$(which docker)" ]; then
-    # Check to be sure the safeguard-dockerdemo image has been created
-    docker images | grep safeguard-dockerdemo
+    # Check to be sure the safeguard-a2ademo image has been created
+    docker images | grep safeguard-a2ademo
     if [ $? -ne 0 ]; then
         # If not, create it
         $ScriptDir/build.sh
     fi
-    # Run a container based on safeguard-dockerdemo and pass additional arguments to it
-    docker run -v "$Volume:/volume" "$@" -it safeguard-dockerdemo
+    # Run a container based on safeguard-a2ademo and pass additional arguments to it
+    docker run -v "$Volume:/volume" "$@" -it safeguard-a2ademo
 else
     >&2 echo "You must install docker to use this script"
     exit 1
