@@ -5,7 +5,7 @@ Generic Event Handler Sample
 
 This is a simple script that demonstrates how to interact with `handle-event.sh`.
 
-When you call `handle-event.sh` the `-S` option allows you to pass in an handler
+When you call `handle-event.sh` the `-S` option allows you to pass in a handler
 script. This script will be called every time the event with the event name you
 passed to the `-E` option occurs.
 
