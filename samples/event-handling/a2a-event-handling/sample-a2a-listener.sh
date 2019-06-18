@@ -28,15 +28,20 @@ EOF
     exit 1
 fi
 
-if [ ! -r "/volume/$SG_CERTFILE" ]; then
+# Get the volume directory (may be the same directory when not running in container)
+if [ -r "$ScriptDir/certs/$SG_CERTFILE" ]; then
+    VolumeDir="$ScriptDir/certs"
+elif [ -r "/volume/$SG_CERTFILE" ]; then
+    VolumeDir="/volume"
+else
     >&2 echo "$SG_CERTFILE certificate file not found in /volume/"
     exit 1
 fi
-if [ ! -r "/volume/$SG_KEYFILE" ]; then
-    >&2 echo "$SG_KEYFILE certificate file not found in /volume/"
+if [ ! -r "$VolumeDir/$SG_KEYFILE" ]; then
+    >&2 echo "$SG_KEYFILE certificate file not found in $VolumeDir"
     exit 1
 fi
 
 echo "Executing a2a event listener..."
-$SafeguardDir/handle-a2a-password-event.sh -a $SG_APPLIANCE -c /volume/$SG_CERTFILE -k /volume/$SG_KEYFILE -A $SG_APIKEY -O -S /samples/events/a2a-password-event-handler.sh -p <<<$SG_KEYFILE_PASSWORD
+$SafeguardDir/handle-a2a-password-event.sh -a $SG_APPLIANCE -c $VolumeDir/$SG_CERTFILE -k $VolumeDir/$SG_KEYFILE -A $SG_APIKEY -O -S $SafeguardDir/../samples/event-handling/a2a-event-handling/a2a-password-event-handler.sh -p <<<$SG_KEYFILE_PASSWORD
 
