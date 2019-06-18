@@ -88,6 +88,7 @@ invoke-safeguard-method.sh -a $Appliance -B $CABundle -T ... <<<$AccessToken
 
 Where, the `...` is replaced with whatever command you would like to send.
 
-Your handler script may call Safeguard as many times as is necessary to
-accomplish whatever you'd like to do to react to the event.
+Your handler script is not limited to calling `invoke-safeguard-method.sh` one
+time.  It may call Safeguard as many times as is necessary to accomplish whatever
+you'd like to do to react to the event.
 
