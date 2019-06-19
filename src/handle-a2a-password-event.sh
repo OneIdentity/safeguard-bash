@@ -85,6 +85,7 @@ require_prereqs()
         >&2 echo "The handler script passed to -S option must be executable"
         exit 1
     fi
+    HandlerScript=$(echo "$(cd "$(dirname "$HandlerScript")"; pwd -P)/$(basename "$HandlerScript")")
 }
 
 cleanup()
@@ -134,7 +135,7 @@ require_prereqs
 
 AcctPass=$("$ScriptDir/get-a2a-password.sh" -a $Appliance -c $Cert -k $PKey -A $ApiKey -p <<< $Pass | jq -c -r .)
 Error=$(echo $AcctPass | jq .Code 2> /dev/null)
-if [ ! -z "$Error" -o ! "$Error" = "null" -o -z "$AcctPass" ]; then
+if [ ! -z "$Error" -o -z "$AcctPass" ]; then
     >&2 echo "Unable to fetch initial password from A2A service"
     >&2 echo "$AcctPass"
     exit 1
@@ -169,7 +170,7 @@ while true; do
     if [ ! -z "$Output" ]; then
         AcctPass=$("$ScriptDir/get-a2a-password.sh" -a $Appliance -c $Cert -k $PKey -A $ApiKey -p <<< $Pass | jq -c -r .)
         Error=$(echo $AcctPass | jq .Code 2> /dev/null)
-        if [ ! -z "$Error" -o ! "$Error" = "null" -o -z "$AcctPass" ]; then
+        if [ ! -z "$Error" -o -z "$AcctPass" ]; then
             >&2 echo "Unable to fetch initial password from A2A service"
             >&2 echo "$AcctPass"
         else
@@ -181,3 +182,4 @@ EOF
         unset AcctPass
     fi
 done
+

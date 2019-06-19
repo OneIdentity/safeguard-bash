@@ -91,6 +91,7 @@ require_prereqs()
         >&2 echo "The handler script passed to -S option must be executable"
         exit 1
     fi
+    HandlerScript=$(echo "$(cd "$(dirname "$HandlerScript")"; pwd -P)/$(basename "$HandlerScript")")
 }
 
 check_access_token()
