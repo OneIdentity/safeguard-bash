@@ -10,7 +10,7 @@ USAGE: get-linked-account.sh [-h]
   -h  Show help and exit
   -a  Network address of the appliance
   -t  Safeguard access token
-  -v  Web API Version: 2 is default
+  -v  Web API Version: 3 is default
 
 Get all linked accounts for this user via the Web API.
 
@@ -25,7 +25,7 @@ ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 Appliance=
 AccessToken=
-Version=2
+Version=3
 
 . "$ScriptDir/utils/loginfile.sh"
 

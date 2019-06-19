@@ -11,7 +11,7 @@ USAGE: connect-safeguard.sh [-h]
   -q  Query list of primary identity providers for appliance
   -a  Network address of the appliance
   -B  CA bundle for SSL trust validation (no checking by default)
-  -v  Web API Version: 2 is default
+  -v  Web API Version: 3 is default
   -i  Safeguard identity provider, examples: certificate, local, ad<num>
   -u  Safeguard user to use
   -c  File containing client certificate
@@ -36,7 +36,7 @@ ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 Appliance=
 CABundle=
 CABundleArg=
-Version=2
+Version=3
 QueryProviders=false
 Providers=
 Provider=

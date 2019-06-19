@@ -6,7 +6,7 @@ print_usage()
 USAGE: get-appliance-status.sh [-h] [-a appliance] [-v version]
   -h  Show help and exit
   -a  Network address of the appliance
-  -v  Web API Version: 2 is default
+  -v  Web API Version: 3 is default
 
 Anonymously retrieve the appliance status.
 
@@ -19,9 +19,16 @@ EOF
 
 ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-Version=2
+Version=3
 
 . "$ScriptDir/utils/loginfile.sh"
+
+require_args()
+{
+    if [ -z "Appliance" ]; then
+        read -p "Appliance Network Address: " Appliance
+    fi
+}
 
 while getopts ":a:v:h" opt; do
     case $opt in
@@ -42,6 +49,8 @@ if [ -z "$Appliance" ]; then
         Appliance=$(read_from_login_file Appliance)
     fi
 fi
+
+require_args
 
 $ScriptDir/invoke-safeguard-method.sh -n -a "$Appliance" -s notification -v $Version -m GET -U Status
 

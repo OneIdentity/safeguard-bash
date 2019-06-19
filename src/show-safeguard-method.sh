@@ -9,7 +9,7 @@ USAGE: show-safeguard-method.sh [-h]
   -h  Show help and exit
   -a  Network address of the appliance
   -B  CA bundle for SSL trust validation (no checking by default)
-  -v  Web API Version: 2 is default
+  -v  Web API Version: 3 is default
   -s  Service: core, appliance, cluster, notification
   -m  HTTP Method: GET, PUT, POST, DELETE
   -U  Relative resource URL (e.g. AccessRequests)
@@ -25,7 +25,7 @@ EOF
 
 ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-Version=2
+Version=3
 Service=
 Method=
 RelativeUrl=

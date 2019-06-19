@@ -9,7 +9,7 @@ USAGE: disconnect-safeguard.sh [-h]
 
   -h  Show help and exit
   -a  Network address of the appliance
-  -v  Web API Version: 2 is default
+  -v  Web API Version: 3 is default
   -t  Safeguard access token
 
 This will call the logout service on the appliance and remove the login file
@@ -22,7 +22,7 @@ EOF
 
 Appliance=
 AccessToken=
-Version=2
+Version=3
 
 LoginFile="$HOME/.safeguard_login"
 

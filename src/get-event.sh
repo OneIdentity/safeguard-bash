@@ -9,7 +9,7 @@ USAGE: get-event.sh [-h]
   -h  Show help and exit
   -a  Network address of the appliance
   -t  Safeguard access token
-  -v  Web API Version: 2 is default
+  -v  Web API Version: 3 is default
 
 List the events that can be used
 
@@ -26,7 +26,7 @@ fi
 
 Appliance=
 AccessToken=
-Version=2
+Version=3
 
 . "$ScriptDir/utils/loginfile.sh"
 
@@ -52,7 +52,9 @@ while getopts ":t:a:v:h" opt; do
     esac
 done
 
-Result=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -s core -m GET -U "Events?fields=Name,Description&orderby=Name" -N)
+require_args
+
+Result=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -v $Version -s core -m GET -U "Events?fields=Name,Description&orderby=Name" -N <<<$AccessToken)
 Error=$(echo $Result | jq .Code 2> /dev/null)
 if [ -z "$Error" -o "$Error" = "null" ]; then
     echo $Result | jq -r '.[] | "\(.Name) -- \(.Description)"' # display events as flat list

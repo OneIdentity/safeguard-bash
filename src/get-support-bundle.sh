@@ -10,7 +10,7 @@ USAGE: get-support-bundle.sh [-h]
   -h  Show help and exit
   -a  Network address of the appliance
   -t  Safeguard access token
-  -v  Web API Version: 2 is default
+  -v  Web API Version: 3 is default
   -e  Include event logs in the support bundle (increases generation time)
   -s  Include session logs in the support bundle (increases generation time)
 
@@ -26,7 +26,7 @@ EOF
 
 ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-Version=2
+Version=3
 Appliance=
 AccessToken=
 IncludeEvents=false
