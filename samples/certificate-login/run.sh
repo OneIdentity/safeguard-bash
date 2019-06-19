@@ -38,7 +38,7 @@ fi
 
 # Make sure they have docker installed
 if [ ! -z "$(which docker)" ]; then
-    echo "Rebuilding the image: safeguard-dockerdemo ..."
+    echo "Rebuilding the image: safeguard-certdemo ..."
     $ScriptDir/build.sh
     # Run a container based on safeguard-certdemo and pass additional arguments to it
     docker run -it safeguard-certdemo "$@"

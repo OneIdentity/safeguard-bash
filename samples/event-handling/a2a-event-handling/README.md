@@ -54,7 +54,7 @@ Follow these steps:
    step 1).
 
    ```bash
-   $ ./run.sh -v certs --env-file <(cat <<EOF
+   $ ./run.sh -v $(pwd)/certs --env-file <(cat <<EOF
    SG_APPLIANCE=<Safeguard address here>
    SG_CERTFILE=A2AUser.cert.pem
    SG_KEYFILE=A2AUser.key.pem
@@ -63,6 +63,11 @@ Follow these steps:
    EOF
    )
    ```
+
+   Also, if you want to use a DNS name in your environment file, you may need to
+   insert `--dns <your DNS server>` between `-v $(pwd)/certs` and `--env-file` in
+   the `./run.sh` command line above. Unless you have configured your docker
+   daemon to use your local DNS, it will default to Google's DNS.
 
 4. Open the Safeguard UI and change the password for the safeguard-bash-asset\a2a
    account.

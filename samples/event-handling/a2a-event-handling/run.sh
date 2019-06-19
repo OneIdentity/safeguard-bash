@@ -54,12 +54,8 @@ fi
 
 # Make sure they have docker installed
 if [ ! -z "$(which docker)" ]; then
-    # Check to be sure the safeguard-a2ademo image has been created
-    docker images | grep safeguard-a2ademo
-    if [ $? -ne 0 ]; then
-        # If not, create it
-        $ScriptDir/build.sh
-    fi
+    echo "Rebuilding the image: safeguard-certdemo ..."
+    $ScriptDir/build.sh
     # Run a container based on safeguard-a2ademo and pass additional arguments to it
     docker run -v "$Volume:/volume" "$@" -it safeguard-a2ademo
 else
