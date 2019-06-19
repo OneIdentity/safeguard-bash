@@ -4,12 +4,13 @@ print_usage()
 {
     cat <<EOF
 USAGE: handle-event.sh [-h]
-       handle-event.sh [-a appliance] [-B cabundle] [-t accesstoken] [-E eventname] [-S script]
-       handle-event.sh [-a appliance] [-B cabundle] [-i provider] [-u user] [-p] [-E eventname] [-S script]
-       handle-event.sh [-a appliance] [-B cabundle] -i certificate [-c file] [-k file] [-p] [-E eventname] [-S script]
+       handle-event.sh [-a appliance] [-v version] [-B cabundle] [-t accesstoken] [-E eventname] [-S script]
+       handle-event.sh [-a appliance] [-v version] [-B cabundle] [-i provider] [-u user] [-p] [-E eventname] [-S script]
+       handle-event.sh [-a appliance] [-v version] [-B cabundle] -i certificate [-c file] [-k file] [-p] [-E eventname] [-S script]
 
   -h  Show help and exit
   -a  Network address of the appliance
+  -v  Web API Version: 3 is default
   -B  CA bundle for SSL trust validation (no checking by default)
   -t  Safeguard access token
   -i  Safeguard identity provider, examples: certificate, local, ad<num>
@@ -43,7 +44,7 @@ TokenExpirationThreshold=0
 Appliance=
 CABundleArg=
 CABundle=
-Version=2
+Version=3
 AccessToken=
 Provider=
 User=
@@ -179,10 +180,13 @@ cleanup()
 
 trap cleanup EXIT
 
-while getopts ":a:B:t:i:u:c:k:E:S:ph" opt; do
+while getopts ":a:v:B:t:i:u:c:k:E:S:ph" opt; do
     case $opt in
     a)
         Appliance=$OPTARG
+        ;;
+    v)
+        Version=$OPTARG
         ;;
     B)
         CABundle=$OPTARG
