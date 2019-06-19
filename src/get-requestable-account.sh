@@ -10,7 +10,7 @@ USAGE: get-requestable-account.sh [-h]
   -h  Show help and exit
   -a  Network address of the appliance
   -t  Safeguard access token
-  -v  Web API Version: 2 is default
+  -v  Web API Version: 3 is default
 
 First call the Me endpoint for requestable Safeguard assets, then call
 each in succession to get all accounts for those assets.
@@ -28,7 +28,7 @@ fi
 
 Appliance=
 AccessToken=
-Version=2
+Version=3
 
 . "$ScriptDir/utils/loginfile.sh"
 

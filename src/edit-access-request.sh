@@ -11,7 +11,7 @@ USAGE: edit-access-request.sh [-h]
   -h  Show help and exit
   -a  Network address of the appliance
   -t  Safeguard access token
-  -v  Web API Version: 2 is default
+  -v  Web API Version: 3 is default
   -i  Request Id
   -m  Action to perform (Approve, Deny, Review, Cancel, Close, CheckIn,
                          CheckOutPassword, InitializeSession, Acknowledge)
@@ -33,7 +33,7 @@ fi
 
 Appliance=
 AccessToken=
-Version=2
+Version=3
 RequestId=
 Action=
 Comment=

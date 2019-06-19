@@ -9,7 +9,7 @@ USAGE: get-a2a-password.sh [-h]
   -h  Show help and exit
   -a  Network address of the appliance
   -B  CA bundle for SSL trust validation (no checking by default)
-  -v  Web API Version: 2 is default
+  -v  Web API Version: 3 is default
   -c  File containing client certificate
   -k  File containing client private key
   -A  A2A API token identifying the account
@@ -27,7 +27,7 @@ ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 Appliance=
 CABundleArg=
 CABundle=
-Version=2
+Version=3
 Cert=
 PKey=
 ApiKey=

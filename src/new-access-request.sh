@@ -11,7 +11,7 @@ USAGE: new-access-request.sh [-h]
   -h  Show help and exit
   -a  Network address of the appliance
   -t  Safeguard access token
-  -v  Web API Version: 2 is default
+  -v  Web API Version: 3 is default
   -s  Asset Id
   -c  Account Id
   -y  Access type (e.g. password, rdp, ssh)
@@ -33,7 +33,7 @@ fi
 
 Appliance=
 AccessToken=
-Version=2
+Version=3
 AssetId=
 AccountId=
 AccessType=

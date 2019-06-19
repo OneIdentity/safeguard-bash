@@ -10,7 +10,7 @@ USAGE: get-access-request.sh [-h]
   -h  Show help and exit
   -a  Network address of the appliance
   -t  Safeguard access token
-  -v  Web API Version: 2 is default
+  -v  Web API Version: 3 is default
   -i  ID of specific access request
   -F  Full JSON output
 
@@ -29,7 +29,7 @@ fi
 
 Appliance=
 AccessToken=
-Version=2
+Version=3
 Id=
 FullOutput=false
 

@@ -10,7 +10,7 @@ USAGE: get-actionable-request.sh [-h]
   -h  Show help and exit
   -a  Network address of the appliance
   -t  Safeguard access token
-  -v  Web API Version: 2 is default
+  -v  Web API Version: 3 is default
   -r  Request role (e.g. Admin, Approver, Requester, Reviewer) 
   -F  Full JSON output
 
@@ -28,7 +28,7 @@ ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 Appliance=
 AccessToken=
-Version=2
+Version=3
 RequestRole=
 FullOutput=false
 

@@ -9,7 +9,7 @@ USAGE: install-ssl-certificate.sh [-h]
 
   -h  Show help and exit
   -a  Network address of the appliance
-  -v  Web API Version: 2 is default
+  -v  Web API Version: 3 is default
   -t  Safeguard access token
   -C  File containing certificate (PKCS#12 format, ie p12 or pfx file)
   -P  Password to decrypt the certificate (otherwise you will be prompted)
@@ -30,7 +30,7 @@ fi
 
 Appliance=
 AccessToken=
-Version=2
+Version=3
 SSLCertificateFile=
 SSLCertificatePassword=
 
@@ -45,6 +45,10 @@ require_args()
     if [ -z "$SSLCertificatePassword" ]; then
         read -s -p "Certificate file password: " SSLCertificatePassword
         >&2 echo
+    fi
+    if [ ! -r "$SSLCertificateFile" ]; then
+        >&2 echo "Unable to read certificate file '$SSLCertificateFile'"
+        exit 1
     fi
 }
 
@@ -72,11 +76,6 @@ while getopts ":t:a:v:C:P:h" opt; do
 done
 
 require_args
-
-if [ ! -r "$SSLCertificateFile" ]; then
-    >&2 echo "Unable to read certificate file '$SSLCertificateFile'"
-    exit 1
-fi
 
 echo "Uploading '$SSLCertificateFile'..."
 Response=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -v $Version -s core -m POST -U SslCertificates -N -b "{

@@ -9,7 +9,7 @@ USAGE: install-trusted-certificate.sh [-h]
 
   -h  Show help and exit
   -a  Network address of the appliance
-  -v  Web API Version: 2 is default
+  -v  Web API Version: 3 is default
   -t  Safeguard access token
   -C  File containing certificate (PEM format, or DER-encoded)
 
@@ -26,7 +26,7 @@ ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 Appliance=
 AccessToken=
-Version=2
+Version=3
 RootCertificateFile=
 
 . "$ScriptDir/utils/loginfile.sh"
@@ -36,6 +36,10 @@ require_args()
     require_login_args
     if [ -z "$RootCertificateFile" ]; then
         read -p "Certificate file: " RootCertificateFile
+    fi
+    if [ ! -r "$RootCertificateFile" ]; then
+        >&2 echo "Unable to read certificate file '$RootCertificateFile'"
+        exit 1
     fi
 }
 
@@ -60,11 +64,6 @@ while getopts ":t:a:v:C:h" opt; do
 done
 
 require_args
-
-if [ ! -r "$RootCertificateFile" ]; then
-    >&2 echo "Unable to read certificate file '$RootCertificateFile'"
-    exit 1
-fi
 
 echo "Uploading '$RootCertificateFile'..."
 $ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -v $Version -s core -m POST -U TrustedCertificates -N -b "{

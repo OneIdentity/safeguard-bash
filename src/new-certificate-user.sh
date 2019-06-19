@@ -9,7 +9,7 @@ USAGE: new-certificate-user.sh [-h]
   -h  Show help and exit
   -a  Network address of the appliance
   -t  Safeguard access token
-  -v  Web API Version: 2 is default
+  -v  Web API Version: 3 is default
   -n  Name for new user
   -C  User certificate file (used to obtain SHA-1 thumbprint)
   -s  SHA-1 thumbprint as a string
@@ -29,7 +29,7 @@ fi
 
 Appliance=
 AccessToken=
-Version=2
+Version=3
 NewUserName=
 NewUserThumbprint=
 
@@ -79,6 +79,8 @@ while getopts ":t:a:v:n:C:s:h" opt; do
     esac
 done
 
-$ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -s core -m POST -U "Users" -N -b "
+require_args
+
+$ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -v $Version -s core -m POST -U "Users" -N -b "
 { \"UserName\":\"$NewUserName\", \"PrimaryAuthenticationProviderId\":-2, \"PrimaryAuthenticationIdentity\":\"$NewUserThumbprint\" }" <<<$AccessToken
 

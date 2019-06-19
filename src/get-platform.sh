@@ -4,11 +4,12 @@ print_usage()
 {
     cat <<EOF
 USAGE: get-platform.sh [-h]
-       get-platform.sh [-a appliance] [-t accesstoken] [-n platformname]
+       get-platform.sh [-a appliance] [-t accesstoken] [-v version] [-n platformname]
 
   -h  Show help and exit
   -a  Network address of the appliance
   -t  Safeguard access token
+  -v  Web API Version: 3 is default
 
 Get all access request favorites for this user via the Web API.
 
@@ -23,7 +24,7 @@ ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 Appliance=
 AccessToken=
-Version=2
+Version=3
 PlatformName=
 
 . "$ScriptDir/utils/loginfile.sh"
@@ -33,13 +34,16 @@ require_args()
     require_login_args
 }
 
-while getopts ":t:a:n:h" opt; do
+while getopts ":t:a:v:n:h" opt; do
     case $opt in
     t)
         AccessToken=$OPTARG
         ;;
     a)
         Appliance=$OPTARG
+        ;;
+    v)
+        Version=$OPTARG
         ;;
     n)
         PlatformName=$OPTARG

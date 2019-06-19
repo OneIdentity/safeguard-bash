@@ -10,7 +10,7 @@ USAGE: install-license.sh [-h]
   -h  Show help and exit
   -a  Network address of the appliance
   -t  Safeguard access token
-  -v  Web API Version: 2 is default
+  -v  Web API Version: 3 is default
   -L  License file
 
 Upload a license file to Safeguard.  This script will stage the license file then
@@ -29,7 +29,7 @@ fi
 
 Appliance=
 AccessToken=
-Version=2
+Version=3
 LicenseFile=
 
 . "$ScriptDir/utils/loginfile.sh"
@@ -39,6 +39,10 @@ require_args()
     require_login_args
     if [ -z "$LicenseFile" ]; then
         read -p "License file: " LicenseFile
+    fi
+    if [ ! -r "$LicenseFile" ]; then
+        >&2 echo "Unable to read license file '$LicenseFile'"
+        exit 1
     fi
 }
 
@@ -62,10 +66,7 @@ while getopts ":t:a:v:L:h" opt; do
     esac
 done
 
-if [ ! -r "$LicenseFile" ]; then
-    >&2 echo "Unable to read license file '$LicenseFile'"
-    exit 1
-fi
+require_args
 
 echo "Staging license file..."
 Response=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -v $Version -s core -m POST -U Licenses -N -b "{
