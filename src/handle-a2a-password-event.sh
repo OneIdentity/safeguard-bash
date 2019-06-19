@@ -4,10 +4,11 @@ print_usage()
 {
     cat <<EOF
 USAGE: handle-a2a-password-event.sh [-h]
-       handle-a2a-password-event.sh [-a appliance] [-c file] [-k file] [-A apikey] [-O] [-p] [-S script]
+       handle-a2a-password-event.sh [-a appliance] [-v version] [-c file] [-k file] [-A apikey] [-O] [-p] [-S script]
 
   -h  Show help and exit
   -a  Network address of the appliance
+  -v  Web API Version: 3 is default
   -c  File containing client certificate
   -k  File containing client private key
   -A  A2A API token identifying the account
@@ -34,6 +35,7 @@ EOF
 ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 Appliance=
+Version=3
 Cert=
 PKey=
 ApiKey=
@@ -99,10 +101,13 @@ cleanup()
 
 trap cleanup EXIT
 
-while getopts ":a:c:k:A:S:pOh" opt; do
+while getopts ":a:v:c:k:A:S:pOh" opt; do
     case $opt in
     a)
         Appliance=$OPTARG
+        ;;
+    v)
+        Version=$OPTARG
         ;;
     c)
         Cert=$OPTARG
@@ -133,7 +138,7 @@ require_args
 require_prereqs
 
 
-AcctPass=$("$ScriptDir/get-a2a-password.sh" -a $Appliance -c $Cert -k $PKey -A $ApiKey -p <<< $Pass | jq -c -r .)
+AcctPass=$("$ScriptDir/get-a2a-password.sh" -a $Appliance -v $Version -c $Cert -k $PKey -A $ApiKey -p <<< $Pass | jq -c -r .)
 Error=$(echo $AcctPass | jq .Code 2> /dev/null)
 if [ ! -z "$Error" -o -z "$AcctPass" ]; then
     >&2 echo "Unable to fetch initial password from A2A service"
@@ -168,7 +173,7 @@ while true; do
         backoff_wait
     fi
     if [ ! -z "$Output" ]; then
-        AcctPass=$("$ScriptDir/get-a2a-password.sh" -a $Appliance -c $Cert -k $PKey -A $ApiKey -p <<< $Pass | jq -c -r .)
+        AcctPass=$("$ScriptDir/get-a2a-password.sh" -a $Appliance -v $Version -c $Cert -k $PKey -A $ApiKey -p <<< $Pass | jq -c -r .)
         Error=$(echo $AcctPass | jq .Code 2> /dev/null)
         if [ ! -z "$Error" -o -z "$AcctPass" ]; then
             >&2 echo "Unable to fetch initial password from A2A service"
