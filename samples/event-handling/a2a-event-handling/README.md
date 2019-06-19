@@ -54,7 +54,7 @@ Follow these steps:
    step 1).
 
    ```bash
-   $ ./run.sh -v certs --env-file <(cat <<EOF
+   $ ./run.sh -v $(pwd)/certs --env-file <(cat <<EOF
    SG_APPLIANCE=<Safeguard address here>
    SG_CERTFILE=A2AUser.cert.pem
    SG_KEYFILE=A2AUser.key.pem
@@ -63,6 +63,9 @@ Follow these steps:
    EOF
    )
    ```
+
+   Also, if you want to use a DNS name, insert `--dns <your DNS server>` between
+   `-v $(pwd)/certs` and `--env-file`.
 
 4. Open the Safeguard UI and change the password for the safeguard-bash-asset\a2a
    account.
