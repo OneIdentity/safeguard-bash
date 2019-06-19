@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if [ -z "$(which jq)" ]; then
+    >&2 echo "This script requires jq for parsing and manipulating responses."
+    exit 1
+fi
+
 # Handle script parameters and usage
 if [ "$1" = "-h" ]; then
     cat <<EOF
