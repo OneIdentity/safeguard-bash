@@ -64,8 +64,10 @@ Follow these steps:
    )
    ```
 
-   Also, if you want to use a DNS name, insert `--dns <your DNS server>` between
-   `-v $(pwd)/certs` and `--env-file`.
+   Also, if you want to use a DNS name in your environment file, you may need to
+   insert `--dns <your DNS server>` between `-v $(pwd)/certs` and `--env-file` in
+   the `./run.sh` command line above. Unless you have configured your docker
+   daemon to use your local DNS, it will default to Google's DNS.
 
 4. Open the Safeguard UI and change the password for the safeguard-bash-asset\a2a
    account.
