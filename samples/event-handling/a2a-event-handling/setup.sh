@@ -40,7 +40,7 @@ fi
 
 # Trusted certificates to upload to establish the chain of trust in Safeguard
 CaCertFile="$ScriptDir/certs/A2ATestCA.cert.pem"
-IssuingCertFile="$ScriptDir/issuing-A2ATestCA.cert.pem"
+IssuingCertFile="$ScriptDir/certs/issuing-A2ATestCA.cert.pem"
 
 # Certificiate file and private key file in PEM format
 ClientCertFile="$ScriptDir/certs/A2AUser.p12"
