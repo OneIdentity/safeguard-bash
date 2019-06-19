@@ -14,10 +14,7 @@ if test -t 1; then
 fi
 
 if [ ! -z "$(which docker)" ]; then
-    docker images | grep safeguard-import-assets-from-tpam
-    if [ $? -ne 0 ]; then
-        $ScriptDir/build.sh
-    fi
+    $ScriptDir/build.sh
     echo -e "${YELLOW}Running the safeguard-import-assets-from-tpam container.\n" \
             "The keyfile you specified will automatically be copied to /tpam_id.${NC}"
     Id=$(docker run -it -d safeguard-import-assets-from-tpam -c /bin/bash)
