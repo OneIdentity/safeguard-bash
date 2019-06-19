@@ -43,5 +43,7 @@ if [ ! -r "$VolumeDir/$SG_KEYFILE" ]; then
 fi
 
 echo "Executing a2a event listener..."
-$SafeguardDir/handle-a2a-password-event.sh -a $SG_APPLIANCE -c $VolumeDir/$SG_CERTFILE -k $VolumeDir/$SG_KEYFILE -A $SG_APIKEY -O -S $SafeguardDir/../samples/event-handling/a2a-event-handling/a2a-password-event-handler.sh -p <<<$SG_KEYFILE_PASSWORD
+SampleHandlerScript=$SafeguardDir/../samples/event-handling/a2a-event-handling/a2a-password-event-handler.sh
+>&2 echo "SampleHandlerScript=$SampleHandlerScript"
+$SafeguardDir/handle-a2a-password-event.sh -a $SG_APPLIANCE -c $VolumeDir/$SG_CERTFILE -k $VolumeDir/$SG_KEYFILE -A $SG_APIKEY -O -S $SampleHandlerScript -p <<<$SG_KEYFILE_PASSWORD
 
