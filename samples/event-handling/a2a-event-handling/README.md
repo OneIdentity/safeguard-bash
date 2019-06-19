@@ -54,6 +54,14 @@ Follow these steps:
    step 1).
 
    ```bash
+   $ ./run.sh -v certs --env-file <(cat <<EOF
+   SG_APPLIANCE=<Safeguard address here>
+   SG_CERTFILE=A2AUser.cert.pem
+   SG_KEYFILE=A2AUser.key.pem
+   SG_APIKEY=<ApiKey printed out by setup.sh>
+   SG_KEYFILE_PASSWORD=test
+   EOF
+   )
    ```
 
 4. Open the Safeguard UI and change the password for the safeguard-bash-asset\a2a
