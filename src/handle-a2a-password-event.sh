@@ -85,6 +85,7 @@ require_prereqs()
         >&2 echo "The handler script passed to -S option must be executable"
         exit 1
     fi
+    HandlerScript=$(echo "$(cd "$(dirname "$HandlerScript")"; pwd -P)/$(basename "$HandlerScript")")
 }
 
 cleanup()
@@ -132,9 +133,11 @@ require_args
 require_prereqs
 
 
-AcctPass=$("$ScriptDir/get-a2a-password.sh" -a $Appliance -c $Cert -k $PKey -A $ApiKey -p <<< $Pass | jq -r .)
-if [ -z "$AcctPass" ]; then
+AcctPass=$("$ScriptDir/get-a2a-password.sh" -a $Appliance -c $Cert -k $PKey -A $ApiKey -p <<< $Pass | jq -c -r .)
+Error=$(echo $AcctPass | jq .Code 2> /dev/null)
+if [ ! -z "$Error" -o -z "$AcctPass" ]; then
     >&2 echo "Unable to fetch initial password from A2A service"
+    >&2 echo "$AcctPass"
     exit 1
 fi
 >&2 echo "[$(date '+%x %X')] Calling $HandlerScript with initial password"
@@ -165,11 +168,18 @@ while true; do
         backoff_wait
     fi
     if [ ! -z "$Output" ]; then
-        AcctPass=$("$ScriptDir/get-a2a-password.sh" -a $Appliance -c $Cert -k $PKey -A $ApiKey -p <<< $Pass | jq -r .)
-        >&2 echo "[$(date '+%x %X')] Calling $HandlerScript with new password"
-        $HandlerScript <<EOF
+        AcctPass=$("$ScriptDir/get-a2a-password.sh" -a $Appliance -c $Cert -k $PKey -A $ApiKey -p <<< $Pass | jq -c -r .)
+        Error=$(echo $AcctPass | jq .Code 2> /dev/null)
+        if [ ! -z "$Error" -o -z "$AcctPass" ]; then
+            >&2 echo "Unable to fetch initial password from A2A service"
+            >&2 echo "$AcctPass"
+        else
+            >&2 echo "[$(date '+%x %X')] Calling $HandlerScript with new password"
+            $HandlerScript <<EOF
 $AcctPass
 EOF
+        fi
         unset AcctPass
     fi
 done
+

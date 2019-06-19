@@ -11,7 +11,7 @@ MAINTAINER support@oneidentity.com
 # environment variables and call the a2a_password_event_handler.sh script from the
 # samples/events/ directory that is already embedded in safeguard-bash. This handler
 # script just logs out the current password each time it changes.
-COPY sample_a2a_listener.sh /scripts/
+COPY sample-a2a-listener.sh /scripts/
 
 # To do something interesting with a2a and this framework, you would want to add your
 # own script using a COPY statement that does something important with the password.
@@ -26,7 +26,7 @@ ENTRYPOINT ["/bin/bash"]
 # overridden by arguments passed to 'docker run'. In this case the defaults will give
 # us exactly what we need. The only reason to override would be to debug the container
 # which you could do by passing '-c /bin/bash' to either docker run or run.sh.
-CMD ["/scripts/sample_a2a_listener.sh"]
+CMD ["/scripts/sample-a2a-listener.sh"]
 
 # When you call 'docker run' on safeguard-dockerdemo, or use the run.sh script in this
 # directory, the container will check to see if it has the right environment variables

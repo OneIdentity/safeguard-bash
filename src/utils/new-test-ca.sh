@@ -119,7 +119,7 @@ commonName                      = Common Name
 # Optionally, specify some defaults.
 countryName_default             = US
 stateOrProvinceName_default     = Utah
-localityName_default            = Lindon
+localityName_default            = Pleasant Grove
 0.organizationName_default      = One Identity LLC
 organizationalUnitName_default  = PAM
 commonName_default              = $CaName
@@ -269,7 +269,7 @@ commonName                      = Common Name
 # Optionally, specify some defaults.
 countryName_default             = US
 stateOrProvinceName_default     = Utah
-localityName_default            = Lindon
+localityName_default            = Pleasant Grove
 0.organizationName_default      = One Identity LLC
 organizationalUnitName_default  = PAM
 commonName_default              = $IntermediateCaName

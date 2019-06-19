@@ -4,8 +4,13 @@
 # safeguard-bash
 One Identity Safeguard Bash and cURL scripting resources.
 
-Take a look at our [samples](samples/README.md) for a few ideas of what
-you can do with safeguard-bash.
+-----------
+
+<p align="center">
+<i>Check out our <a href="samples">sample projects</a> to get started with your own custom integration to Safeguard!</i>
+</p>
+
+-----------
 
 ## Installation
 The easiest way to install safeguard-bash is via Docker; however, you can
@@ -132,7 +137,7 @@ generate an event that can be received over SignalR.  The following command line
 will give you a list of all of the possible events.
 
 ```Bash
-$ invoke-safeguard-method.sh -s core -U Events?fields=Name,Description | jq -r '.[] | "\(.Name) -- \(.Description)"' | sort
+$ get-event.sh
 ```
 
 The `listen-for-event.sh` script and the `listen-for-a2a-event.sh` script will
@@ -146,14 +151,25 @@ through access token timeouts or connection interruptions.
 There are some examples in the sample directory.
 
 ```Bash
-$ handle-event.sh -a 10.5.32.162 -i local -u user -E UserCreated -S samples/events/generic_event_handler.sh
+$ handle-event.sh -a 10.5.32.162 -i local -u user -E UserCreated -S my_event_handler.sh
 ```
 
-The above command will call the `generic_event_handler.sh` script every time a
+The above command will call the `my_event_handler.sh` script every time a
 new user is created and pass information about the event as well as some data
 to contact Safeguard using an access token to take action on the event.  See
 `handle-event.sh -h` for more details.
 
+Also see the [event-handling](samples/event-handling) samples.
+
 ### A2A Password Listener Sample running in Docker
+
+A 5 minute video demonstrating the use of safeguard-bash running in a Docker
+container to create a resilient A2A event listener to handle password changes
+to execute a script every time the password changes.
+
+This sample demonstrates a technique to securely use a certificate file from
+the Docker environment.  The source code is available from the samples directory.
+
+[A2A Password Listener video](https://www.youtube.com/watch?v=UQFcNgYKnTI)
 
 [![A2A Password Listener](https://img.youtube.com/vi/UQFcNgYKnTI/0.jpg)](https://www.youtube.com/watch?v=UQFcNgYKnTI)

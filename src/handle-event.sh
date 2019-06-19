@@ -91,6 +91,7 @@ require_prereqs()
         >&2 echo "The handler script passed to -S option must be executable"
         exit 1
     fi
+    HandlerScript=$(echo "$(cd "$(dirname "$HandlerScript")"; pwd -P)/$(basename "$HandlerScript")")
 }
 
 check_access_token()
@@ -125,7 +126,7 @@ $CABundleArg
 -H "X-TokenLifetimeRemaining"
 -H "Authorization: Bearer $AccessToken"
 EOF
-) "$Url" | grep X-TokenLifetimeRemaining | cut -d' ' -f2 | tr -d '\r')
+) "$Url" | grep -i X-TokenLifetimeRemaining | cut -d' ' -f2 | tr -d '\r')
         TokenExpirationThreshold=$(($MinutesRemaining*60+$Now-120))
         if ! $Silent; then
             >&2 echo "[$(date '+%x %X')] Access token timeout / refresh is set to $((TokenExpirationThreshold-Now)) seconds from now."
