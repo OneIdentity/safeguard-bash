@@ -1,4 +1,4 @@
-Generic Event Handler Sample
+A2A Event Handler Sample
 ============================
 
 ## `sample-a2a-listener.sh`
