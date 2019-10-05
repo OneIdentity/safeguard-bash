@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SourceDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-TargetDir="$TargetDir"
+TargetDir="$HOME/scripts"
 
 # create scripts directory in your home directory if it doesn't exist
 if [ ! -d "$TargetDir" ]; then
