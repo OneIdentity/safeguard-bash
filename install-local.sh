@@ -11,3 +11,23 @@ fi
 # copy all of safeguard-bash into scripts directory
 cp -R $SourceDir/src/* $TargetDir
 
+# find bash profile
+if [ -w "$HOME/.bash_profile" ]; then
+    $BashProfile="$HOME/.bash_profile"
+elif [ -w $"HOME/.profile" ]; then
+    $BashProfile="$HOME/.profile"
+else
+    >&2 echo "Unable to find writable bash profile, cannot edit PATH"
+fi
+
+if [ ! -z "$BashProfile" ]; then
+    echo <<EOF >> $BashProfile
+
+# add script directory to PATH
+if [[ ":\$PATH:" != *":$TargetDir:"* ]]; then
+    PATH="\${PATH:+"\$PATH:"}$TargetDir"
+fi
+
+EOF
+fi
+
