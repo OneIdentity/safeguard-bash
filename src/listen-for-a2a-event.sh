@@ -41,7 +41,18 @@ ApiKey=
 Pass=
 UseOpenSslSclient=false
 
-if [ $(curl --version | grep "libcurl" | sed -e 's,curl [0-9]*\.\([0-9]*\).* (.*,\1,') -ge 33 ]; then
+if [ ! -z "$(which gsed)" ]; then
+    SED=gsed
+else
+    SED=sed
+fi
+
+if [ -z "$(which stdbuf)" ]; then
+    >&2 echo "This script requires the stdbuf utility, please install it."
+    exit 1
+fi
+
+if [ $(curl --version | grep "libcurl" | $SED -e 's,curl [0-9]*\.\([0-9]*\).* (.*,\1,') -ge 33 ]; then
     http11flag='--http1.1'
 fi
 
@@ -73,7 +84,7 @@ get_connection_token()
     NUM=`echo $(( ( RANDOM % 1000000000 )  + 1 ))`
     # This call does not require an authorization header
     curl -s $CABundleArg "https://$Appliance/service/a2a/signalr/negotiate?_=$NUM" \
-        | sed -n -e 's/\+/%2B/g;s/\//%2F/g;s/.*"ConnectionToken":"\([^"]*\)".*/\1/p'
+        | $SED -n -e 's/\+/%2B/g;s/\//%2F/g;s/.*"ConnectionToken":"\([^"]*\)".*/\1/p'
 }
 
 
@@ -121,7 +132,7 @@ Url="https://$Appliance/service/a2a/signalr/connect"
 Params="?transport=serverSentEvents&connectionToken=$ConnectionToken&connectionData=%5b%7b%22name%22%3a%22notificationHub%22%7d%5d&tid=$TID"
 if $UseOpenSslSclient; then
     cat <<EOF | stdbuf -o0 -e0 openssl s_client -connect $Appliance:443 -crlf -quiet -key $PKey -cert $Cert -pass pass:$Pass 2>&1 \
-        | sed -u -e '/^data: /!d;/^data: initialized/d;s/^data: \(.*\)$/\1/g' | while read line; do echo $line | $PRETTYPRINT ; done
+        | $SED -u -e '/^data: /!d;/^data: initialized/d;s/^data: \(.*\)$/\1/g' | while read line; do echo $line | $PRETTYPRINT ; done
 GET /service/a2a/signalr/connect$Params HTTP/1.1
 Host: $Appliance
 Authorization: A2A $ApiKey
@@ -140,5 +151,5 @@ $CABundleArg
 -H "Authorization: A2A $ApiKey"
 $http11flag
 EOF
-) "$Url$Params" | sed -u -e '/^data: initialized/d;/^\s*$/d;s/^data: \(.*\)$/\1/g' | while read line; do echo $line | $PRETTYPRINT ; done
+) "$Url$Params" | $SED -u -e '/^data: initialized/d;/^\s*$/d;s/^data: \(.*\)$/\1/g' | while read line; do echo $line | $PRETTYPRINT ; done
 fi
