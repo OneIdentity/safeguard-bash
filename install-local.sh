@@ -8,7 +8,7 @@ if [ ! -d "$TargetDir" ]; then
     mkdir -p "$TargetDir"
 fi
 
-# copy all of safeguard-bash into scripts directory
+>&2 echo "Copied safeguard-bash scripts into '$TargetDir'"
 cp -R $SourceDir/src/* $TargetDir
 
 # find bash profile
