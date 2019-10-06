@@ -14,7 +14,7 @@ cp -R $SourceDir/src/* $TargetDir
 # find bash profile
 if [ -w "$HOME/.bash_profile" ]; then
     $BashProfile="$HOME/.bash_profile"
-elif [ -w $"HOME/.profile" ]; then
+elif [ -w "$HOME/.profile" ]; then
     $BashProfile="$HOME/.profile"
 else
     >&2 echo "Unable to find writable bash profile, cannot edit PATH"
