@@ -31,13 +31,23 @@ CABundleArg=
 
 . "$ScriptDir/utils/loginfile.sh"
 
+if [ ! -z "$(which gsed)" ]; then
+    SED=gsed
+else
+    SED=sed
+fi
+
+if [ -z "$(which stdbuf)" ]; then
+    >&2 echo "This script requires the stdbuf utility, please install it."
+    exit 1
+fi
 
 get_connection_token()
 {
     NUM=`echo $(( ( RANDOM % 1000000000 )  + 1 ))`
     # this call does not require an authorization header
     curl -s $CABundleArg "https://$Appliance/service/event/signalr/negotiate?_=$NUM" \
-        | sed -n -e 's/\+/%2B/g;s/\//%2F/g;s/.*"ConnectionToken":"\([^"]*\)".*/\1/p'
+        | $SED -n -e 's/\+/%2B/g;s/\//%2F/g;s/.*"ConnectionToken":"\([^"]*\)".*/\1/p'
 }
 
 
@@ -79,5 +89,5 @@ stdbuf -o0 -e0 curl -K <(cat <<EOF
 $CABundleArg
 -H "Authorization: Bearer $AccessToken"
 EOF
-) "$Url$Params" | sed -u -e '/^data: initialized/d;/^\s*$/d;s/^data: \(.*\)$/\1/g' | while read line; do echo $line | $PRETTYPRINT ; done
+) "$Url$Params" | $SED -u -e '/^data: initialized/d;/^\s*$/d;s/^data: \(.*\)$/\1/g' | while read line; do echo $line | $PRETTYPRINT ; done
 
