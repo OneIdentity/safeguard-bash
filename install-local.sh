@@ -21,13 +21,18 @@ else
 fi
 
 if [ ! -z "$BashProfile" ]; then
-    echo <<EOF >> $BashProfile
+    if grep -Fxq '<<safeguard-bash>>' $BashProfile; then
+        >&2 echo "PATH already includes '$TargetDir'"
+    else
+        cat <<EOF >> $BashProfile
 
-# add script directory to PATH
+# add script directory to PATH -- <<safeguard-bash>>
 if [[ ":\$PATH:" != *":$TargetDir:"* ]]; then
     PATH="\${PATH:+"\$PATH:"}$TargetDir"
 fi
 
 EOF
+        >&2 echo "Added '$TargetDir' to PATH, run: . $BashProfile"
+    fi
 fi
 
