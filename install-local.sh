@@ -32,7 +32,7 @@ if [[ ":\$PATH:" != *":$TargetDir:"* ]]; then
 fi
 
 EOF
-        >&2 echo "Added '$TargetDir' to PATH, run: . $BashProfile"
+        >&2 echo "Added '$TargetDir' to PATH, run: '. $BashProfile'"
     fi
 fi
 
