@@ -56,12 +56,15 @@ query_providers()
         GetPrimaryProvidersRelativeURL="RSTS/UserLogin/LoginController?response_type=token&redirect_uri=urn:InstalledApplication&loginRequestStep=1"
         # certificate provider not returned by default because it is marked as not supporting HTML forms login
         Providers=$(curl -s $CABundleArg -X POST -H "Accept: application/json" "https://$Appliance/$GetPrimaryProvidersRelativeURL" \
-                         -d 'RelayState=' | jq '.Providers|.[]|"\(.Id)[\(.DisplayName)]"' | xargs echo -n)
+                         -d 'RelayState=' | jq '.Providers|del(.[] | select(.Id == "local"))|.[]|"\(.Id)[\(.DisplayName)]"' | xargs echo -n)
         if [ -z "$Providers" ]; then
-            >&2 echo "Unable to obtain list of identity providers, does $Appliance exist?"
-            exit 1
+            Exists=$(curl -s -k -X GET -H "Accept: application/json" "https://$Appliance/service/notification/v2/Status")
+            if [ -z "$Exists" ]; then
+                >&2 echo "Unable to obtain list of identity providers, does $Appliance exist?"
+                exit 1
+            fi
         fi
-        Providers=$(echo certificate $Providers)
+        Providers=$(echo certificate local $Providers)
     fi
 }
 
