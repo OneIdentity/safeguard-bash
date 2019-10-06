@@ -21,7 +21,7 @@ else
 fi
 
 if [ ! -z "$BashProfile" ]; then
-    if grep -Fxq '<<safeguard-bash>>' $BashProfile; then
+    if grep -Fq '<<safeguard-bash>>' $BashProfile; then
         >&2 echo "PATH already includes '$TargetDir'"
     else
         cat <<EOF >> $BashProfile
