@@ -1,0 +1,21 @@
+version: 6.0.{build}
+image: Ubuntu1804
+environment:
+  DockerHubAccessToken:
+    secure: VYKd4CaBJazTyU2VNPi0fAiKMtQcpOjwEMprUL7r6HJCeGL8ODKs+8zoo5PTIgOQ
+build_script:
+- sh: >-
+    ./build.sh $APPVEYOR_BUILD_VERSION
+
+    docker tag oneidentity/safeguard-bash:${APPVEYOR_BUILD_VERSION}-alpine oneidentity/safeguard-bash:latest
+
+deploy_script:
+- sh: >-
+    docker login -u petrsnd -p $DockerHubAccessToken
+
+    docker push oneidentity/safeguard-bash:${APPVEYOR_BUILD_VERSION}-alpine
+
+    docker push oneidentity/safeguard-bash:latest
+
+    docker logout
+
