@@ -17,5 +17,5 @@ if [ ! -z "$(docker images -q oneidentity/safeguard-bash:${Version}alpine)" ]; t
     docker rmi --force "oneidentity/safeguard-bash:${Version}alpine"
 fi
 echo "Building a new image: oneidentity/safeguard-bash:${Version}alpine ..."
-docker build --no-cache -t "oneidentity/safeguard-bash:$Version$ImageType" $ScriptDir
+docker build --no-cache -t "oneidentity/safeguard-bash:${Version}alpine" $ScriptDir
 
