@@ -1,0 +1,33 @@
+version: 6.0.{build}
+branches:
+  only:
+  - master
+image: Ubuntu1804
+environment:
+  DockerHubAccessToken:
+    secure: VYKd4CaBJazTyU2VNPi0fAiKMtQcpOjwEMprUL7r6HJCeGL8ODKs+8zoo5PTIgOQ
+build_script:
+- sh: >-
+    ./build.sh $APPVEYOR_BUILD_VERSION
+
+    docker tag oneidentity/safeguard-bash:${APPVEYOR_BUILD_VERSION}-alpine oneidentity/safeguard-bash:latest
+
+test: off
+deploy_script:
+- sh: >-
+    docker login -u petrsnd -p $DockerHubAccessToken
+
+    docker push oneidentity/safeguard-bash:${APPVEYOR_BUILD_VERSION}-alpine
+
+    docker push oneidentity/safeguard-bash:latest
+
+    docker logout
+
+notifications:
+  - provider: Email
+    to:
+    - petrsnd@gmail.com
+    subject: safeguard-bash build is failing
+    on_build_success: false
+    on_build_failure: true
+    on_build_status_changed: false
