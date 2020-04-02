@@ -12,6 +12,10 @@ One Identity Safeguard Bash and cURL scripting resources.
 
 -----------
 
+## Support
+
+One Identity open source projects are supported through [One Identity GitHub issues](https://github.com/OneIdentity/safeguard-bash/issues) and the [One Identity Community](https://www.oneidentity.com/community/). This includes all scripts, plugins, SDKs, modules, code snippets or other solutions. For assistance with any One Identity GitHub project, please raise a new Issue on the [One Identity GitHub project](https://github.com/OneIdentity/safeguard-bash/issues) page. You may also visit the [One Identity Community](https://www.oneidentity.com/community/) to ask questions.  Requests for assistance made through official One Identity Support will be referred back to GitHub and the One Identity Community forums where those requests can benefit all users.
+
 ## Installation
 The easiest way to install safeguard-bash is via Docker; however, you can
 also clone this GitHub repository and put the scripts in your path.
@@ -21,7 +25,7 @@ This code has been compiled into a Docker image hosted on [DockerHub](https://hu
 If you have Docker installed, you can simply run:
 
 ```Bash
-$ docker run -it oneidentity/safeguard-ps
+$ docker run -it oneidentity/safeguard-bash
 ```
 
 It is an extremely light-weight image, and it automatically calls the
@@ -41,15 +45,15 @@ Just use Docker, and you won't have to worry about prerequisites!
 
 ## Getting Started
 Once safeguard-bash is installed, you can begin by running `connect-safeguard.sh`.
-Authentication in Safeguard is based on OAuth2 and `connect-safeguard.sh` uses 
+Authentication in Safeguard is based on OAuth2 and `connect-safeguard.sh` uses
 the Resource Owner Grant of OAuth2.
 
 ```Bash
-$ connect-safeguard.sh 
+$ connect-safeguard.sh
 Appliance network address: 10.5.32.162
 Identity Provider (certificate local ad2-dan.vas): local
 Appliance Login: Admin
-Password: 
+Password:
 A login file has been created.
 ```
 
@@ -108,7 +112,7 @@ scripts from a Docker container.
 
 The `run.sh` script will automatically build a local image for safeguard-bash based
 on the sources you have checked out.  This is convenient for when you are making
-changes to safeguard-bash scripts and want to test them out in a container. 
+changes to safeguard-bash scripts and want to test them out in a container.
 
 If you don't want to run `connect-safeguard.sh` automatically when you enter the
 container, you can use the `run.sh` script to execute the `docker` binary to run
@@ -121,7 +125,7 @@ $ ./run.sh -v ~/certs -c bash
 ```
 
 This will mount my `~/certs` directory inside the container at `/volume` and will
-just drop me at a Bash prompt rather than running `connect-safeguard.sh` 
+just drop me at a Bash prompt rather than running `connect-safeguard.sh`
 automatically.
 
 ## Events
@@ -142,7 +146,7 @@ $ get-event.sh
 
 The `listen-for-event.sh` script and the `listen-for-a2a-event.sh` script will
 connect to SignalR and dump every event received in that user's context as a JSON
-object.  These two scripts are paired with the `handle-event.sh` script and the 
+object.  These two scripts are paired with the `handle-event.sh` script and the
 `handle-a2a-password-event.sh` script respectively to provide a robust mechanism
 for listening for events and calling handler scripts.  These `handle-*` scripts
 include additional logic to make sure that SignalR remains connected even through
