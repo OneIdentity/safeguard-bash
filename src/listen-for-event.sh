@@ -44,10 +44,9 @@ fi
 
 get_connection_token()
 {
-    NUM=`echo $(( ( RANDOM % 1000000000 )  + 1 ))`
-    # this call does not require an authorization header
-    curl -s $CABundleArg "https://$Appliance/service/event/signalr/negotiate?_=$NUM" \
-        | $SED -n -e 's/\+/%2B/g;s/\//%2F/g;s/.*"ConnectionToken":"\([^"]*\)".*/\1/p'
+	# this call does not require an authorization header
+	curl -s $CABundleArg "https://$Appliance/service/event/signalr/negotiate?negotiateVersion=1" -d '' \
+        | $SED -n -e 's/\+/%2B/g;s/\//%2F/g;s/.*"connectionId":"\([^"]*\)".*/\1/p'
 }
 
 
@@ -81,13 +80,19 @@ done
 require_login_args
 
 ConnectionToken=`get_connection_token`
-TID=`echo $(( ( RANDOM % 1000 )  + 1 ))`
-Url="https://$Appliance/service/event/signalr/connect"
-Params="?transport=serverSentEvents&connectionToken=$ConnectionToken&connectionData=%5b%7b%22name%22%3a%22notificationHub%22%7d%5d&tid=$TID"
+Url="https://$Appliance/service/event/signalr"
+Params="?id=$ConnectionToken"
+curl -K <(cat <<EOF
+-s
+$CABundleArg
+-H "Authorization: Bearer $AccessToken"
+EOF
+) -d '{"protocol":"json","version":1}' "$Url$Params"
+
 stdbuf -o0 -e0 curl -K <(cat <<EOF
 -s
 $CABundleArg
 -H "Authorization: Bearer $AccessToken"
 EOF
-) "$Url$Params" | $SED -u -e '/^data: initialized/d;/^\s*$/d;s/^data: \(.*\)$/\1/g' | while read line; do echo $line | $PRETTYPRINT ; done
+) -H 'Accept: text/event-stream' "$Url$Params" | $SED -u -e '/^data: initialized/d;/^\s*$/d;s/^data: \(.*\)$/\1/g' | while read line; do echo $line | $PRETTYPRINT ; done
 
