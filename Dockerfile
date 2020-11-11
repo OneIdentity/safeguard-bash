@@ -1,15 +1,14 @@
 FROM alpine
-LABEL maintainer="support@oneidentity.com"
-
-LABEL org.label-schema.schema-version="1.0"
-LABEL org.label-schema.name="oneidentity/safeguard-bash"
-LABEL org.label-schema.description="Safeguard Bash scripting environment"
-LABEL org.label-schema.url="https://github.com/OneIdentity/safeguard-bash"
-LABEL org.label-schema.vcs-url="https://github.com/OneIdentity/safeguard-bash"
-LABEL org.label-schema.vcs-ref=$APPVEYOR_REPO_COMMIT
-LABEL org.label-schema.vendor="One Identity LLC"
-LABEL org.label-schema.version=$APPVEYOR_BUILD_VERSION
-LABEL org.label-schema.docker.cmd="docker run -it oneidentity/safeguard-bash"
+LABEL maintainer="support@oneidentity.com" \
+      org.label-schema.schema-version="1.0" \
+      org.label-schema.name="oneidentity/safeguard-bash" \
+      org.label-schema.description="Safeguard Bash scripting environment" \
+      org.label-schema.url="https://github.com/OneIdentity/safeguard-bash" \
+      org.label-schema.vcs-url="https://github.com/OneIdentity/safeguard-bash" \
+      org.label-schema.vcs-ref=$APPVEYOR_REPO_COMMIT \
+      org.label-schema.vendor="One Identity LLC" \
+      org.label-schema.version=$APPVEYOR_BUILD_VERSION \
+      org.label-schema.docker.cmd="docker run -it oneidentity/safeguard-bash"
 
 RUN apk -U --no-cache add \
         shadow \
