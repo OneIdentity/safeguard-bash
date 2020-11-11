@@ -13,6 +13,21 @@ build_script:
     docker tag oneidentity/safeguard-bash:${APPVEYOR_BUILD_VERSION}-alpine oneidentity/safeguard-bash:latest
 
 test: off
+artifacts:
+  - path: safeguard-bash-${APPVEYOR_BUILD_VERSION}.zip
+
+deploy:
+  release: safeguard-bash-${APPVEYOR_BUILD_VERSION}
+  description: "Safeguard Bash scripting tools"
+  provider: GitHub
+  auth_token:
+    secure: +d9/LjBowhkiGvfYMeDqaJgxeyxwZ8QfAKfgeFwbzTGRS9lWqLXNBLprHcJLwkq3
+  artifact: /.*\.zip/
+  draft: true
+  prerelease: false
+  on:
+    branch: master
+
 deploy_script:
 - sh: >-
     docker login -u petrsnd -p $DockerHubAccessToken
