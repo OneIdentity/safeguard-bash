@@ -1,13 +1,17 @@
 FROM alpine
+
+ARG COMMIT_ID
+ARG BUILD_VERSION
+
 LABEL maintainer="support@oneidentity.com" \
       org.label-schema.schema-version="1.0" \
       org.label-schema.name="oneidentity/safeguard-bash" \
       org.label-schema.description="Safeguard Bash scripting environment" \
       org.label-schema.url="https://github.com/OneIdentity/safeguard-bash" \
       org.label-schema.vcs-url="https://github.com/OneIdentity/safeguard-bash" \
-      org.label-schema.vcs-ref=$APPVEYOR_REPO_COMMIT \
+      org.label-schema.vcs-ref=$COMMIT_ID \
       org.label-schema.vendor="One Identity LLC" \
-      org.label-schema.version=$APPVEYOR_BUILD_VERSION \
+      org.label-schema.version=$BUILD_VERSION \
       org.label-schema.docker.cmd="docker run -it oneidentity/safeguard-bash"
 
 RUN apk -U --no-cache add \
