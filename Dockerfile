@@ -6,9 +6,9 @@ LABEL org.label-schema.name="oneidentity/safeguard-bash"
 LABEL org.label-schema.description="Safeguard Bash scripting environment"
 LABEL org.label-schema.url="https://github.com/OneIdentity/safeguard-bash"
 LABEL org.label-schema.vcs-url="https://github.com/OneIdentity/safeguard-bash"
-LABEL org.label-schema.vcs-ref=$VCS_REF
+LABEL org.label-schema.vcs-ref=$APPVEYOR_REPO_COMMIT
 LABEL org.label-schema.vendor="One Identity LLC"
-LABEL org.label-schema.version=$BUILD_VERSION
+LABEL org.label-schema.version=$APPVEYOR_BUILD_VERSION
 LABEL org.label-schema.docker.cmd="docker run -it oneidentity/safeguard-bash"
 
 RUN apk -U --no-cache add \

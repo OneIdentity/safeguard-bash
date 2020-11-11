@@ -19,3 +19,21 @@ fi
 echo "Building a new image: oneidentity/safeguard-bash:${Version}alpine ..."
 docker build --no-cache -t "oneidentity/safeguard-bash:${Version}alpine" $ScriptDir
 
+echo "Creating zip file artifact ..."
+if [ -z "$Version" ]; then Version=999.999.999; fi
+ZipFolderName="safeguard-bash-${Version}"
+ZipFileName="$ZipFolderName.zip"
+if [ -f "$ZipFileName" ]; then
+    echo "Cleaning up the old zip: $ZipFileName ..."
+    rm -f $ZipFileName
+fi
+CurDir=`pwd`
+cd $ScriptDir
+mkdir $ZipFolderName
+cp install-local.sh $ZipFolderName
+cp -r src $ZipFolderName
+cp -r samples $ZipFolderName
+cp -r test $ZipFolderName
+zip -r $ZipFileName $ZipFolderName
+rm -rf $ZipFolderName
+cd $CurDir
