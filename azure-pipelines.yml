@@ -1,0 +1,102 @@
+# https://aka.ms/yaml
+
+trigger:
+  branches:
+    include: [ master, release-* ]
+
+# Global Variables:
+#
+# version.<generated build number> gets set in a variable called VersionString.
+#   VersionString is used to replace placeholders in module file.
+#
+# isPrerelease controls whether the release artifacts on GitHub and the PowerShell module
+#   in the PowerShell Gallery is marked as prerelease or not.
+#
+variables:
+  version: "6.0"
+  isPrerelease: ${{ true }}
+  isReleaseBranch: $[ or( eq(variables['Build.SourceBranch'], 'refs/heads/master'), startsWith(variables['Build.SourceBranch'], 'refs/heads/release-') ) ]
+  shouldPublishZip: $[ eq( variables.isReleaseBranch, true ) ]
+  shouldPublishDocker: $[ and( eq( variables.isPrerelease, false ), eq( variables.isReleaseBranch, true ) ) ]
+
+jobs:
+- job:
+  displayName: "Linux - GitHub Zip and Docker Images"
+  pool:
+    vmImage: 'ubuntu-latest'
+
+  steps:
+  - task: Bash@3
+    inputs:
+      targetType: 'filePath'
+      failOnStderr: true
+      filePath: '$(System.DefaultWorkingDirectory)/versionnumber.sh'
+      arguments: $(version) $(Build.BuildId)
+    displayName: 'Setting build version'
+
+  - task: Bash@3
+    inputs:
+      targetType: inline
+      script: 'env | sort'
+    displayName: 'Display environment variables'
+
+  - task: Bash@3
+    inputs:
+      targetType: inline
+      failOnStderr: true
+      script: |
+        $(System.DefaultWorkingDirectory)/build.sh $(VersionString) $(Build.SourceVersion)
+        docker tag oneidentity/safeguard-bash:$(VersionString)-alpine oneidentity/safeguard-bash:latest
+    displayName: 'Building Zip and Docker image'
+    condition: succeeded()
+
+  - task: CopyFiles@2
+    inputs:
+      sourceFolder: '$(System.DefaultWorkingDirectory)'
+      contents: '*.zip'
+      targetFolder: $(Build.ArtifactStagingDirectory)
+    displayName: 'Copy Zip to staging folder'
+    condition: succeeded()
+
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathToPublish: '$(Build.ArtifactStagingDirectory)'
+      artifactName: 'safeguard-bash-$(VersionString)'
+    displayName: 'Publishing the artifacts to Azure pipeline'
+    condition: succeeded()
+
+  - task: GitHubRelease@1
+    inputs:
+      gitHubConnection: 'github.ReleaseServiceAccount'
+      repositoryName: 'OneIdentity/safeguard-bash'
+      action: 'create'
+      target: '$(Build.SourceVersion)'
+      tagSource: 'userSpecifiedTag'
+      tag: 'release-$(VersionString)'
+      title: '$(VersionString)'
+      isPreRelease: $(isPrerelease)
+      changeLogCompareToRelease: 'lastFullRelease'
+      changeLogType: 'commitBased'
+      assets: $(Build.ArtifactStagingDirectory)\*.zip
+    displayName: 'Creating and publishing a release to Github'
+    condition: and( succeeded(), eq( variables.shouldPublishZip, true ) )
+
+  - task: AzureKeyVault@1
+    inputs:
+      azureSubscription: 'OneIdentity.RD.SBox.Safeguard-ServiceConnection'
+      KeyVaultName: 'SafeguardBuildSecrets'
+      SecretsFilter: 'DockerHubAccessToken,DockerHubPassword'
+    displayName: 'Get Docker Hub Access Token from Sandbox Azure Key Vault'
+    condition: and( succeeded(), eq( variables.shouldPublishDocker, true ) )
+
+  - task: Bash@3
+    inputs:
+      targetType: 'inline'
+      failOnStderr: true
+      script: |
+        docker login -u petrsnd --password-stdin <<<$(DockerHubAccessToken) 2>/dev/null
+        docker push oneidentity/safeguard-bash:$(VersionString)-alpine
+        docker push oneidentity/safeguard-bash:latest
+        docker logout
+    condition: and( succeeded(), eq(variables.shouldPublishDocker, true) )
+    displayName: 'Pushing Linux Docker images to Docker Hub'
