@@ -9,7 +9,7 @@ buildId=$2
 echo "verNum = $verNum"
 echo "buildId = $buildId"
 
-buildNumber=$(expr $buildId - 102900) # shrink shared build number appropriately
+buildNumber=$(expr $buildId - 103500) # shrink shared build number appropriately
 echo "buildNumber = ${buildNumber}"
 
 versionString="$verNum.$buildNumber"

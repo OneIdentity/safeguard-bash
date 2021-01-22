@@ -21,7 +21,7 @@ variables:
 
 jobs:
 - job:
-  displayName: "Windows - PowerShell Gallery and Docker Images"
+  displayName: "Linux - GitHub Zip and Docker Images"
   pool:
     vmImage: 'ubuntu-latest'
 
@@ -47,3 +47,16 @@ jobs:
         $(System.DefaultWorkingDirectory)/build.sh $(VersionString) $(Build.SourceVersion)
         docker tag oneidentity/safeguard-bash:$(VersionString)-alpine oneidentity/safeguard-bash:latest
     displayName: 'Building Zip and Docker image'
+
+  - task: CopyFiles@2
+    inputs:
+      sourceFolder: '$(System.DefaultWorkingDirectory)'
+      contents: '*.zip'
+      targetFolder: $(Build.ArtifactStagingDirectory)
+    displayName: 'Copy Zip to staging folder'
+
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathToPublish: '$(Build.ArtifactStagingDirectory)'
+      artifactName: 'safeguard-bash-$(VersionString)'
+    displayName: 'Publishing the artifacts'
