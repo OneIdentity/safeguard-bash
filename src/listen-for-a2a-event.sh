@@ -81,10 +81,9 @@ require_args()
 
 get_connection_token()
 {
-    NUM=`echo $(( ( RANDOM % 1000000000 )  + 1 ))`
     # This call does not require an authorization header
-    curl -s $CABundleArg "https://$Appliance/service/a2a/signalr/negotiate?_=$NUM" \
-        | $SED -n -e 's/\+/%2B/g;s/\//%2F/g;s/.*"ConnectionToken":"\([^"]*\)".*/\1/p'
+    curl -s $CABundleArg "https://$Appliance/service/a2a/signalr/negotiate?negotiateVersion=1" -d '' \
+        | $SED -n -e 's/\+/%2B/g;s/\//%2F/g;s/.*"connectionId":"\([^"]*\)".*/\1/p'
 }
 
 
@@ -127,17 +126,25 @@ done
 require_args
 
 ConnectionToken=`get_connection_token`
-TID=`echo $(( ( RANDOM % 1000 )  + 1 ))`
-Url="https://$Appliance/service/a2a/signalr/connect"
-Params="?transport=serverSentEvents&connectionToken=$ConnectionToken&connectionData=%5b%7b%22name%22%3a%22notificationHub%22%7d%5d&tid=$TID"
+Url="https://$Appliance/service/a2a/signalr"
+Params="?id=$ConnectionToken"
+curl -K <(cat <<EOF
+-s
+$CABundleArg
+--key $PKey
+--cert $Cert
+--pass $Pass
+-H "Authorization: A2A $ApiKey"
+EOF
+) -d '{"protocol":"json","version":1}' "$Url$Params"
 if $UseOpenSslSclient; then
     cat <<EOF | stdbuf -o0 -e0 openssl s_client -connect $Appliance:443 -crlf -quiet -key $PKey -cert $Cert -pass pass:$Pass 2>&1 \
         | $SED -u -e '/^data: /!d;/^data: initialized/d;s/^data: \(.*\)$/\1/g' | while read line; do echo $line | $PRETTYPRINT ; done
-GET /service/a2a/signalr/connect$Params HTTP/1.1
+GET /service/a2a/signalr$Params HTTP/1.1
 Host: $Appliance
 Authorization: A2A $ApiKey
 User-Agent: curl/7.47.0
-Accept: application/json
+Accept: text/event-stream
 
 
 EOF
@@ -151,5 +158,5 @@ $CABundleArg
 -H "Authorization: A2A $ApiKey"
 $http11flag
 EOF
-) "$Url$Params" | $SED -u -e '/^data: initialized/d;/^\s*$/d;s/^data: \(.*\)$/\1/g' | while read line; do echo $line | $PRETTYPRINT ; done
+) -H 'Accept: text/event-stream' "$Url$Params" | $SED -u -e '/^data: initialized/d;/^\s*$/d;s/^data: \(.*\)$/\1/g' | while read line; do echo $line | $PRETTYPRINT ; done
 fi
