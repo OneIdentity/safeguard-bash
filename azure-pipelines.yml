@@ -65,13 +65,6 @@ jobs:
     displayName: 'Publishing the artifacts to Azure pipeline'
     condition: succeeded()
 
-  - task: Bash@3
-    inputs:
-      targetType: inline
-      script: ls -l $(Build.ArtifactStagingDirectory)
-    displayName: "List artifacts"
-    condition: succeeded()
-
   - task: GitHubRelease@1
     inputs:
       gitHubConnection: 'github.ReleaseServiceAccount'
