@@ -77,7 +77,7 @@ jobs:
       isPreRelease: $(isPrerelease)
       changeLogCompareToRelease: 'lastFullRelease'
       changeLogType: 'commitBased'
-      assets: $(Build.ArtifactStagingDirectory)\*.zip
+      assets: $(Build.ArtifactStagingDirectory)/*.zip
     displayName: 'Creating and publishing a release to Github'
     condition: and( succeeded(), eq( variables.shouldPublishZip, true ) )
 
