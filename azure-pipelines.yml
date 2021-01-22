@@ -14,7 +14,7 @@ trigger:
 #
 variables:
   version: "6.0"
-  isPrerelease: ${{ true }}
+  isPrerelease: ${{ false }}
   isReleaseBranch: $[ or( eq(variables['Build.SourceBranch'], 'refs/heads/master'), startsWith(variables['Build.SourceBranch'], 'refs/heads/release-') ) ]
   shouldPublishZip: $[ eq( variables.isReleaseBranch, true ) ]
   shouldPublishDocker: $[ and( eq( variables.isPrerelease, false ), eq( variables.isReleaseBranch, true ) ) ]
