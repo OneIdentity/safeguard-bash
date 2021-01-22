@@ -13,7 +13,7 @@ trigger:
 #   in the PowerShell Gallery is marked as prerelease or not.
 #
 variables:
-  version: "6.0"
+  version: "6.8"
   isPrerelease: ${{ true }}
   isReleaseBranch: $[ or( eq(variables['Build.SourceBranch'], 'refs/heads/master'), startsWith(variables['Build.SourceBranch'], 'refs/heads/release-') ) ]
   shouldPublishZip: $[ eq( variables.isReleaseBranch, true ) ]
