@@ -1,19 +1,49 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
 # https://aka.ms/yaml
 
 trigger:
-- main
+  branches:
+    include: [ master, release-* ]
 
-pool:
-  vmImage: 'ubuntu-latest'
+# Global Variables:
+#
+# version.<generated build number> gets set in a variable called VersionString.
+#   VersionString is used to replace placeholders in module file.
+#
+# isPrerelease controls whether the release artifacts on GitHub and the PowerShell module
+#   in the PowerShell Gallery is marked as prerelease or not.
+#
+variables:
+  version: "6.0"
+  isPrerelease: ${{ true }}
+  isReleaseBranch: $[ or( eq(variables['Build.SourceBranch'], 'refs/heads/master'), startsWith(variables['Build.SourceBranch'], 'refs/heads/release-') ) ]
+  shouldPublishModule: $[ eq( variables.isReleaseBranch, true ) ]
+  shouldPublishDocker: $[ and( eq( variables.isPrerelease, false ), eq( variables.isReleaseBranch, true ) ) ]
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+jobs:
+- job:
+  displayName: "Windows - PowerShell Gallery and Docker Images"
+  pool:
+    vmImage: 'ubuntu-latest'
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+  steps:
+  - task: Bash@3
+    inputs:
+      targetType: 'filePath'
+      failOnStderr: true
+      filePath: '$(System.DefaultWorkingDirectory)/versionnumber.sh'
+      arguments: $(version) $(Build.BuildId)
+    displayName: 'Setting build version'
+
+  - task: Bash@3
+    inputs:
+      targetType: inline
+      script: 'env | sort'
+    displayName: 'Display environment variables'
+
+  - task: Bash@3
+    inputs:
+      targetType: inline
+      script: |
+        $(System.DefaultWorkingDirectory)/build.sh $(VersionString) $(Build.SourceVersion)
+        docker tag oneidentity/safeguard-bash:$(VersionString)-alpine oneidentity/safeguard-bash:latest
+    displayName: 'Building Zip and Docker image'
