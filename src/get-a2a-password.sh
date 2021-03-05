@@ -4,7 +4,7 @@ print_usage()
 {
     cat <<EOF
 USAGE: get-a2a-password.sh [-h]
-       get-a2a-password.sh [-a appliance] [-B cabundle] [-v version] [-c file] [-k file] [-A apikey] [-p]
+       get-a2a-password.sh [-a appliance] [-B cabundle] [-v version] [-c file] [-k file] [-A apikey] [-p] [-r]
 
   -h  Show help and exit
   -a  Network address of the appliance
@@ -14,6 +14,7 @@ USAGE: get-a2a-password.sh [-h]
   -k  File containing client private key
   -A  A2A API token identifying the account
   -p  Read certificate password from stdin
+  -r  Raw output, i.e. remove quotes from JSON string to get just the password
 
 Retrieve a password using the Safeguard A2A service.
 
@@ -31,6 +32,7 @@ Version=3
 Cert=
 PKey=
 ApiKey=
+Raw=false
 PassStdin=
 Pass=
 
@@ -58,7 +60,7 @@ require_args()
     fi
 }
 
-while getopts ":a:B:v:c:k:A:ph" opt; do
+while getopts ":a:B:v:c:k:A:prh" opt; do
     case $opt in
     a)
         Appliance=$OPTARG
@@ -81,6 +83,9 @@ while getopts ":a:B:v:c:k:A:ph" opt; do
     A)
         ApiKey=$OPTARG
         ;;
+    r)
+        Raw=true
+        ;;
     h)
         print_usage
         ;;
@@ -99,7 +104,11 @@ fi
 Result=$(invoke_a2a_method "$Appliance" "$CABundleArg" "$Cert" "$PKey" "$Pass" "$ApiKey" GET "Credentials?type=Password" $Version "$Body")
 Error=$(echo $Result | jq .Code 2> /dev/null)
 if [ -z "$Error" -o "$Error" = "null" ]; then
-    echo $Result | $ATTRFILTER
+    if $Raw; then
+        echo $Result | $ATTRFILTER | jq --raw-output .
+    else
+        echo $Result | $ATTRFILTER
+    fi
 else
     echo $Result | $ERRORFILTER
 fi
