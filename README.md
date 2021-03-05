@@ -18,9 +18,11 @@ One Identity open source projects are supported through [One Identity GitHub iss
 
 ## Installation
 The easiest way to install safeguard-bash is via Docker; however, you can
-also clone this GitHub repository and copy the scripts from the `src`
-directory (including the `utils` subdirectory) to a desired location on your
-file system and add them to your `PATH`.
+also download a zip file from 
+[Releases](https://github.com/OneIdentity/safeguard-bash/releases) or clone
+this GitHub repository and copy the scripts from the `src` directory 
+(including the `utils` subdirectory) to a desired location on your file 
+system and add them to your `PATH`.
 
 The `install-local.sh` script will copy the scripts to `$HOME/scripts` and
 make sure that directory is added to your `PATH` in your `.bash_profile` or
