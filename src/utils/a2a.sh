@@ -1,36 +1,35 @@
 #!/bin/bash
 # This is a script to support calling the a2a service across multiple scripts.
 # It shouldn't be called directly.
-
 invoke_a2a_method()
 {
-    local appliance=$1 ; shift 
+    local appliance=$1 ; shift
     local cabundlearg=$1 ; shift
-    local certfile=$1 ; shift 
-    local pkeyfile=$1 ; shift 
-    local pass=$1 ; shift 
-    local apikey=$1 ; shift 
-    local method=$1 ; shift 
+    local certfile=$1 ; shift
+    local pkeyfile=$1 ; shift
+    local pass=$1 ; shift
+    local apikey=$1 ; shift
+    local method=$1 ; shift
     method=$(echo "$method" | tr '[:lower:]' '[:upper:]')
-    local relurl=$1 ; shift 
-    local version=$1 ; shift 
+    local relurl=$1 ; shift
+    local version=$1 ; shift
 
     if [ $(curl --version | grep "libcurl" | sed -e 's,curl [0-9]*\.\([0-9]*\).* (.*,\1,') -ge 33 ]; then
         http11flag='--http1.1'
     fi
-    local response=$(curl -K <(cat <<EOF
--s
-$cabundlearg
---key $pkeyfile
---cert $certfile
---pass $pass
--X $method
-$http11flag
--H "Accept: application/json"
--H "Authorization: A2A $apikey"
-EOF
-) "https://$appliance/service/a2a/v$version/$relurl"
-        )
+#    local response=$(curl -K <(cat <<EOF
+#-s
+#$cabundlearg
+#--key $pkeyfile
+#--cert $certfile
+#--pass $pass
+#-X $method
+#$http11flag
+#-H "Accept: application/json"
+#-H "Authorization: A2A $apikey"
+#EOF
+#) "https://$appliance/service/a2a/v$version/$relurl"
+#        )
     local error=$(echo $response | jq .Code 2> /dev/null)
     if [ ! -z "$response" ] && [ -z "$error" -o "$error" = "null" ]; then
         echo "$response"
@@ -39,7 +38,7 @@ EOF
         # ignore certificate errors when using client certificate authentication. This works around that
         # problem by calling OpenSSL directly and manually formulating an HTTP request.
         #   see https://github.com/curl/curl/issues/1411
-        response=$(cat <<EOF | openssl s_client -connect $appliance:443 -quiet -crlf -key $pkeyfile -cert $certfile -pass pass:$pass 2>&1
+        IFS=$'\n' read -d '' -r -a response < <(cat <<EOF | openssl s_client -connect $appliance:443 -quiet -crlf -key $pkeyfile -cert $certfile -pass pass:$pass 2>&1
 $method /service/a2a/v$version/$relurl HTTP/1.1
 Host: $appliance
 User-Agent: curl/7.47.0
@@ -49,8 +48,42 @@ Connection: close
 
 EOF
             )
-        # echo "$response" | sed -n '/read:errno/,$p' | sed -e 's/\(.*\)read\:errno\=.*/\1/'
-        echo "$response" | grep -o '".*"'
+        local noclose=true
+        local noempty=true
+        local length=
+        local body=
+        for line in "${response[@]}"; do
+            line=$(echo $line | tr -d '\r')
+            if $noclose; then
+                # need to find the connection close marker
+                if [ "$line" = "Connection: close" ]; then
+                    noclose=false
+                fi
+            elif $noempty; then
+                # after close there should be an empty line
+                if [ "$line" = "" ]; then
+                    noempty=false
+                fi
+            elif [ -z "$length" ]; then
+                # after empty line should be the length of the HTTP payload
+                (( 16#$line )) 2> /dev/null
+                if [ $? -eq 0 ]; then
+                    length=$line
+                fi
+            elif [ -z "$body" ]; then
+                # after length should be the body
+                body=$line
+            else
+                # after body should just be garbage
+                echo $line > /dev/null
+            fi
+        done
+        if [ -z "$body" ]; then
+            # Coalesce all the output into a string and dump it
+            printf '%s\n' "${response[@]}"
+        else
+            echo "$body"
+        fi
     fi
 }
 

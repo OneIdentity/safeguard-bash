@@ -98,18 +98,22 @@ ATTRFILTER='cat'
 ERRORFILTER='cat'
 if [ ! -z "$(which jq)" ]; then
     ERRORFILTER='jq .'
-    ATTRFILTER='jq .'
+    if $Raw; then
+        ATTRFILTER='jq --raw-output .'
+    else
+        ATTRFILTER='jq .'
+    fi
 fi
 
 Result=$(invoke_a2a_method "$Appliance" "$CABundleArg" "$Cert" "$PKey" "$Pass" "$ApiKey" GET "Credentials?type=Password" $Version "$Body")
-Error=$(echo $Result | jq .Code 2> /dev/null)
-if [ -z "$Error" -o "$Error" = "null" ]; then
-    if $Raw; then
-        echo $Result | $ATTRFILTER | jq --raw-output .
-    else
-        echo $Result | $ATTRFILTER
-    fi
+echo $Result | jq . > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    echo $Result
 else
-    echo $Result | $ERRORFILTER
+    Error=$(echo $Result | jq .Code 2> /dev/null)
+    if [ -z "$Error" -o "$Error" = "null" ]; then
+        echo $Result | $ATTRFILTER
+    else
+        echo $Result | $ERRORFILTER
+    fi
 fi
-
