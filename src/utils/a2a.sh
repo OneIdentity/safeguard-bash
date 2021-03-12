@@ -9,27 +9,30 @@ invoke_a2a_method()
     local pkeyfile=$1 ; shift
     local pass=$1 ; shift
     local apikey=$1 ; shift
+    local service=$1 ; shift
     local method=$1 ; shift
     method=$(echo "$method" | tr '[:lower:]' '[:upper:]')
     local relurl=$1 ; shift
     local version=$1 ; shift
 
+    apikeyflag="-H \"Authorization: A2A $apikey\""
+
     if [ $(curl --version | grep "libcurl" | sed -e 's,curl [0-9]*\.\([0-9]*\).* (.*,\1,') -ge 33 ]; then
         http11flag='--http1.1'
     fi
-#    local response=$(curl -K <(cat <<EOF
-#-s
-#$cabundlearg
-#--key $pkeyfile
-#--cert $certfile
-#--pass $pass
-#-X $method
-#$http11flag
-#-H "Accept: application/json"
-#-H "Authorization: A2A $apikey"
-#EOF
-#) "https://$appliance/service/a2a/v$version/$relurl"
-#        )
+   local response=$(curl -K <(cat <<EOF
+-s
+$cabundlearg
+--key $pkeyfile
+--cert $certfile
+--pass $pass
+-X $method
+$http11flag
+-H "Accept: application/json"
+$apikeyflag
+EOF
+) "https://$appliance/service/$service/v$version/$relurl"
+       )
     local error=$(echo $response | jq .Code 2> /dev/null)
     if [ ! -z "$response" ] && [ -z "$error" -o "$error" = "null" ]; then
         echo "$response"
@@ -39,7 +42,7 @@ invoke_a2a_method()
         # problem by calling OpenSSL directly and manually formulating an HTTP request.
         #   see https://github.com/curl/curl/issues/1411
         IFS=$'\n' read -d '' -r -a response < <(cat <<EOF | openssl s_client -connect $appliance:443 -quiet -crlf -key $pkeyfile -cert $certfile -pass pass:$pass 2>&1
-$method /service/a2a/v$version/$relurl HTTP/1.1
+$method /service/$service/v$version/$relurl HTTP/1.1
 Host: $appliance
 User-Agent: curl/7.47.0
 Authorization: A2A $apikey
@@ -79,8 +82,13 @@ EOF
             fi
         done
         if [ -z "$body" ]; then
-            # Coalesce all the output into a string and dump it
-            printf '%s\n' "${response[@]}"
+            # Coalesce all the output into a string, see if it matches other types of output, or dump error
+            output=$(printf '%s\n' "${response[@]}")
+            if grep -q "read:errno=0" <<< $output; then
+                echo "$output" | sed -n '/read:errno/,$p' | sed -e 's/\(.*\)read\:errno\=.*/\1/'
+            else
+                echo $output
+            fi
         else
             echo "$body"
         fi

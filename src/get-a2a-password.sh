@@ -105,7 +105,7 @@ if [ ! -z "$(which jq)" ]; then
     fi
 fi
 
-Result=$(invoke_a2a_method "$Appliance" "$CABundleArg" "$Cert" "$PKey" "$Pass" "$ApiKey" GET "Credentials?type=Password" $Version "$Body")
+Result=$(invoke_a2a_method "$Appliance" "$CABundleArg" "$Cert" "$PKey" "$Pass" "$ApiKey" a2a GET "Credentials?type=Password" $Version "$Body")
 echo $Result | jq . > /dev/null 2>&1
 if [ $? -ne 0 ]; then
     echo $Result

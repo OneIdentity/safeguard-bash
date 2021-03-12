@@ -3,8 +3,8 @@
 print_usage()
 {
     cat <<EOF
-USAGE: get-a2a-password.sh [-h]
-       get-a2a-password.sh [-a appliance] [-B cabundle] [-v version] [-c file] [-k file] [-A apikey] [-F format] [-p] [-r]
+USAGE: get-a2a-privatekey.sh [-h]
+       get-a2a-privatekey.sh [-a appliance] [-B cabundle] [-v version] [-c file] [-k file] [-A apikey] [-F format] [-p] [-r]
 
   -h  Show help and exit
   -a  Network address of the appliance
@@ -118,7 +118,7 @@ if [ ! -z "$(which jq)" ]; then
     fi
 fi
 
-Result=$(invoke_a2a_method "$Appliance" "$CABundleArg" "$Cert" "$PKey" "$Pass" "$ApiKey" GET "Credentials?type=PrivateKey&keyFormat=$KeyFormat" $Version)
+Result=$(invoke_a2a_method "$Appliance" "$CABundleArg" "$Cert" "$PKey" "$Pass" "$ApiKey" a2a GET "Credentials?type=PrivateKey&keyFormat=$KeyFormat" $Version)
 echo $Result | jq . > /dev/null 2>&1
 if [ $? -ne 0 ]; then
     echo $Result
