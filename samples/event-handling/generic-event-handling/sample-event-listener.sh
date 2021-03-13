@@ -49,6 +49,8 @@ if [ -x "$ScriptDir/connect-safeguard.sh" ]; then
     SafeguardDir="$ScriptDir"
 elif [ -x "../../../src/connect-safeguard.sh" ]; then
     SafeguardDir="$( cd ../../../src && pwd )"
+elif [ -x "/scripts/connect-safeguard.sh" ]; then
+    SafeguardDir="$( cd /scripts && pwd )"
 else
     cat <<EOF
 Unable to find the safeguard-bash scripts.

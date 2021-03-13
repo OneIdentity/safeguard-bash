@@ -159,7 +159,7 @@ while true; do
         fi
         coproc listener { 
             "$ScriptDir/listen-for-a2a-event.sh" -a $Appliance -c $Cert -k $PKey -A $ApiKey -p $OpenSslSclientFlag <<< $Pass 2> /dev/null | \
-                jq --unbuffered -c ".M[]?.A[]? | select(.Data?.EventName==\"AssetAccountPasswordUpdated\") | .Data?" 2> /dev/null
+                jq --unbuffered -c ".arguments[]? | select(.Data?.EventName==\"AssetAccountPasswordUpdated\") | .Data?" 2> /dev/null
         }
         >&2 echo "[$(date '+%x %X')] Started listener coprocess PID=$listener_PID."
     fi
@@ -187,4 +187,3 @@ EOF
         unset AcctPass
     fi
 done
-
