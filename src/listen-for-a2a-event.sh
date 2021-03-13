@@ -123,6 +123,7 @@ require_args
 ConnectionToken=`get_connection_token`
 Url="https://$Appliance/service/a2a/signalr"
 Params="?id=$ConnectionToken"
+Body=$(echo -e "{\"protocol\":\"json\",\"version\":1}\x1E") # \x1E is record separator char
 curl -K <(cat <<EOF
 -s
 $CABundleArg
@@ -131,14 +132,14 @@ $CABundleArg
 --pass $Pass
 -H "Authorization: A2A $ApiKey"
 EOF
-) -d '{"protocol":"json","version":1}' "$Url$Params"
+) -d "$Body" "$Url$Params"
 if $UseOpenSslSclient; then
     if [ -z "$(which stdbuf)" ]; then
         >&2 echo "Using openssl s_client with this script requires the stdbuf utility, please install it."
         exit 1
     fi
     cat <<EOF | stdbuf -o0 -e0 openssl s_client -connect $Appliance:443 -crlf -quiet -key $PKey -cert $Cert -pass pass:$Pass 2>&1 \
-        | $SED -u -e '/^data: /!d;/^data: initialized/d;s/^data: \(.*\)$/\1/g' | while read line; do echo $line | $PRETTYPRINT ; done
+        | $SED -u -e '/^:.*$/d;/^\s*$/d;s/^data: \(.*\)$/\1/g' | while read line; do echo $line | $PRETTYPRINT ; done
 GET /service/a2a/signalr$Params HTTP/1.1
 Host: $Appliance
 Authorization: A2A $ApiKey
@@ -157,5 +158,8 @@ $CABundleArg
 -H "Authorization: A2A $ApiKey"
 $http11flag
 EOF
-) -H 'Accept: text/event-stream' "$Url$Params" | $SED -u -e '/^data: initialized/d;/^\s*$/d;s/^data: \(.*\)$/\1/g' | while read line; do echo $line | $PRETTYPRINT ; done
+) -H 'Accept: text/event-stream' "$Url$Params" | $SED -u -e '/^:.*$/d;/^\s*$/d;s/^data: \(.*\)$/\1/g' |
+    while read line; do
+        echo $line | $PRETTYPRINT
+    done
 fi

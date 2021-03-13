@@ -9,7 +9,7 @@ if test -t 1; then
 fi
 
 # This read timeout is important to prevent hanging your event pipeline
-read -t 0.5 Pass
+read -t 1 Pass
 
 echo -e "${YELLOW}$0 received Password:${NC} $Pass"
 
