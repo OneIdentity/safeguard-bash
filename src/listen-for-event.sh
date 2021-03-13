@@ -94,5 +94,9 @@ stdbuf -o0 -e0 curl -K <(cat <<EOF
 $CABundleArg
 -H "Authorization: Bearer $AccessToken"
 EOF
-) -H 'Accept: text/event-stream' "$Url$Params" | $SED -u -e '/^data: initialized/d;/^\s*$/d;s/^data: \(.*\)$/\1/g' | while read line; do echo $line | $PRETTYPRINT ; done
-
+) -H 'Accept: text/event-stream' "$Url$Params" | $SED -u -e '/^data: initialized/d;/^\s*$/d;s/^data: \(.*\)$/\1/g' |
+    while read line; do
+        if [ "${line::1}" != ":" ]; then
+            echo $line | $PRETTYPRINT;
+        fi
+    done
