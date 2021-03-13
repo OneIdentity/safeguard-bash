@@ -89,7 +89,9 @@ $CABundleArg
 EOF
 ) -d '{"protocol":"json","version":1}' "$Url$Params"
 
-stdbuf -o0 -e0 curl -K <(cat <<EOF
+
+
+stdbuf -o0 -e0 curl -N -K <(cat <<EOF
 -s
 $CABundleArg
 -H "Authorization: Bearer $AccessToken"
