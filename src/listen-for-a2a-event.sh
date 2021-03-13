@@ -47,11 +47,6 @@ else
     SED=sed
 fi
 
-if [ -z "$(which stdbuf)" ]; then
-    >&2 echo "This script requires the stdbuf utility, please install it."
-    exit 1
-fi
-
 if [ $(curl --version | grep "libcurl" | $SED -e 's,curl [0-9]*\.\([0-9]*\).* (.*,\1,') -ge 33 ]; then
     http11flag='--http1.1'
 fi
@@ -138,6 +133,10 @@ $CABundleArg
 EOF
 ) -d '{"protocol":"json","version":1}' "$Url$Params"
 if $UseOpenSslSclient; then
+    if [ -z "$(which stdbuf)" ]; then
+        >&2 echo "Using openssl s_client with this script requires the stdbuf utility, please install it."
+        exit 1
+    fi
     cat <<EOF | stdbuf -o0 -e0 openssl s_client -connect $Appliance:443 -crlf -quiet -key $PKey -cert $Cert -pass pass:$Pass 2>&1 \
         | $SED -u -e '/^data: /!d;/^data: initialized/d;s/^data: \(.*\)$/\1/g' | while read line; do echo $line | $PRETTYPRINT ; done
 GET /service/a2a/signalr$Params HTTP/1.1
@@ -149,7 +148,7 @@ Accept: text/event-stream
 
 EOF
 else
-    stdbuf -o0 -e0 curl -K <(cat <<EOF
+    curl -N -K <(cat <<EOF
 -s
 $CABundleArg
 --key $PKey

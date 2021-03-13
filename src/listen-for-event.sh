@@ -37,11 +37,6 @@ else
     SED=sed
 fi
 
-if [ -z "$(which stdbuf)" ]; then
-    >&2 echo "This script requires the stdbuf utility, please install it."
-    exit 1
-fi
-
 get_connection_token()
 {
 	# this call does not require an authorization header
@@ -91,7 +86,7 @@ EOF
 
 
 
-stdbuf -o0 -e0 curl -N -K <(cat <<EOF
+curl -N -K <(cat <<EOF
 -s
 $CABundleArg
 -H "Authorization: Bearer $AccessToken"
