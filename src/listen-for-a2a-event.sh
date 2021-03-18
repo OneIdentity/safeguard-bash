@@ -139,7 +139,7 @@ if $UseOpenSslSclient; then
         exit 1
     fi
     cat <<EOF | stdbuf -o0 -e0 openssl s_client -connect $Appliance:443 -crlf -quiet -key $PKey -cert $Cert -pass pass:$Pass 2>&1 \
-        | $SED -u -e '/^:.*$/d;/^\s*$/d;s/^data: \(.*\)$/\1/g' | while read line; do echo $line | $PRETTYPRINT ; done
+        | $SED -u -e '/{.*}/!d' | while read line; do echo $line | $PRETTYPRINT ; done
 GET /service/a2a/signalr$Params HTTP/1.1
 Host: $Appliance
 Authorization: A2A $ApiKey
