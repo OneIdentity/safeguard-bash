@@ -13,15 +13,15 @@ USAGE: listen-for-a2a-event.sh [-h]
   -k  File containing client private key
   -A  A2A API token identifying the account
   -p  Read certificate password from stdin
-  -O  Use openssl s_client instead of curl for GnuTLS problem
+  -O  Use openssl s_client instead of curl for TLS client authentication problems
 
 This script will create a SignalR connection to the A2A service to report
 events.
 
 The -O option was added to allow this script to work in certain situations where the
 underlying TLS implementation compiled in with curl doesn't properly handle client
-certificates.  Usually this happens on Ubuntu 16.04 LTS and other Debian-based systems
-where curl is compiled against GnuTLS.
+certificates.  This has been observed on some versions of macOS, Ubuntu, and other
+Debian-based systems.
 
 NOTE: Install jq to get pretty-printed JSON output.
 
@@ -45,11 +45,6 @@ if [ ! -z "$(which gsed)" ]; then
     SED=gsed
 else
     SED=sed
-fi
-
-if [ -z "$(which stdbuf)" ]; then
-    >&2 echo "This script requires the stdbuf utility, please install it."
-    exit 1
 fi
 
 if [ $(curl --version | grep "libcurl" | $SED -e 's,curl [0-9]*\.\([0-9]*\).* (.*,\1,') -ge 33 ]; then
@@ -82,8 +77,61 @@ require_args()
 get_connection_token()
 {
     # This call does not require an authorization header
-    curl -s $CABundleArg "https://$Appliance/service/a2a/signalr/negotiate?negotiateVersion=1" -d '' \
-        | $SED -n -e 's/\+/%2B/g;s/\//%2F/g;s/.*"connectionId":"\([^"]*\)".*/\1/p'
+    if $UseOpenSslSclient; then
+        TokenResponse=$(cat <<EOF | openssl s_client -connect $Appliance:443 -quiet -crlf -key $PKey -cert $Cert -pass pass:$Pass 2>&1
+POST /service/a2a/signalr/negotiate?negotiateVersion=1 HTTP/1.1
+Host: $Appliance
+User-Agent: curl/7.47.0
+Authorization: A2A $apikey
+Accept: application/json
+Connection: close
+Content-type: application/json
+Content-Length: 0
+
+
+EOF
+)
+        echo $TokenResponse | $SED -n -e 's/\+/%2B/g;s/\//%2F/g;s/.*"connectionId":"\([^"]*\)".*/\1/p'
+    else
+        curl -K <(cat <<EOF
+-s
+$CABundleArg
+--key $PKey
+--cert $Cert
+--pass $Pass
+EOF
+) "https://$Appliance/service/a2a/signalr/negotiate?negotiateVersion=1" -d '' \
+            | $SED -n -e 's/\+/%2B/g;s/\//%2F/g;s/.*"connectionId":"\([^"]*\)".*/\1/p'
+    fi
+}
+
+negotiate_connection()
+{
+    if $UseOpenSslSclient; then
+        NegotiateResponse=$(cat <<EOF | openssl s_client -connect $Appliance:443 -quiet -crlf -key $PKey -cert $Cert -pass pass:$Pass 2>&1
+POST /service/a2a/signalr$Params HTTP/1.1
+Host: $Appliance
+User-Agent: curl/7.47.0
+Authorization: A2A $ApiKey
+Accept: application/json
+Connection: close
+Content-type: application/json
+Content-Length: ${#Body}
+
+$Body
+EOF
+)
+    else
+        curl -K <(cat <<EOF
+-s
+$CABundleArg
+--key $PKey
+--cert $Cert
+--pass $Pass
+-H "Authorization: A2A $ApiKey"
+EOF
+) -d "$Body" "$Url$Params"
+    fi
 }
 
 
@@ -125,21 +173,23 @@ done
 
 require_args
 
+# Step 1 -- initialize connection
 ConnectionToken=`get_connection_token`
+
+# Step 2 -- negotiate connection
 Url="https://$Appliance/service/a2a/signalr"
 Params="?id=$ConnectionToken"
-curl -K <(cat <<EOF
--s
-$CABundleArg
---key $PKey
---cert $Cert
---pass $Pass
--H "Authorization: A2A $ApiKey"
-EOF
-) -d '{"protocol":"json","version":1}' "$Url$Params"
+Body=$(echo -e "{\"protocol\":\"json\",\"version\":1}\x1E") # \x1E is record separator char
+negotiate_connection
+
+# Step 3 -- listen
 if $UseOpenSslSclient; then
+    if [ -z "$(which stdbuf)" ]; then
+        >&2 echo "Using openssl s_client with this script requires the stdbuf utility, please install it."
+        exit 1
+    fi
     cat <<EOF | stdbuf -o0 -e0 openssl s_client -connect $Appliance:443 -crlf -quiet -key $PKey -cert $Cert -pass pass:$Pass 2>&1 \
-        | $SED -u -e '/^data: /!d;/^data: initialized/d;s/^data: \(.*\)$/\1/g' | while read line; do echo $line | $PRETTYPRINT ; done
+        | $SED -u -e '/{.*}/!d' | while read line; do echo $line | $PRETTYPRINT ; done
 GET /service/a2a/signalr$Params HTTP/1.1
 Host: $Appliance
 Authorization: A2A $ApiKey
@@ -149,7 +199,7 @@ Accept: text/event-stream
 
 EOF
 else
-    stdbuf -o0 -e0 curl -K <(cat <<EOF
+    curl -N -K <(cat <<EOF
 -s
 $CABundleArg
 --key $PKey
@@ -158,5 +208,8 @@ $CABundleArg
 -H "Authorization: A2A $ApiKey"
 $http11flag
 EOF
-) -H 'Accept: text/event-stream' "$Url$Params" | $SED -u -e '/^data: initialized/d;/^\s*$/d;s/^data: \(.*\)$/\1/g' | while read line; do echo $line | $PRETTYPRINT ; done
+) -H 'Accept: text/event-stream' "$Url$Params" | $SED -u -e '/^:.*$/d;/^\s*$/d;s/^data: \(.*\)$/\1/g' |
+    while read line; do
+        echo $line | $PRETTYPRINT
+    done
 fi

@@ -252,7 +252,7 @@ while true; do
         fi
         coproc listener { 
             "$ScriptDir/listen-for-event.sh" -a $Appliance -T <<< $AccessToken 2> /dev/null | \
-                jq --unbuffered -c ".M[]?.A[]? | select(.Name==\"$EventName\") | .Data?" 2> /dev/null
+                jq --unbuffered -c ".arguments[]? | select(.Name==\"$EventName\") | .Data?" 2> /dev/null
         }
         >&2 echo "[$(date '+%x %X')] Started listener coprocess PID=$listener_PID."
     fi

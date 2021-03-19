@@ -20,7 +20,7 @@ invoke_a2a_method()
     if [ $(curl --version | grep "libcurl" | sed -e 's,curl [0-9]*\.\([0-9]*\).* (.*,\1,') -ge 33 ]; then
         http11flag='--http1.1'
     fi
-   local response=$(curl -K <(cat <<EOF
+    local response=$(curl -K <(cat <<EOF
 -s
 $cabundlearg
 --key $pkeyfile
