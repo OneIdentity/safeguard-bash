@@ -77,8 +77,61 @@ require_args()
 get_connection_token()
 {
     # This call does not require an authorization header
-    curl -s $CABundleArg "https://$Appliance/service/a2a/signalr/negotiate?negotiateVersion=1" -d '' \
-        | $SED -n -e 's/\+/%2B/g;s/\//%2F/g;s/.*"connectionId":"\([^"]*\)".*/\1/p'
+    if $UseOpenSslSclient; then
+        TokenResponse=$(cat <<EOF | openssl s_client -connect $Appliance:443 -quiet -crlf -key $PKey -cert $Cert -pass pass:$Pass 2>&1
+POST /service/a2a/signalr/negotiate?negotiateVersion=1 HTTP/1.1
+Host: $Appliance
+User-Agent: curl/7.47.0
+Authorization: A2A $apikey
+Accept: application/json
+Connection: close
+Content-type: application/json
+Content-Length: 0
+
+
+EOF
+)
+        echo $TokenResponse | $SED -n -e 's/\+/%2B/g;s/\//%2F/g;s/.*"connectionId":"\([^"]*\)".*/\1/p'
+    else
+        curl -K <(cat <<EOF
+-s
+$CABundleArg
+--key $PKey
+--cert $Cert
+--pass $Pass
+EOF
+) "https://$Appliance/service/a2a/signalr/negotiate?negotiateVersion=1" -d '' \
+            | $SED -n -e 's/\+/%2B/g;s/\//%2F/g;s/.*"connectionId":"\([^"]*\)".*/\1/p'
+    fi
+}
+
+negotiate_connection()
+{
+    if $UseOpenSslSclient; then
+        NegotiateResponse=$(cat <<EOF | openssl s_client -connect $Appliance:443 -quiet -crlf -key $PKey -cert $Cert -pass pass:$Pass 2>&1
+POST /service/a2a/signalr$Params HTTP/1.1
+Host: $Appliance
+User-Agent: curl/7.47.0
+Authorization: A2A $ApiKey
+Accept: application/json
+Connection: close
+Content-type: application/json
+Content-Length: ${#Body}
+
+$Body
+EOF
+)
+    else
+        curl -K <(cat <<EOF
+-s
+$CABundleArg
+--key $PKey
+--cert $Cert
+--pass $Pass
+-H "Authorization: A2A $ApiKey"
+EOF
+) -d "$Body" "$Url$Params"
+    fi
 }
 
 
@@ -120,19 +173,16 @@ done
 
 require_args
 
+# Step 1 -- initialize connection
 ConnectionToken=`get_connection_token`
+
+# Step 2 -- negotiate connection
 Url="https://$Appliance/service/a2a/signalr"
 Params="?id=$ConnectionToken"
 Body=$(echo -e "{\"protocol\":\"json\",\"version\":1}\x1E") # \x1E is record separator char
-curl -K <(cat <<EOF
--s
-$CABundleArg
---key $PKey
---cert $Cert
---pass $Pass
--H "Authorization: A2A $ApiKey"
-EOF
-) -d "$Body" "$Url$Params"
+negotiate_connection
+
+# Step 3 -- listen
 if $UseOpenSslSclient; then
     if [ -z "$(which stdbuf)" ]; then
         >&2 echo "Using openssl s_client with this script requires the stdbuf utility, please install it."
