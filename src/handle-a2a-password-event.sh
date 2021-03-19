@@ -12,7 +12,7 @@ USAGE: handle-a2a-password-event.sh [-h]
   -c  File containing client certificate
   -k  File containing client private key
   -A  A2A API token identifying the account
-  -O  Use openssl s_client instead of curl for GnuTLS problem
+  -O  Use openssl s_client instead of curl for TLS client authentication problems
   -p  Read certificate password from stdin
   -S  Script to execute when the password changes
 
@@ -25,8 +25,8 @@ only one line of text:
 
 The -O option was added to allow this script to work in certain situations where the
 underlying TLS implementation compiled in with curl doesn't properly handle client
-certificates.  Usually this happens on Ubuntu 16.04 LTS and other Debian-based systems
-where curl is compiled against GnuTLS.
+certificates.  This has been observed on some versions of macOS, Ubuntu, and other
+Debian-based systems.
 
 EOF
     exit 0
@@ -157,7 +157,7 @@ while true; do
             wait $listener_PID
             unset listener_PID
         fi
-        coproc listener { 
+        coproc listener {
             "$ScriptDir/listen-for-a2a-event.sh" -a $Appliance -c $Cert -k $PKey -A $ApiKey -p $OpenSslSclientFlag <<< $Pass 2> /dev/null | \
                 jq --unbuffered -c ".arguments[]? | select(.Data?.EventName==\"AssetAccountPasswordUpdated\") | .Data?" 2> /dev/null
         }

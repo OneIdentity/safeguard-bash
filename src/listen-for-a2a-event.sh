@@ -13,15 +13,15 @@ USAGE: listen-for-a2a-event.sh [-h]
   -k  File containing client private key
   -A  A2A API token identifying the account
   -p  Read certificate password from stdin
-  -O  Use openssl s_client instead of curl for GnuTLS problem
+  -O  Use openssl s_client instead of curl for TLS client authentication problems
 
 This script will create a SignalR connection to the A2A service to report
 events.
 
 The -O option was added to allow this script to work in certain situations where the
 underlying TLS implementation compiled in with curl doesn't properly handle client
-certificates.  Usually this happens on Ubuntu 16.04 LTS and other Debian-based systems
-where curl is compiled against GnuTLS.
+certificates.  This has been observed on some versions of macOS, Ubuntu, and other
+Debian-based systems.
 
 NOTE: Install jq to get pretty-printed JSON output.
 
