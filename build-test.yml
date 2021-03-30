@@ -6,9 +6,9 @@ pr:
     include:
       - master
       - release-*
-    paths:
-      exclude:
-        - README.md
+  paths:
+    exclude:
+      - README.md
 jobs:
   - job: Build
     displayName: "Linux - GitHub Zip and Docker Images"
