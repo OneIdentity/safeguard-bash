@@ -11,7 +11,7 @@ pr:
       - README.md
 jobs:
   - job: Build
-    displayName: "Linux - GitHub Zip and Docker Images"
+    displayName: "Build Linux Docker images"
     pool:
       vmImage: 'ubuntu-latest'
     steps:

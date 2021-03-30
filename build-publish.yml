@@ -11,7 +11,7 @@ trigger:
 pr: none
 jobs:
 - job: Build
-  displayName: "Linux - GitHub Zip and Docker Images"
+  displayName: "Build and publish Linux Docker images, publish GitHub zip"
   pool:
     vmImage: 'ubuntu-latest'
   steps:
