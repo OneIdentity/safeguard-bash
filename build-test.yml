@@ -1,0 +1,18 @@
+variables:
+  - template: pipeline-templates/global-variables.yml
+trigger: none
+pr:
+  branches:
+    include:
+      - master
+      - release-*
+    paths:
+      exclude:
+        - README.md
+jobs:
+  - job: Build
+    displayName: "Linux - GitHub Zip and Docker Images"
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+      - template: pipeline-templates/build-steps.yml
