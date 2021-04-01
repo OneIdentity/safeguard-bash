@@ -4,11 +4,10 @@ print_usage()
 {
     cat <<EOF
 USAGE: connect-safeguard.sh [-h]
-       connect-safeguard.sh [-a appliance] [-B cabundle] [-v version] [-q] [-i provider] [-u user] [-p] [-X]
+       connect-safeguard.sh [-a appliance] [-B cabundle] [-v version] [-i provider] [-u user] [-p] [-X]
        connect-safeguard.sh [-a appliance] [-B cabundle] [-v version] -i certificate [-c file] [-k file] [-p] [-X]
 
   -h  Show help and exit
-  -q  Query list of primary identity providers for appliance
   -a  Network address of the appliance
   -B  CA bundle for SSL trust validation (no checking by default)
   -v  Web API Version: 3 is default
@@ -37,7 +36,6 @@ Appliance=
 CABundle=
 CABundleArg=
 Version=3
-QueryProviders=false
 Providers=
 Provider=
 User=
@@ -172,7 +170,7 @@ EOF
 }
 
 
-while getopts ":a:B:v:i:u:c:k:pqhX" opt; do
+while getopts ":a:B:v:i:u:c:k:phX" opt; do
     case $opt in
     a)
         Appliance=$OPTARG
@@ -198,9 +196,6 @@ while getopts ":a:B:v:i:u:c:k:pqhX" opt; do
     p)
         # read password from stdin before doing anything
         read -s Pass
-        ;;
-    q)
-        QueryProviders=true
         ;;
     X)
         StoreLoginFile=false

@@ -54,17 +54,19 @@ query_providers()
 {
     if [ ! -z "$(which jq)" ]; then
         GetPrimaryProvidersRelativeURL="RSTS/UserLogin/LoginController?response_type=token&redirect_uri=urn:InstalledApplication&loginRequestStep=1"
-        # certificate provider not returned by default because it is marked as not supporting HTML forms login
         Providers=$(curl -s $CABundleArg -X POST -H "Accept: application/json" "https://$Appliance/$GetPrimaryProvidersRelativeURL" \
-                         -d 'RelayState=' | jq '.Providers|del(.[] | select(.Id == "local"))|.[]|"\(.Id)[\(.DisplayName)]"' | xargs echo -n)
+                         -d 'RelayState=' | jq -c '.Providers | del(.[].ForgotPasswordUrl)')
         if [ -z "$Providers" ]; then
             Exists=$(curl -s -k -X GET -H "Accept: application/json" "https://$Appliance/service/notification/v2/Status")
             if [ -z "$Exists" ]; then
-                >&2 echo "Unable to obtain list of identity providers, does $Appliance exist?"
+                >&2 echo "Unable to obtain list of identity providers, is $Appliance online?"
                 exit 1
+            else
+                Providers='[{"Id":"local","DisplayName":"Local"}]'
             fi
         fi
-        Providers=$(echo certificate local $Providers)
+        # certificate provider not returned by default because it is marked as not supporting HTML forms login
+        Providers=$(echo $Providers | jq -c '. + [{"Id":"certificate","DisplayName":"Certificate"}]')
     fi
 }
 
@@ -74,24 +76,27 @@ require_connect_args()
     if [ -z "$Appliance" ]; then
         read -p "Appliance Network Address: " Appliance
     fi
-    if $QueryProviders; then
-        if [ ! -z "$(which jq)" ]; then
-            query_providers
-        else
-            >&2 echo "You must install jq to query providers"
-            exit 1
-        fi
+    if [ ! -z "$(which jq)" ]; then
+        query_providers
     fi
+    ProviderPrompt=$(echo $Providers | jq '.|del(.[] | select(.Id == "local"))|del(.[] |select(.Id == "certificate"))|.[]|"\(.Id) [\(.DisplayName)],"' | xargs echo -n | sed 's/.$//')
+    ProviderPrompt=$(echo "(local, certificate, $ProviderPrompt)")
     if [ -z "$Provider" ]; then
         if [ ! -z "$Providers" ]; then
-            read -p "Identity Provider ($Providers): " Provider
+            read -p "Identity Provider $ProviderPrompt: " Provider
         else
             read -p "Identity Provider: " Provider
         fi
     fi
     if [ ! -z "$Providers" ]; then
-        if ! [[ $Providers =~ (^|[[:space:]])$Provider($|[[:space:]]) ]]; then
-            >&2 echo "Specified provider '$Provider' must be one of: $Providers!"; print_usage
+        if [ -z "$(echo $Providers | jq -c ".[]|select(.Id==\"$Provider\")")" -a -z "$(echo $Providers | jq -c ".[]|select(.DisplayName==\"$Provider\")")" ]; then
+            >&2 echo -e "\nSpecified provider '$Provider' must be one of: $ProviderPrompt!\n\n"; print_usage
+        else
+            if [ ! -z "$(echo $Providers | jq -c ".[]|select(.Id==\"$Provider\")")" ]; then
+                Provider=$(echo $Providers | jq -r ".[]|select(.Id==\"$Provider\")|.Id")
+            else
+                Provider=$(echo $Providers | jq -r ".[]|select(.DisplayName==\"$Provider\")|.Id")
+            fi
         fi
     fi
     if [ "$Provider" = "certificate" ]; then
