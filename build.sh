@@ -32,6 +32,7 @@ docker build \
     --build-arg COMMIT_ID=$CommitId \
     -t "oneidentity/safeguard-bash:${DockerVersionStr}alpine" \
     $ScriptDir
+docker tag "oneidentity/safeguard-bash:${DockerVersionStr}alpine" "oneidentity/safeguard-bash:latest"
 
 echo "Creating zip file artifact ..."
 ZipFolderName="safeguard-bash-${Version}"

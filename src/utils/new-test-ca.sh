@@ -13,9 +13,13 @@ cleanup()
 
 trap cleanup EXIT
 
-read -p "Enter CA friendly name:" CaName
-if [ -z "$CaName" ]; then
-    CaName="test-ca"
+if [ ! -z "$1" ]; then
+    CaName=$1
+else
+    read -p "Enter CA friendly name:" CaName
+    if [ -z "$CaName" ]; then
+        CaName="test-ca"
+    fi
 fi
 IntermediateCaName="issuing-$CaName"
 
