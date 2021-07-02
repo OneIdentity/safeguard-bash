@@ -42,14 +42,14 @@ if [ ! -z "$(which docker)" ]; then
     if [ $? -ne 0 ]; then
         $ScriptDir/build.sh
     fi
-    echo -e "${YELLOW}Running the safeguard-bash container.\n" \
+    echo -e "${YELLOW}Running the oneidentity/safeguard-bash container.\n" \
             "You can specify an alternate startup command using arguments to this script.\n" \
             "The default entrypoint is bash, so use the -c argument.\n" \
             "  e.g. run.sh -c /bin/bash${NC}"
     if [ -z "$Volume" ]; then
-        docker run -it safeguard-bash "$@"
+        docker run -it oneidentity/safeguard-bash "$@"
     else
-        docker run -v "$Volume:/volume" -it safeguard-bash "$@"
+        docker run -v "$Volume:/volume" -it oneidentity/safeguard-bash "$@"
     fi
 else
     >&2 echo "You must install docker to use this script"
