@@ -44,13 +44,21 @@ with a bogus password.
 
 ## Running This Sample
 
+NOTE: This sample uses certificates that are checked into this repository.  To
+adapt this to your own environment you will want to securely issue your own
+certificates.
+
 Follow these steps:
 
 1. Run `setup.sh` and provide the bootstrap admin credential (local\admin). This
    will set everything up for you. Please note the A2A API key that is displayed.
-2. Run `run.sh` to build and run the container. It will exit by saying that you
+
+2. Open the Safeguard UI and set an initial password for safeguard-bash-asset\a2a.
+
+3. Run `run.sh` to build and run the container. It will exit by saying that you
    have not provided the right environment variables.
-3. Re-run `run.sh` with the following command line (including the A2A API key from
+
+4. Re-run `run.sh` with the following command line (including the A2A API key from
    step 1).
 
    ```bash
@@ -69,9 +77,11 @@ Follow these steps:
    the `./run.sh` command line above. Unless you have configured your docker
    daemon to use your local DNS, it will default to Google's DNS.
 
-4. Open the Safeguard UI and change the password for the safeguard-bash-asset\a2a
+5. Open the Safeguard UI and change the password for the safeguard-bash-asset\a2a
    account.
-5. You can change the password multiple times.
-6. You can unplug the network or reboot Safeguard and the script will re-connect
+
+6. You can change the password multiple times.
+
+7. You can unplug the network or reboot Safeguard and the script will re-connect
    as necessary.
 
