@@ -37,7 +37,11 @@ $apikeyflag
 EOF
 ) "https://$appliance/service/$service/v$version/$relurl"
        )
-        error=$(echo $response | jq .Code 2> /dev/null)
+        if [ -z "$(which jq 2> /dev/null)" ]; then
+            error=$(echo $response | grep ".Code")
+        else
+            error=$(echo $response | jq .Code 2> /dev/null)
+        fi
     fi
     if [ ! -z "$response" ] && [ -z "$error" -o "$error" = "null" ]; then
         echo "$response"
