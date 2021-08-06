@@ -25,6 +25,10 @@ EOF
 
 ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+if [ -z "$(which jq 2> /dev/null)" ]; then
+    >&2 echo "This script requires jq for parsing and manipulating responses."
+    exit 1
+fi
 
 Appliance=
 AccessToken=
@@ -77,19 +81,15 @@ done
 
 require_args
 
-ATTRFILTER='cat'
-ERRORFILTER='cat'
-if [ ! -z "$(which jq 2> /dev/null)" ]; then
-    ERRORFILTER='jq .'
-    if $FullOutput; then
-        ATTRFILTER='jq .'
+ERRORFILTER='jq .'
+if $FullOutput; then
+    ATTRFILTER='jq .'
+else
+    ArrayFilter='[.[]|{Id,AssetId,AssetName,AccountId,AccountName,State}]'
+    if [ -z "$RequestRole" ]; then
+        ATTRFILTER="jq with_entries(.value|=$ArrayFilter)"
     else
-        ArrayFilter='[.[]|{Id,AssetId,AssetName,AccountId,AccountName,State}]'
-        if [ -z "$RequestRole" ]; then
-            ATTRFILTER="jq with_entries(.value|=$ArrayFilter)"
-        else
-            ATTRFILTER="jq $ArrayFilter"
-        fi
+        ATTRFILTER="jq $ArrayFilter"
     fi
 fi
 
