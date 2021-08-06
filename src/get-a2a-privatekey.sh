@@ -4,7 +4,7 @@ print_usage()
 {
     cat <<EOF
 USAGE: get-a2a-privatekey.sh [-h]
-       get-a2a-privatekey.sh [-a appliance] [-B cabundle] [-v version] [-c file] [-k file] [-A apikey] [-F format] [-p] [-r]
+       get-a2a-privatekey.sh [-a appliance] [-B cabundle] [-v version] [-c file] [-k file] [-A apikey] [-F format] [-O] [-p] [-r]
 
   -h  Show help and exit
   -a  Network address of the appliance
@@ -13,8 +13,9 @@ USAGE: get-a2a-privatekey.sh [-h]
   -c  File containing client certificate
   -k  File containing client private key
   -A  A2A API token identifying the account
+  -O  Use openssl s_client instead of curl for TLS client authentication problems
   -p  Read certificate password from stdin
-  -r  Raw output, i.e. remove quotes & interpret escape chars from JSON string to get just the private key
+  -r  Raw output, i.e. remove quotes & interpret escape chars from JSON string to get just the private key (requires jq)
   -F  Private key format (default: OpenSsh)
       OpenSsh: OpenSSH legacy PEM format
       Ssh2: Tectia format for use with tools from SSH.com
@@ -40,6 +41,7 @@ Raw=false
 KeyFormat=OpenSsh
 PassStdin=
 Pass=
+UseOpenSslSclient=false
 
 . "$ScriptDir/utils/loginfile.sh"
 . "$ScriptDir/utils/a2a.sh"
@@ -65,7 +67,7 @@ require_args()
     fi
 }
 
-while getopts ":a:B:v:c:k:A:F:prh" opt; do
+while getopts ":a:B:v:c:k:A:F:pOrh" opt; do
     case $opt in
     a)
         Appliance=$OPTARG
@@ -88,6 +90,9 @@ while getopts ":a:B:v:c:k:A:F:prh" opt; do
     A)
         ApiKey=$OPTARG
         ;;
+    O)
+        UseOpenSslSclient=true
+        ;;
     r)
         Raw=true
         ;;
@@ -109,7 +114,7 @@ require_args
 
 ATTRFILTER='cat'
 ERRORFILTER='cat'
-if [ ! -z "$(which jq)" ]; then
+if [ ! -z "$(which jq 2> /dev/null)" ]; then
     ERRORFILTER='jq .'
     if $Raw; then
         ATTRFILTER='jq --raw-output .'
@@ -118,7 +123,7 @@ if [ ! -z "$(which jq)" ]; then
     fi
 fi
 
-Result=$(invoke_a2a_method "$Appliance" "$CABundleArg" "$Cert" "$PKey" "$Pass" "$ApiKey" a2a GET "Credentials?type=PrivateKey&keyFormat=$KeyFormat" $Version)
+Result=$(invoke_a2a_method "$Appliance" "$CABundleArg" "$Cert" "$PKey" "$Pass" "$ApiKey" a2a GET "Credentials?type=PrivateKey&keyFormat=$KeyFormat" $Version $UseOpenSslSclient)
 echo $Result | jq . > /dev/null 2>&1
 if [ $? -ne 0 ]; then
     echo $Result

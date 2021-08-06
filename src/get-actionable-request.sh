@@ -11,7 +11,7 @@ USAGE: get-actionable-request.sh [-h]
   -a  Network address of the appliance
   -t  Safeguard access token
   -v  Web API Version: 3 is default
-  -r  Request role (e.g. Admin, Approver, Requester, Reviewer) 
+  -r  Request role (e.g. Admin, Approver, Requester, Reviewer)
   -F  Full JSON output
 
 Get an access request or all access requests via the Web API that are open that
@@ -25,6 +25,10 @@ EOF
 
 ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+if [ -z "$(which jq 2> /dev/null)" ]; then
+    >&2 echo "This script requires jq for parsing and manipulating responses."
+    exit 1
+fi
 
 Appliance=
 AccessToken=
@@ -77,19 +81,15 @@ done
 
 require_args
 
-ATTRFILTER='cat'
-ERRORFILTER='cat'
-if [ ! -z "$(which jq)" ]; then
-    ERRORFILTER='jq .'
-    if $FullOutput; then
-        ATTRFILTER='jq .'
+ERRORFILTER='jq .'
+if $FullOutput; then
+    ATTRFILTER='jq .'
+else
+    ArrayFilter='[.[]|{Id,AssetId,AssetName,AccountId,AccountName,State}]'
+    if [ -z "$RequestRole" ]; then
+        ATTRFILTER="jq with_entries(.value|=$ArrayFilter)"
     else
-        ArrayFilter='[.[]|{Id,AssetId,AssetName,AccountId,AccountName,State}]'
-        if [ -z "$RequestRole" ]; then
-            ATTRFILTER="jq with_entries(.value|=$ArrayFilter)"
-        else
-            ATTRFILTER="jq $ArrayFilter"
-        fi
+        ATTRFILTER="jq $ArrayFilter"
     fi
 fi
 

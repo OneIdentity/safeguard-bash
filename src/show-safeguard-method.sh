@@ -91,7 +91,7 @@ while getopts ":a:B:v:s:m:U:h" opt; do
     esac
 done
 
-if [ -z "$(which jq)" ]; then
+if [ -z "$(which jq 2> /dev/null)" ]; then
     >&2 echo "This script requires extensive JSON parsing, so you must download and install jq to use it."
     exit 1
 fi
@@ -187,15 +187,15 @@ if [ ! -z "$RelativeUrl" -a ! -z "$Method" ]; then
     if [ -z "$Body" ]; then
         Body='null'
     fi
-    Obj=$(echo $Ops | jq "{ 
-        \"Path\": .key | ltrimstr(\"/v$Version/\"), 
-        \"Method\": \"$Method\", 
+    Obj=$(echo $Ops | jq "{
+        \"Path\": .key | ltrimstr(\"/v$Version/\"),
+        \"Method\": \"$Method\",
         \"Description\": .value.$MethodFilter.summary,
         \"QueryParameters\": [.value.$MethodFilter.parameters[] | select(.in == \"query\") | {
             \"Name\": .name,
             \"Description\": .description,
             \"Type\": .type,
-            \"Required\": .required 
+            \"Required\": .required
         }],
         \"PathParameters\": [.value.$MethodFilter.parameters[] | select(.in == \"path\") | {
             \"Name\": .name,

@@ -5,7 +5,7 @@ print_usage()
     cat <<EOF
 USAGE: new-access-request.sh [-h]
        new-access-request.sh [-v version] [-s assetid] [-c accountid] [-y accesstype] [-F]
-       new-access-request.sh [-a appliance] [-t accesstoken] [-v version] 
+       new-access-request.sh [-a appliance] [-t accesstoken] [-v version]
                              [-s assetid] [-c accountid] [-y accesstype] [-F]
 
   -h  Show help and exit
@@ -26,7 +26,7 @@ EOF
 
 ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-if [ -z "$(which jq)" ]; then
+if [ -z "$(which jq 2> /dev/null)" ]; then
     >&2 echo "This script requires jq for parsing and manipulating responses."
     exit 1
 fi

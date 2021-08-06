@@ -21,7 +21,7 @@ EOF
 
 ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-if [ -z "$(which jq)" ]; then
+if [ -z "$(which jq 2> /dev/null)" ]; then
     >&2 echo "This script requires jq for parsing between requests."
     exit 1
 fi

@@ -3,24 +3,28 @@
 # It shouldn't be called directly.
 invoke_a2a_method()
 {
-    local appliance=$1 ; shift
-    local cabundlearg=$1 ; shift
-    local certfile=$1 ; shift
-    local pkeyfile=$1 ; shift
-    local pass=$1 ; shift
-    local apikey=$1 ; shift
-    local service=$1 ; shift
-    local method=$1 ; shift
+    local appliance=$1 ; shift       #1
+    local cabundlearg=$1 ; shift     #2
+    local certfile=$1 ; shift        #3
+    local pkeyfile=$1 ; shift        #4
+    local pass=$1 ; shift            #5
+    local apikey=$1 ; shift          #6
+    local service=$1 ; shift         #7
+    local method=$1 ; shift          #8
     method=$(echo "$method" | tr '[:lower:]' '[:upper:]')
-    local relurl=$1 ; shift
-    local version=$1 ; shift
+    local relurl=$1 ; shift          #9
+    local version=$1 ; shift         #10
+    local usesclient=$1 ; shift      #11
 
-    apikeyflag="-H \"Authorization: A2A $apikey\""
+    local apikeyflag="-H \"Authorization: A2A $apikey\""
+    local response=""
+    local error=""
 
-    if [ $(curl --version | grep "libcurl" | sed -e 's,curl [0-9]*\.\([0-9]*\).* (.*,\1,') -ge 33 ]; then
-        http11flag='--http1.1'
-    fi
-    local response=$(curl -K <(cat <<EOF
+    if ! $usesclient; then
+        if [ $(curl --version | grep "libcurl" | sed -e 's,curl [0-9]*\.\([0-9]*\).* (.*,\1,') -ge 33 ]; then
+            http11flag='--http1.1'
+        fi
+        response=$(curl -K <(cat <<EOF
 -s
 $cabundlearg
 --key $pkeyfile
@@ -33,7 +37,12 @@ $apikeyflag
 EOF
 ) "https://$appliance/service/$service/v$version/$relurl"
        )
-    local error=$(echo $response | jq .Code 2> /dev/null)
+        if [ -z "$(which jq 2> /dev/null)" ]; then
+            error=$(echo $response | grep '"Code":60108')
+        else
+            error=$(echo $response | jq .Code 2> /dev/null)
+        fi
+    fi
     if [ ! -z "$response" ] && [ -z "$error" -o "$error" = "null" ]; then
         echo "$response"
     else

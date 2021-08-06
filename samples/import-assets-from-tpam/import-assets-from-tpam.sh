@@ -74,7 +74,7 @@ while getopts ":t:a:T:I:P:h" opt; do
     esac
 done
 
-if [ -z "$(which jq)" ]; then
+if [ -z "$(which jq 2> /dev/null)" ]; then
     >&2 echo "This script requires extensive JSON parsing, so you must download and install jq to use it."
     exit 1
 fi
@@ -116,15 +116,15 @@ TpamJsonFiltered=$(echo $TpamJson \
 SgJsonPre=$(echo $TpamJsonFiltered \
            | jq '.[] | with_entries(
                  if (.key == "SystemName") then
-                     .key |= "Name" 
+                     .key |= "Name"
                  elif (.key == "PortNumber") then
                      .key |= "ConnectionProperties"
                  elif (.key == "PlatformName") then
-                     .key |= "PlatformId" 
+                     .key |= "PlatformId"
                  else . end )' \
            | jq 'with_entries(
                  if ((.key == "ConnectionProperties") and (.value == null)) then
-                     .value |= { ServiceAccountCredentialType: "None" } 
+                     .value |= { ServiceAccountCredentialType: "None" }
                  elif (.key == "ConnectionProperties") then
                      .value |= { ServiceAccountCredentialType: "None", Port: . }
                  else . end )' | jq -s .)
