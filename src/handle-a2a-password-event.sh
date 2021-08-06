@@ -138,7 +138,7 @@ require_args
 require_prereqs
 
 
-AcctPass=$("$ScriptDir/get-a2a-password.sh" -a $Appliance -v $Version -c $Cert -k $PKey -A $ApiKey -p <<< $Pass | jq -c -r .)
+AcctPass=$("$ScriptDir/get-a2a-password.sh" -a $Appliance -v $Version -c $Cert -k $PKey -A $ApiKey -p $OpenSslSclientFlag <<< $Pass | jq -c -r .)
 Error=$(echo $AcctPass | jq .Code 2> /dev/null)
 if [ ! -z "$Error" -o -z "$AcctPass" ]; then
     >&2 echo "Unable to fetch initial password from A2A service"
@@ -173,7 +173,7 @@ while true; do
         backoff_wait
     fi
     if [ ! -z "$Output" ]; then
-        AcctPass=$("$ScriptDir/get-a2a-password.sh" -a $Appliance -v $Version -c $Cert -k $PKey -A $ApiKey -p <<< $Pass | jq -c -r .)
+        AcctPass=$("$ScriptDir/get-a2a-password.sh" -a $Appliance -v $Version -c $Cert -k $PKey -A $ApiKey -p $OpenSslSclientFlag <<< $Pass | jq -c -r .)
         Error=$(echo $AcctPass | jq .Code 2> /dev/null)
         if [ ! -z "$Error" -o -z "$AcctPass" ]; then
             >&2 echo "Unable to fetch initial password from A2A service"
