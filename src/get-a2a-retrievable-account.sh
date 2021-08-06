@@ -22,6 +22,10 @@ EOF
 
 ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+if [ -z "$(which jq)" ]; then
+    >&2 echo "This script requires jq for parsing and manipulating responses."
+    exit 1
+fi
 
 Appliance=
 CABundleArg=
@@ -82,11 +86,6 @@ while getopts ":a:B:v:c:k:A:prh" opt; do
 done
 
 require_args
-
-if [ -z "$(which jq 2> /dev/null)" ]; then
-    >&2 echo "This script requires jq for parsing and manipulating responses."
-    exit 1
-fi
 
 Registrations=$(invoke_a2a_method "$Appliance" "$CABundleArg" "$Cert" "$PKey" "$Pass" "NONE" core GET "A2ARegistrations" $Version "")
 echo $Registrations | jq -r '.[] | [.Id, .AppName, .Description // "", .Disabled, .CertificateUserId, .CertificateUser, .CertificateUserThumbPrint] | @tsv' |
