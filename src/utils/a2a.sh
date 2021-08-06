@@ -38,7 +38,7 @@ EOF
 ) "https://$appliance/service/$service/v$version/$relurl"
        )
         if [ -z "$(which jq 2> /dev/null)" ]; then
-            error=$(echo $response | grep ".Code")
+            error=$(echo $response | grep '"Code":60108')
         else
             error=$(echo $response | jq .Code 2> /dev/null)
         fi
