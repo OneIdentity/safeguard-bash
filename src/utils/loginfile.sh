@@ -52,7 +52,7 @@ require_login_args()
 
 query_providers()
 {
-    if [ ! -z "$(which jq)" ]; then
+    if [ ! -z "$(which jq 2> /dev/null)" ]; then
         GetPrimaryProvidersRelativeURL="RSTS/UserLogin/LoginController?response_type=token&redirect_uri=urn:InstalledApplication&loginRequestStep=1"
         Providers=$(curl -s $CABundleArg -X POST -H "Accept: application/json" "https://$Appliance/$GetPrimaryProvidersRelativeURL" \
                          -d 'RelayState=' | jq -c '.Providers | del(.[].ForgotPasswordUrl)')
@@ -76,7 +76,7 @@ require_connect_args()
     if [ -z "$Appliance" ]; then
         read -p "Appliance Network Address: " Appliance
     fi
-    if [ ! -z "$(which jq)" ]; then
+    if [ ! -z "$(which jq 2> /dev/null)" ]; then
         query_providers
     fi
     ProviderPrompt=$(echo $Providers | jq '.|del(.[] | select(.Id == "local"))|del(.[] |select(.Id == "certificate"))|.[]|"\(.Id) [\(.DisplayName)],"' | xargs echo -n | sed 's/.$//')

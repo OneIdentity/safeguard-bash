@@ -109,7 +109,7 @@ require_args
 
 ATTRFILTER='cat'
 ERRORFILTER='cat'
-if [ ! -z "$(which jq)" ]; then
+if [ ! -z "$(which jq 2> /dev/null)" ]; then
     ERRORFILTER='jq .'
     if $Raw; then
         ATTRFILTER='jq --raw-output .'

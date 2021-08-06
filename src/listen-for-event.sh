@@ -45,7 +45,7 @@ get_connection_token()
 }
 
 
-if [ ! -z "`which jq`" ]; then
+if [ ! -z "$(which jq 2> /dev/null)" ]; then
     PRETTYPRINT="jq ."
 else
     PRETTYPRINT="cat"

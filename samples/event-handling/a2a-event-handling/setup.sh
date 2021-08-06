@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ -z "$(which jq)" ]; then
+if [ -z "$(which jq 2> /dev/null)" ]; then
     >&2 echo "This script requires jq for parsing and manipulating responses."
     exit 1
 fi

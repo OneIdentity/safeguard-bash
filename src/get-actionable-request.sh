@@ -11,7 +11,7 @@ USAGE: get-actionable-request.sh [-h]
   -a  Network address of the appliance
   -t  Safeguard access token
   -v  Web API Version: 3 is default
-  -r  Request role (e.g. Admin, Approver, Requester, Reviewer) 
+  -r  Request role (e.g. Admin, Approver, Requester, Reviewer)
   -F  Full JSON output
 
 Get an access request or all access requests via the Web API that are open that
@@ -79,7 +79,7 @@ require_args
 
 ATTRFILTER='cat'
 ERRORFILTER='cat'
-if [ ! -z "$(which jq)" ]; then
+if [ ! -z "$(which jq 2> /dev/null)" ]; then
     ERRORFILTER='jq .'
     if $FullOutput; then
         ATTRFILTER='jq .'

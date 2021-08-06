@@ -29,7 +29,7 @@ USAGE: invoke-safeguard-method.sh [-h]
 
 Create a login file using connect-safeguard.sh for convenience. A login file is
 required in order to use certificate authentication. If a login file is not used
-connect-safeguard.sh will be called to create one. You may also use the -n option for 
+connect-safeguard.sh will be called to create one. You may also use the -n option for
 anonymous authentication or the -a and -t options to specify an access token.
 
 NOTE: Install jq to get pretty-printed JSON output.
@@ -160,7 +160,7 @@ done
 
 PRETTYPRINT='cat'
 if [ "$Accept" = "application/json" ]; then
-    if [ ! -z "$(which jq)" ]; then
+    if [ ! -z "$(which jq 2> /dev/null)" ]; then
         if $FilterNulls; then
             # If we had walk we could replace everything recursively with
             #   walk( if type == "object" then with_entries(select(.value != null)) else . end)

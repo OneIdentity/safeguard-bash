@@ -22,7 +22,7 @@ USAGE: handle-event.sh [-h]
   -S  Script to execute when the event occurs
 
 Connect to SignalR using the Safeguard event service via a Safeguard access token
-and execute a provided script (handler script) each time an event occurs passing 
+and execute a provided script (handler script) each time an event occurs passing
 the details of the event as a JSON object string to stdin.  The handler script will
 actually be passed four lines of text:
 
@@ -80,7 +80,7 @@ require_args()
 
 require_prereqs()
 {
-    if [ -z "$(which jq)" ]; then
+    if [ -z "$(which jq 2> /dev/null)" ]; then
         >&2 echo "This script requires the jq utility for parsing JSON response data from Safeguard"
         exit 1
     fi
@@ -250,7 +250,7 @@ while true; do
             wait $listener_PID
             unset listener_PID
         fi
-        coproc listener { 
+        coproc listener {
             "$ScriptDir/listen-for-event.sh" -a $Appliance -T <<< $AccessToken 2> /dev/null | \
                 jq --unbuffered -c ".arguments[]? | select(.Name==\"$EventName\") | .Data?" 2> /dev/null
         }
