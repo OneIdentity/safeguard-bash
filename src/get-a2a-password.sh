@@ -4,7 +4,7 @@ print_usage()
 {
     cat <<EOF
 USAGE: get-a2a-password.sh [-h]
-       get-a2a-password.sh [-a appliance] [-B cabundle] [-v version] [-c file] [-k file] [-A apikey] [-p] [-r]
+       get-a2a-password.sh [-a appliance] [-B cabundle] [-v version] [-c file] [-k file] [-A apikey] [-O] [-p] [-r]
 
   -h  Show help and exit
   -a  Network address of the appliance
@@ -13,8 +13,9 @@ USAGE: get-a2a-password.sh [-h]
   -c  File containing client certificate
   -k  File containing client private key
   -A  A2A API token identifying the account
+  -O  Use openssl s_client instead of curl for TLS client authentication problems
   -p  Read certificate password from stdin
-  -r  Raw output, i.e. remove quotes from JSON string to get just the password
+  -r  Raw output, i.e. remove quotes from JSON string to get just the password (requires jq)
 
 Retrieve a password using the Safeguard A2A service.
 
@@ -35,6 +36,7 @@ ApiKey=
 Raw=false
 PassStdin=
 Pass=
+UseOpenSslSclient=false
 
 . "$ScriptDir/utils/loginfile.sh"
 . "$ScriptDir/utils/a2a.sh"
@@ -60,7 +62,7 @@ require_args()
     fi
 }
 
-while getopts ":a:B:v:c:k:A:prh" opt; do
+while getopts ":a:B:v:c:k:A:pOrh" opt; do
     case $opt in
     a)
         Appliance=$OPTARG
@@ -82,6 +84,9 @@ while getopts ":a:B:v:c:k:A:prh" opt; do
         ;;
     A)
         ApiKey=$OPTARG
+        ;;
+    O)
+        UseOpenSslSclient=true
         ;;
     r)
         Raw=true
@@ -105,7 +110,7 @@ if [ ! -z "$(which jq 2> /dev/null)" ]; then
     fi
 fi
 
-Result=$(invoke_a2a_method "$Appliance" "$CABundleArg" "$Cert" "$PKey" "$Pass" "$ApiKey" a2a GET "Credentials?type=Password" $Version "$Body")
+Result=$(invoke_a2a_method "$Appliance" "$CABundleArg" "$Cert" "$PKey" "$Pass" "$ApiKey" a2a GET "Credentials?type=Password" $Version $UseOpenSslSclient)
 echo $Result | jq . > /dev/null 2>&1
 if [ $? -ne 0 ]; then
     echo $Result
