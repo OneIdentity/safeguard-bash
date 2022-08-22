@@ -9,7 +9,7 @@ USAGE: set-account-password.sh [-h]
   -h  Show help and exit
   -a  Network address of the appliance
   -t  Safeguard access token
-  -v  Web API Version: 3 is default
+  -v  Web API Version: 4 is default
   -c  Account Id
   -p  Read new password from stdin
 
@@ -29,7 +29,7 @@ fi
 
 Appliance=
 AccessToken=
-Version=3
+Version=4
 AccountId=
 Pass=
 

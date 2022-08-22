@@ -4,12 +4,12 @@ print_usage()
 {
     cat <<EOF
 USAGE: disconnect-safeguard.sh [-h]
-       disconnect-safeguard.sh [-v version] 
-       disconnect-safeguard.sh [-a appliance] [-t accesstoken] [-v version] 
+       disconnect-safeguard.sh [-v version]
+       disconnect-safeguard.sh [-a appliance] [-t accesstoken] [-v version]
 
   -h  Show help and exit
   -a  Network address of the appliance
-  -v  Web API Version: 3 is default
+  -v  Web API Version: 4 is default
   -t  Safeguard access token
 
 This will call the logout service on the appliance and remove the login file
@@ -22,7 +22,7 @@ EOF
 
 Appliance=
 AccessToken=
-Version=3
+Version=4
 
 LoginFile="$HOME/.safeguard_login"
 

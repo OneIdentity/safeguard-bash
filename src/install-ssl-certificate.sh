@@ -9,7 +9,7 @@ USAGE: install-ssl-certificate.sh [-h]
 
   -h  Show help and exit
   -a  Network address of the appliance
-  -v  Web API Version: 3 is default
+  -v  Web API Version: 4 is default
   -t  Safeguard access token
   -C  File containing certificate (PKCS#12 format, ie p12 or pfx file)
   -P  Password to decrypt the certificate (otherwise you will be prompted)
@@ -30,7 +30,7 @@ fi
 
 Appliance=
 AccessToken=
-Version=3
+Version=4
 SSLCertificateFile=
 SSLCertificatePassword=
 

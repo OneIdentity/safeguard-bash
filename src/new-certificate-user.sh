@@ -9,7 +9,7 @@ USAGE: new-certificate-user.sh [-h]
   -h  Show help and exit
   -a  Network address of the appliance
   -t  Safeguard access token
-  -v  Web API Version: 3 is default
+  -v  Web API Version: 4 is default
   -n  Name for new user
   -C  User certificate file (used to obtain SHA-1 thumbprint)
   -s  SHA-1 thumbprint as a string
@@ -29,7 +29,7 @@ fi
 
 Appliance=
 AccessToken=
-Version=3
+Version=4
 NewUserName=
 NewUserThumbprint=
 

@@ -6,7 +6,7 @@ print_usage()
 USAGE: get-appliance-verification.sh [-h] [-a appliance] [-v version]
   -h  Show help and exit
   -a  Network address of the appliance
-  -v  Web API Version: 3 is default
+  -v  Web API Version: 4 is default
 
 Anonymously retrieve the appliance status.
 
@@ -19,7 +19,7 @@ EOF
 
 ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-Version=3
+Version=4
 
 require_args()
 {

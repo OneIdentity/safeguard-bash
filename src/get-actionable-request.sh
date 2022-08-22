@@ -10,7 +10,7 @@ USAGE: get-actionable-request.sh [-h]
   -h  Show help and exit
   -a  Network address of the appliance
   -t  Safeguard access token
-  -v  Web API Version: 3 is default
+  -v  Web API Version: 4 is default
   -r  Request role (e.g. Admin, Approver, Requester, Reviewer)
   -F  Full JSON output
 
@@ -32,7 +32,7 @@ fi
 
 Appliance=
 AccessToken=
-Version=3
+Version=4
 RequestRole=
 FullOutput=false
 

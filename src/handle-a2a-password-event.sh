@@ -8,7 +8,7 @@ USAGE: handle-a2a-password-event.sh [-h]
 
   -h  Show help and exit
   -a  Network address of the appliance
-  -v  Web API Version: 3 is default
+  -v  Web API Version: 4 is default
   -c  File containing client certificate
   -k  File containing client private key
   -A  A2A API token identifying the account
@@ -35,7 +35,7 @@ EOF
 ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 Appliance=
-Version=3
+Version=4
 Cert=
 PKey=
 ApiKey=
