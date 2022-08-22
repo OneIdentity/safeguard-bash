@@ -9,7 +9,7 @@ USAGE: install-trusted-certificate.sh [-h]
 
   -h  Show help and exit
   -a  Network address of the appliance
-  -v  Web API Version: 3 is default
+  -v  Web API Version: 4 is default
   -t  Safeguard access token
   -C  File containing certificate (PEM format, or DER-encoded)
 
@@ -26,7 +26,7 @@ ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 Appliance=
 AccessToken=
-Version=3
+Version=4
 RootCertificateFile=
 
 . "$ScriptDir/utils/loginfile.sh"

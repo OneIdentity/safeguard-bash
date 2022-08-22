@@ -14,7 +14,7 @@ USAGE: invoke-safeguard-method.sh [-h]
   -h  Show help and exit
   -a  Network address of the appliance
   -B  CA bundle for SSL trust validation (no checking by default)
-  -v  Web API Version: 3 is default
+  -v  Web API Version: 4 is default
   -n  Anonymous authentication, don't use login file either
   -t  Safeguard access token
   -T  Read Safeguard access token from stdin
@@ -48,7 +48,7 @@ Cert=
 PKey=
 Pass=
 
-Version=3
+Version=4
 Service=
 Method="GET"
 RelativeUrl=

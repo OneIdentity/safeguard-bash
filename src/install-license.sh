@@ -10,7 +10,7 @@ USAGE: install-license.sh [-h]
   -h  Show help and exit
   -a  Network address of the appliance
   -t  Safeguard access token
-  -v  Web API Version: 3 is default
+  -v  Web API Version: 4 is default
   -L  License file
 
 Upload a license file to Safeguard.  This script will stage the license file then
@@ -29,7 +29,7 @@ fi
 
 Appliance=
 AccessToken=
-Version=3
+Version=4
 LicenseFile=
 
 . "$ScriptDir/utils/loginfile.sh"

@@ -9,7 +9,7 @@ USAGE: get-trusted-ca-bundle.sh [-h]
   -h  Show help and exit
   -a  Network address of the appliance
   -t  Safeguard access token
-  -v  Web API Version: 3 is default
+  -v  Web API Version: 4 is default
 
 Download trusted certificate authority bundle for the SSL certificate being
 served by this appliance.
@@ -28,7 +28,7 @@ fi
 
 Appliance=
 AccessToken=
-Version=3
+Version=4
 
 . "$ScriptDir/utils/loginfile.sh"
 

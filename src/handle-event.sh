@@ -10,7 +10,7 @@ USAGE: handle-event.sh [-h]
 
   -h  Show help and exit
   -a  Network address of the appliance
-  -v  Web API Version: 3 is default
+  -v  Web API Version: 4 is default
   -B  CA bundle for SSL trust validation (no checking by default)
   -t  Safeguard access token
   -i  Safeguard identity provider, examples: certificate, local, ad<num>
@@ -44,7 +44,7 @@ TokenExpirationThreshold=0
 Appliance=
 CABundleArg=
 CABundle=
-Version=3
+Version=4
 AccessToken=
 Provider=
 User=

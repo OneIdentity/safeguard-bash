@@ -9,7 +9,7 @@ USAGE: get-event.sh [-h]
   -h  Show help and exit
   -a  Network address of the appliance
   -t  Safeguard access token
-  -v  Web API Version: 3 is default
+  -v  Web API Version: 4 is default
 
 List the events that can be used
 
@@ -26,7 +26,7 @@ fi
 
 Appliance=
 AccessToken=
-Version=3
+Version=4
 
 . "$ScriptDir/utils/loginfile.sh"
 
