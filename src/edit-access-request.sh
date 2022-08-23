@@ -69,7 +69,7 @@ require_args()
     esac
 }
 
-while getopts ":t:a:v:i:m:c:h" opt; do
+while getopts ":t:a:v:i:m:c:Fh" opt; do
     case $opt in
     t)
         AccessToken=$OPTARG
