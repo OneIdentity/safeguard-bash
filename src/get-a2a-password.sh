@@ -120,5 +120,6 @@ else
         echo $Result | $ATTRFILTER
     else
         echo $Result | $ERRORFILTER
+        exit 1
     fi
 fi

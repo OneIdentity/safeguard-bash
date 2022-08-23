@@ -118,5 +118,6 @@ if [ -z "$Error" -o "$Error" = "null" ]; then
     echo $Result | $ATTRFILTER
 else
     echo $Result | $ERRORFILTER
+    exit 1
 fi
 
