@@ -60,6 +60,7 @@ require_args()
     close) Action="Close" ;;
     checkin) Action="CheckIn" ;;
     checkoutpassword) Action="CheckOutPassword" ;;
+    checkoutsshkey) Action="CheckOutSshKey" ;;
     initializesession) Action="InitializeSession" ;;
     acknowledge) Action="Acknowledge" ;;
     *)
@@ -69,7 +70,7 @@ require_args()
     esac
 }
 
-while getopts ":t:a:v:i:m:c:h" opt; do
+while getopts ":t:a:v:i:m:c:Fh" opt; do
     case $opt in
     t)
         AccessToken=$OPTARG
@@ -117,5 +118,6 @@ if [ -z "$Error" -o "$Error" = "null" ]; then
     echo $Result | $ATTRFILTER
 else
     echo $Result | $ERRORFILTER
+    exit 1
 fi
 

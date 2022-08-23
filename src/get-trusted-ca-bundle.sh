@@ -71,7 +71,9 @@ if [ -z "$Error" -o "$Error" = "null" ]; then
         fi
     else
         echo $Response | jq .
+        exit 1
     fi
 else
     echo $Response | jq .
+    exit 1
 fi

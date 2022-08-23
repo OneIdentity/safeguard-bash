@@ -58,8 +58,9 @@ require_args()
     password) AccessType="Password" ;;
     rdp) AccessType="RemoteDesktop" ;;
     ssh) AccessType="Ssh" ;;
+    sshkey) AccessType="SshKey" ;;
     *)
-        >&2 echo "Access Type must be one of password, rdp, or ssh"
+        >&2 echo "Access Type must be one of password, sshkey, rdp, or ssh"
         exit 1
         ;;
     esac
@@ -100,11 +101,11 @@ ERRORFILTER='jq .'
 if $FullOutput; then
     ATTRFILTER='jq .'
 else
-    ATTRFILTER='jq {Id,AssetId,AssetName,AccountId,AccountName,State}'
+    ATTRFILTER='jq {Id,RequesterId,RequesterDisplayName,AssetId,AssetName,AccountId,AccountName,AccessRequestType,State}'
 fi
 
 Result=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -v $Version -s core -m POST -U "AccessRequests" -N -b "{
-    \"SystemId\": $AssetId,
+    \"AssetId\": $AssetId,
     \"AccountId\": $AccountId,
     \"AccessRequestType\": \"$AccessType\"
 }" <<<$AccessToken)
@@ -114,5 +115,6 @@ if [ -z "$Error" -o "$Error" = "null" ]; then
     echo $Result | $ATTRFILTER
 else
     echo $Result | $ERRORFILTER
+    exit 1
 fi
 

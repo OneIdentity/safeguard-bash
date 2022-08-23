@@ -60,5 +60,6 @@ if [ -z "$Error" -o "$Error" = "null" ]; then
     echo $Result | jq -r '.[] | "\(.Name) -- \(.Description)"' # display events as flat list
 else
     echo $Result | jq . # display error as JSON
+    exit 1
 fi
 
