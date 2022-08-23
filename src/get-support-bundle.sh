@@ -4,8 +4,8 @@ print_usage()
 {
     cat <<EOF
 USAGE: get-support-bundle.sh [-h]
-       get-support-bundle.sh [-v version] [-e] [-s]
-       get-support-bundle.sh [-a appliance] [-t accesstoken] [-v version] [-e] [-s]
+       get-support-bundle.sh [-v version] [-e] [-s] [-d days]
+       get-support-bundle.sh [-a appliance] [-t accesstoken] [-v version] [-e] [-s] [-d days]
 
   -h  Show help and exit
   -a  Network address of the appliance
@@ -13,6 +13,10 @@ USAGE: get-support-bundle.sh [-h]
   -v  Web API Version: 4 is default
   -e  Include event logs in the support bundle (increases generation time)
   -s  Include session logs in the support bundle (increases generation time)
+  -d  Number of log retention days to retrieve (default 1):
+      0 - Just today's logs
+      1 - Include yesterday
+      n - Up to 30 days
 
 Download a support bundle from Safeguard. Including event logs will increase
 the generation time. Including the session logs will dramatically increase the
@@ -31,10 +35,11 @@ Appliance=
 AccessToken=
 IncludeEvents=false
 IncludeSessions=false
+LogDays=1
 
 . "$ScriptDir/utils/loginfile.sh"
 
-while getopts ":t:a:v:esh" opt; do
+while getopts ":t:a:v:esd:h" opt; do
     case $opt in
     t)
         AccessToken=$OPTARG
@@ -50,6 +55,10 @@ while getopts ":t:a:v:esh" opt; do
         ;;
     s)
         IncludeSessions=true
+        ;;
+    s)
+        LogDays=$OPTARG
+
         ;;
     h)
         print_usage
@@ -71,6 +80,7 @@ if [ "$IncludeSessions" = "true" ]; then
 else
     Url="$Url&includeSessionLogs=false"
 fi
+Url="$Url&logRetentionDays=$LogDays"
 
 >&2 echo "Generating and downloading support bundle..."
 curl -K <(cat <<EOF
