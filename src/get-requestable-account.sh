@@ -51,24 +51,26 @@ done
 
 require_login_args
 
-Response=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -v $Version -s core -m GET -U "Me/RequestableAssets" -N <<<$AccessToken)
+Response=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -v $Version -s core -m GET -U "Me/AccessRequestAssets" -N <<<$AccessToken)
 Error=$(echo $Response | jq .Code 2> /dev/null)
 if [ -z "$Error" -o "$Error" = "null" ]; then
     Ids=$(echo $Response |  jq ".[].Id")
     if [ ! -z "$Ids" ]; then
-        Objs=""
-        for Id in $Ids; do
-            Accounts=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -v $Version -s core -m GET -U "Me/RequestableAssets/$Id/Accounts" -N <<<$AccessToken \
-                       | jq '.[] | {Id,Name,AccountRequestTypes}' | jq -s .)
-            Asset=$(echo $Response | jq --argjson accounts "$Accounts" \
-                    ".[] | select(.Id == $Id) | {Id,Name,NetworkAddress,PlatformDisplayName,AccountRequestTypes,Accounts} | .Accounts |= \$accounts")
-            Objs="$Objs$Asset"
-        done
-        echo "$Objs" | jq -s .
+        Ids=$(echo "$Ids" | tr '\n' ',' | sed 's/,$//')
+        Output=""
+        $ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -v $Version -s core -m GET -U "Me/RequestEntitlements?assetIds=$Id" -N <<<$AccessToken \
+               | jq -c '.[] | {Asset,Account,Policy}' | while IFS= read Obj; do
+            AssetId=$(echo $Obj | jq '.Asset.Id')
+            NetworkAddress=$(echo $Response | jq ".[] | select(.Id==$AssetId) | {NetworkAddress}")
+            Asset=$(echo $Obj | jq '.Asset | .["AssetId"] = .Id | .["AssetName"] = .Name | {AssetId,AssetName,PlatformDisplayName}')
+            Account=$(echo $Obj | jq '.Account | .["AccountId"] = .Id | .["AccountDomainName"] = .DomainName |.["AccountName"] = .Name | {AccountId,AccountDomainName,AccountName}')
+            RequestType=$(echo $Obj | jq '.Policy | .["AccessRequestType"] = .AccessRequestProperties.AccessRequestType | {AccessRequestType}')
+            OutputObj=$(echo "$Asset$NetworkAddress$Account$RequestType" | jq -s add)
+            echo $OutputObj
+        done | jq -s .
     else
         echo '[]' | jq .
     fi
 else
     echo $Response | jq .
 fi
-
