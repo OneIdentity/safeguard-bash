@@ -58,8 +58,9 @@ require_args()
     password) AccessType="Password" ;;
     rdp) AccessType="RemoteDesktop" ;;
     ssh) AccessType="Ssh" ;;
+    sshkey) AccessType="SshKey" ;;
     *)
-        >&2 echo "Access Type must be one of password, rdp, or ssh"
+        >&2 echo "Access Type must be one of password, sshkey, rdp, or ssh"
         exit 1
         ;;
     esac

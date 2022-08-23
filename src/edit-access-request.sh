@@ -60,6 +60,7 @@ require_args()
     close) Action="Close" ;;
     checkin) Action="CheckIn" ;;
     checkoutpassword) Action="CheckOutPassword" ;;
+    checkoutsshkey) Action="CheckOutSshKey" ;;
     initializesession) Action="InitializeSession" ;;
     acknowledge) Action="Acknowledge" ;;
     *)
