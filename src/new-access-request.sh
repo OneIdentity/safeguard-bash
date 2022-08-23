@@ -101,11 +101,11 @@ ERRORFILTER='jq .'
 if $FullOutput; then
     ATTRFILTER='jq .'
 else
-    ATTRFILTER='jq {Id,AssetId,AssetName,AccountId,AccountName,State}'
+    ATTRFILTER='jq {Id,RequesterId,RequesterDisplayName,AssetId,AssetName,AccountId,AccountName,AccessRequestType,State}'
 fi
 
 Result=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -v $Version -s core -m POST -U "AccessRequests" -N -b "{
-    \"SystemId\": $AssetId,
+    \"AssetId\": $AssetId,
     \"AccountId\": $AccountId,
     \"AccessRequestType\": \"$AccessType\"
 }" <<<$AccessToken)
