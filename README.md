@@ -32,7 +32,7 @@ remove the v3 API. There are currently no plans to remove the v3 API.
 $ connect-safeguard.sh -a 192.168.123.123 -i local -u Admin -v 3
 Password:
 A login file has been created.
-# All subsequent commands will use v3, use -Verbose for any cmdlet to see URL details
+# All subsequent script commands will use v3 if they support the login file
 ```
 
 ## Installation
