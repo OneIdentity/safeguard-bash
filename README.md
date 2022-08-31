@@ -16,12 +16,31 @@ One Identity Safeguard Bash and cURL scripting resources.
 
 One Identity open source projects are supported through [One Identity GitHub issues](https://github.com/OneIdentity/safeguard-bash/issues) and the [One Identity Community](https://www.oneidentity.com/community/). This includes all scripts, plugins, SDKs, modules, code snippets or other solutions. For assistance with any One Identity GitHub project, please raise a new Issue on the [One Identity GitHub project](https://github.com/OneIdentity/safeguard-bash/issues) page. You may also visit the [One Identity Community](https://www.oneidentity.com/community/) to ask questions.  Requests for assistance made through official One Identity Support will be referred back to GitHub and the One Identity Community forums where those requests can benefit all users.
 
+## Default API Update
+
+safeguard-bash will use v4 API by default starting with version 7.0. It is
+possible to continue using the v3 API by passing in the `-v` parameter
+when creating a connection or calling A2A or any of the other scripts.
+
+Safeguard for Privileged Passwords 7.X hosts both the v3 and v4 APIs. New coding
+projects should target the v4 API, and existing projects can be migrated over time.
+Notification will be given to customers many releases in advance of any plans to
+remove the v3 API. There are currently no plans to remove the v3 API.
+
+```Bash
+# Use v3 instead of v4 when connecting
+$ connect-safeguard.sh -a 192.168.123.123 -i local -u Admin -v 3
+Password:
+A login file has been created.
+# All subsequent script commands will use v3 if they support the login file
+```
+
 ## Installation
 The easiest way to install safeguard-bash is via Docker; however, you can
-also download a zip file from 
+also download a zip file from
 [Releases](https://github.com/OneIdentity/safeguard-bash/releases) or clone
-this GitHub repository and copy the scripts from the `src` directory 
-(including the `utils` subdirectory) to a desired location on your file 
+this GitHub repository and copy the scripts from the `src` directory
+(including the `utils` subdirectory) to a desired location on your file
 system and add them to your `PATH`.
 
 The `install-local.sh` script will copy the scripts to `$HOME/scripts` and
