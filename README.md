@@ -16,6 +16,8 @@ One Identity Safeguard Bash and cURL scripting resources.
 
 One Identity open source projects are supported through [One Identity GitHub issues](https://github.com/OneIdentity/safeguard-bash/issues) and the [One Identity Community](https://www.oneidentity.com/community/). This includes all scripts, plugins, SDKs, modules, code snippets or other solutions. For assistance with any One Identity GitHub project, please raise a new Issue on the [One Identity GitHub project](https://github.com/OneIdentity/safeguard-bash/issues) page. You may also visit the [One Identity Community](https://www.oneidentity.com/community/) to ask questions.  Requests for assistance made through official One Identity Support will be referred back to GitHub and the One Identity Community forums where those requests can benefit all users.
 
+If you would like to add to add to safeguard-bash? See the [developer guide](https://github.com/OneIdentity/safeguard-bash/blob/master/src/README.md).
+
 ## Default API Update
 
 safeguard-bash will use v4 API by default starting with version 7.0. It is
