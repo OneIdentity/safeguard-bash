@@ -1,5 +1,21 @@
 #!/bin/bash
 
+if [[ "$1" == "-h" ]]; then
+    cat <<EOF
+
+USAGE: new-test-ca.sh [caFriendlyName]
+
+caFriendlyName  Provide a partial name for CA subject DN
+
+Running this command will generate a directory representing a root CA and an
+intermediate CA from which you can create certificates for use with SPP. The
+friendly name will be used in the subject DN for the root CA and given a
+'-issuing' suffix for the intermediate CA.
+
+EOF
+    exit 0
+fi
+
 CurDir="$(pwd)"
 ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
@@ -13,13 +29,13 @@ cleanup()
 
 trap cleanup EXIT
 
-if [ ! -z "$1" ]; then
-    CaName=$1
-else
+if [ -z "$1" ]; then
     read -p "Enter CA friendly name:" CaName
     if [ -z "$CaName" ]; then
         CaName="test-ca"
     fi
+else
+    CaName=$1
 fi
 IntermediateCaName="issuing-$CaName"
 
@@ -291,6 +307,15 @@ subjectKeyIdentifier = hash
 authorityKeyIdentifier = keyid:always,issuer
 basicConstraints = critical, CA:true, pathlen:0
 keyUsage = critical, digitalSignature, cRLSign, keyCertSign
+
+[ tsa_cert ]
+# Extensions for tsa certificate (man x509v3_config).
+basicConstraints = CA:FALSE
+nsComment = "Generated TSA Certificate from $IntermediateCaName"
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid,issuer:always
+keyUsage = critical, digitalSignature, keyEncipherment
+extendedKeyUsage = timeStamping
 
 [ audit_cert ]
 # Extensions for audit certificate (man x509v3_config).
