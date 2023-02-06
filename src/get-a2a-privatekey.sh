@@ -21,7 +21,7 @@ USAGE: get-a2a-privatekey.sh [-h]
       Ssh2: Tectia format for use with tools from SSH.com
       Putty: Putty format for use with PuTTY tools
 
-Retrieve a private key using the Safeguard A2A service.
+Retrieve an SSH private key using the Safeguard A2A service.
 
 EOF
     exit 0
