@@ -81,6 +81,11 @@ done
 
 require_args
 
-$ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -v $Version -s core -m POST -U "Users" -N -b "
-{ \"UserName\":\"$NewUserName\", \"PrimaryAuthenticationProviderId\":-2, \"PrimaryAuthenticationIdentity\":\"$NewUserThumbprint\" }" <<<$AccessToken
+if [ $Version -eq 4 ]; then
+        $ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -v $Version -s core -m POST -U "Users" -N -b "
+{ \"Name\":\"$NewUserName\", \"IdentityProvider\": {\"Id\": -1}, \"PrimaryAuthenticationProvider\": {\"Id\":-2, \"Identity\":\"$NewUserThumbprint\"} }" <<<$AccessToken
+else
+        $ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -v $Version -s core -m POST -U "Users" -N -b "
+{ \"UserName\":\"$NewUserName\", \"IdentityProviderId\":-1, \"PrimaryAuthenticationProviderId\":-2, \"PrimaryAuthenticationIdentity\":\"$NewUserThumbprint\" }" <<<$AccessToken
+fi
 
