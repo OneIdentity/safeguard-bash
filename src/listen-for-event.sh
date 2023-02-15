@@ -41,7 +41,7 @@ get_connection_token()
 {
     # this call does not require an authorization header
     curl -s $CABundleArg "https://$Appliance/service/event/signalr/negotiate?negotiateVersion=1" -d '' \
-        | $SED -n -e 's/\+/%2B/g;s/\//%2F/g;s/.*"connectionId":"\([^"]*\)".*/\1/p'
+        | $SED -n -e 's/\+/%2B/g;s/\//%2F/g;s/.*"connectionToken":"\([^"]*\)".*/\1/p'
 }
 
 
