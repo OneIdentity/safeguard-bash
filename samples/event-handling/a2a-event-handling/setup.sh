@@ -93,11 +93,8 @@ echo -e "${YELLOW}\nInstalling intermediate ca...${NC}"
 $SafeguardDir/install-trusted-certificate.sh -C $IssuingCertFile
 
 echo -e "${YELLOW}\nAdding certificate user named $CertUserName...${NC}"
-Result=$($SafeguardDir/invoke-safeguard-method.sh -s core -m POST -U Users -N -b "{
-    \"PrimaryAuthenticationProviderId\": -2,
-    \"UserName\": \"$CertUserName\",
-    \"PrimaryAuthenticationIdentity\": \"$Thumbprint\"
-}")
+Result=$($SafeguardDir/invoke-safeguard-method.sh -v 4 -s core -m POST -U Users -N -b "
+{ \"Name\":\"$CertUserName\", \"IdentityProvider\": {\"Id\": -1}, \"PrimaryAuthenticationProvider\": {\"Id\":-2, \"Identity\":\"$Thumbprint\"} }")
 Error=$(echo $Result | jq .Code 2> /dev/null)
 echo $Result | jq .
 if [ -z "$Error" -o "$Error" = "null" ]; then
@@ -109,10 +106,11 @@ else
 fi
 
 echo -e "${YELLOW}\nAdding setup user named $SetupUserName...${NC}"
-Result=$($SafeguardDir/invoke-safeguard-method.sh -s core -m POST -U Users -N -b "{
-    \"PrimaryAuthenticationProviderId\": -1,
-    \"UserName\": \"$SetupUserName\",
-    \"AdminRoles\": [\"PolicyAdmin\",\"AssetAdmin\"]
+Result=$($SafeguardDir/invoke-safeguard-method.sh -v 4 -s core -m POST -U Users -N -b "{
+ \"Name\":\"$SetupUserName\",
+ \"IdentityProvider\": {\"Id\": -1},
+ \"PrimaryAuthenticationProvider\": {\"Id\":-1}, 
+ \"AdminRoles\": [\"PolicyAdmin\",\"AssetAdmin\"]
 }")
 Error=$(echo $Result | jq .Code 2> /dev/null)
 echo $Result | jq .
@@ -147,8 +145,8 @@ echo $Result | jq .
 if [ -z "$Error" -o "$Error" = "null" ]; then
     AssetId=$(echo $Result | jq .Id)
     echo -e "${YELLOW}\nCreating a test account ($AccountName)...${NC}"
-    Result=$($SafeguardDir/invoke-safeguard-method.sh -s core -m POST -U AssetAccounts -N -b "{
-        \"AssetId\": $AssetId,
+    Result=$($SafeguardDir/invoke-safeguard-method.sh -v 4 -s core -m POST -U AssetAccounts -N -b "{
+        \"Asset\": { \"Id\": $AssetId },
         \"Name\": \"$AccountName\",
         \"Description\": \"This should be deleted\"
     }")
