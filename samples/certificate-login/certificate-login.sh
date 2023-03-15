@@ -91,10 +91,10 @@ echo -e "${YELLOW}\nInstalling intermediate ca...${NC}"
 $SafeguardDir/install-trusted-certificate.sh -C $IssuingCertFile
 
 echo -e "${YELLOW}\nAdding certificate user named $UserName...${NC}"
-$SafeguardDir/invoke-safeguard-method.sh -s core -m POST -U Users -b "{
-    \"PrimaryAuthenticationProviderId\": -2,
-    \"UserName\": \"$UserName\",
-    \"PrimaryAuthenticationIdentity\": \"$Thumbprint\"
+$SafeguardDir/invoke-safeguard-method.sh -v 4 -s core -m POST -U Users -b "{
+    \"PrimaryAuthenticationProvider\": {\"Id\":-2, \"Identity\":\"$Thumbprint\"},
+    \"IdentityProvider\": {\"Id\": -1},
+    \"Name\": \"$UserName\"
 }"
 
 echo -e "${YELLOW}\nLogging out as user admin ($Provider/$AdminUser)...${NC}"

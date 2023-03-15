@@ -91,7 +91,7 @@ Content-Length: 0
 
 EOF
 )
-        echo $TokenResponse | $SED -n -e 's/\+/%2B/g;s/\//%2F/g;s/.*"connectionId":"\([^"]*\)".*/\1/p'
+        echo $TokenResponse | $SED -n -e 's/\+/%2B/g;s/\//%2F/g;s/.*"connectionToken":"\([^"]*\)".*/\1/p'
     else
         curl -K <(cat <<EOF
 -s
@@ -101,7 +101,7 @@ $CABundleArg
 --pass $Pass
 EOF
 ) "https://$Appliance/service/a2a/signalr/negotiate?negotiateVersion=1" -d '' \
-            | $SED -n -e 's/\+/%2B/g;s/\//%2F/g;s/.*"connectionId":"\([^"]*\)".*/\1/p'
+            | $SED -n -e 's/\+/%2B/g;s/\//%2F/g;s/.*"connectionToken":"\([^"]*\)".*/\1/p'
     fi
 }
 
