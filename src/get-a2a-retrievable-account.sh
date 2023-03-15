@@ -92,7 +92,7 @@ echo $Registrations | jq -r '.[] | [.Id, .AppName, .Description // "", .Disabled
     tr '\t' '|' | # when using \t in IFS the delimiters get aggregated and it doesn't recognize empty tokens
     while IFS='|' read -r RegId AppName RegDesc RegDisabled CertUserId CertUser CertThumbprint; do
         invoke_a2a_method "$Appliance" "$CABundleArg" "$Cert" "$PKey" "$Pass" "NONE" core GET "A2ARegistrations/$RegId/RetrievableAccounts" $Version "" |
-            jq '.[] | . + {AssetId: .SystemId, AssetName: .SystemName, AssetDescription: .SystemDescription} | delpaths([["SystemId"], ["SystemName"], ["SystemDescription"]])' |
+            jq .[] |
             jq --arg AppName "$AppName" --arg RegDesc "$RegDesc" --arg CertUserId "$CertUserId" --arg CertUser "$CertUser" --arg CertThumbprint "$CertThumbprint" \
                     '. + {AppName: $AppName, Description: $RegDesc, CertificateUserId: ($CertUserId | tonumber), CertificateUser: $CertUser, CertificateUserThumbprint: $CertThumbprint}'
     done | jq -S --arg RegDisabled "$RegDisabled" '. + {Disabled: (.AccountDisabled != 0 and $RegDisabled)} | del(.AccountDisabled)' | jq --slurp # slurp puts things back into an array
