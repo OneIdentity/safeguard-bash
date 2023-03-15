@@ -3,8 +3,8 @@
 print_usage()
 {
     cat <<EOF
-USAGE: get-a2a-privatekey.sh [-h]
-       get-a2a-privatekey.sh [-a appliance] [-B cabundle] [-v version] [-c file] [-k file] [-A apikey] [-F format] [-O] [-p] [-r]
+USAGE: get-a2a-apikeysecret.sh [-h]
+       get-a2a-apikeysecret.sh [-a appliance] [-B cabundle] [-v version] [-c file] [-k file] [-A apikey] [-O] [-p] [-r]
 
   -h  Show help and exit
   -a  Network address of the appliance
@@ -15,13 +15,10 @@ USAGE: get-a2a-privatekey.sh [-h]
   -A  A2A API token identifying the account
   -O  Use openssl s_client instead of curl for TLS client authentication problems
   -p  Read certificate password from stdin
-  -r  Raw output, i.e. remove quotes & interpret escape chars from JSON string to get just the private key (requires jq)
-  -F  Private key format (default: OpenSsh)
-      OpenSsh: OpenSSH legacy PEM format
-      Ssh2: Tectia format for use with tools from SSH.com
-      Putty: Putty format for use with PuTTY tools
+  -r  Raw output, i.e. remove quotes from JSON string to get just the password (requires jq)
 
-Retrieve an SSH private key using the Safeguard A2A service.
+Retrieve an API key secret using the Safeguard A2A service.  More than one key may be associated with an account.
+This script returns an array of objects representing all API key secrets.
 
 EOF
     exit 0
@@ -38,7 +35,6 @@ Cert=
 PKey=
 ApiKey=
 Raw=false
-KeyFormat=OpenSsh
 PassStdin=
 Pass=
 UseOpenSslSclient=false
@@ -67,7 +63,7 @@ require_args()
     fi
 }
 
-while getopts ":a:B:v:c:k:A:F:pOrh" opt; do
+while getopts ":a:B:v:c:k:A:pOrh" opt; do
     case $opt in
     a)
         Appliance=$OPTARG
@@ -96,14 +92,6 @@ while getopts ":a:B:v:c:k:A:F:pOrh" opt; do
     r)
         Raw=true
         ;;
-    F)
-        KeyFormat=$OPTARG
-        KeyFormat=$(echo "$KeyFormat" | tr '[:upper:]' '[:lower:]')
-        case $KeyFormat in
-            openssh|ssh2|putty) ;;
-            *) >&2 echo "Must specify a valid key format!"; print_usage ;;
-        esac
-        ;;
     h)
         print_usage
         ;;
@@ -123,7 +111,7 @@ if [ ! -z "$(which jq 2> /dev/null)" ]; then
     fi
 fi
 
-Result=$(invoke_a2a_method "$Appliance" "$CABundleArg" "$Cert" "$PKey" "$Pass" "$ApiKey" a2a GET "Credentials?type=PrivateKey&keyFormat=$KeyFormat" $Version $UseOpenSslSclient)
+Result=$(invoke_a2a_method "$Appliance" "$CABundleArg" "$Cert" "$PKey" "$Pass" "$ApiKey" a2a GET "Credentials?type=ApiKey" $Version $UseOpenSslSclient)
 echo $Result | jq . > /dev/null 2>&1
 if [ $? -ne 0 ]; then
     echo $Result
