@@ -1,4 +1,5 @@
 #!/bin/bash
+exec 2>&1
 trap "exit 1" TERM
 export TOP_PID=$$
 
