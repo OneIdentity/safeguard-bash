@@ -1,5 +1,4 @@
 #!/bin/bash
-exec 2>&1
 trap "exit 1" TERM
 export TOP_PID=$$
 
@@ -32,7 +31,7 @@ docker build \
     --build-arg BUILD_VERSION=$Version \
     --build-arg COMMIT_ID=$CommitId \
     -t "oneidentity/safeguard-bash:${DockerVersionStr}alpine" \
-    $ScriptDir
+    $ScriptDir 2>&1
 docker tag "oneidentity/safeguard-bash:${DockerVersionStr}alpine" "oneidentity/safeguard-bash:latest"
 
 echo "Creating zip file artifact ..."
