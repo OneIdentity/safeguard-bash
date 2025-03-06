@@ -19,7 +19,7 @@ steps:
     failOnStderr: true
     script: |
       $(System.DefaultWorkingDirectory)/build.sh $(VersionString) $(Build.SourceVersion)
-      docker tag oneidentity/safeguard-bash:$(VersionString)-alpine3.8 oneidentity/safeguard-bash:latest
+      docker tag oneidentity/safeguard-bash:$(VersionString)-alpine3.18 oneidentity/safeguard-bash:latest
   displayName: 'Building Zip and Docker image'
 
 - task: CopyFiles@2
