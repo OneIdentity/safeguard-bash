@@ -30,7 +30,7 @@ jobs:
           changeLogType: 'commitBased'
           assets: $(Build.ArtifactStagingDirectory)/*.zip
         displayName: 'Creating and publishing a release to Github'
-      - task: AzureKeyVault@1
+      - task: AzureKeyVault@2
         inputs:
           azureSubscription: 'OneIdentity.RD.SBox.Safeguard-ServiceConnection'
           KeyVaultName: 'SafeguardBuildSecrets'
