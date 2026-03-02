@@ -93,6 +93,11 @@ else
     ATTRRENAMEFILTER="jq '.[] | . + {AssetId: .SystemId, AssetName: .SystemName, AssetDescription: .SystemDescription} | delpaths([[\"SystemId\"], [\"SystemName\"], [\"SystemDescription\"]])'"
 fi
 Registrations=$(invoke_a2a_method "$Appliance" "$CABundleArg" "$Cert" "$PKey" "$Pass" "NONE" core GET "A2ARegistrations" $Version "")
+echo "$Registrations" | jq . > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    >&2 echo "$Registrations"
+    exit 1
+fi
 echo $Registrations | jq -r '.[] | [.Id, .AppName, .Description // "", .Disabled, .CertificateUserId, .CertificateUser, .CertificateUserThumbPrint] | @tsv' |
     tr '\t' '|' | # when using \t in IFS the delimiters get aggregated and it doesn't recognize empty tokens
     while IFS='|' read -r RegId AppName RegDesc RegDisabled CertUserId CertUser CertThumbprint; do
