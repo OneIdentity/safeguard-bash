@@ -26,6 +26,7 @@ invoke_a2a_method()
         fi
         response=$(curl -K <(cat <<EOF
 -s
+-S
 $cabundlearg
 --key $pkeyfile
 --cert $certfile
@@ -35,8 +36,15 @@ $http11flag
 -H "Accept: application/json"
 $apikeyflag
 EOF
-) "https://$appliance/service/$service/v$version/$relurl"
+) "https://$appliance/service/$service/v$version/$relurl" 2>"${TMPDIR:-/tmp}/.a2a_curl_err.$$"
        )
+        local curlerr=$?
+        if [ $curlerr -ne 0 ] && [ -z "$response" ]; then
+            >&2 cat "${TMPDIR:-/tmp}/.a2a_curl_err.$$"
+            rm -f "${TMPDIR:-/tmp}/.a2a_curl_err.$$"
+            return 1
+        fi
+        rm -f "${TMPDIR:-/tmp}/.a2a_curl_err.$$"
         if [ -z "$(which jq 2> /dev/null)" ]; then
             error=$(echo $response | grep '"Code":60108')
         else
