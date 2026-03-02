@@ -55,7 +55,7 @@ query_providers()
     if [ ! -z "$(which jq 2> /dev/null)" ]; then
         GetPrimaryProvidersRelativeURL="RSTS/UserLogin/LoginController?response_type=token&redirect_uri=urn:InstalledApplication&loginRequestStep=1"
         Providers=$(curl -s $CABundleArg -X POST -H "Accept: application/json" "https://$Appliance/$GetPrimaryProvidersRelativeURL" \
-                         -d 'RelayState=' | jq -c '.Providers | del(.[].ForgotPasswordUrl)')
+                         -d 'RelayState=' | jq -c '.Providers | del(.[].ForgotPasswordUrl)' 2> /dev/null)
         if [ -z "$Providers" ]; then
             Exists=$(curl -s -k -X GET -H "Accept: application/json" "https://$Appliance/service/notification/v2/Status")
             if [ -z "$Exists" ]; then
@@ -79,8 +79,10 @@ require_connect_args()
     if [ ! -z "$(which jq 2> /dev/null)" ]; then
         query_providers
     fi
-    ProviderPrompt=$(echo $Providers | jq '.|del(.[] | select(.Id == "local"))|del(.[] |select(.Id == "certificate"))|.[]|"\(.Id) [\(.DisplayName)],"' | xargs echo -n | sed 's/.$//')
-    ProviderPrompt=$(echo "(local, certificate, $ProviderPrompt)")
+    if [ ! -z "$Providers" ]; then
+        ProviderPrompt=$(echo $Providers | jq '.|del(.[] | select(.Id == "local"))|del(.[] |select(.Id == "certificate"))|.[]|"\(.Id) [\(.DisplayName)],"' | xargs echo -n | sed 's/.$//')
+        ProviderPrompt=$(echo "(local, certificate, $ProviderPrompt)")
+    fi
     if [ -z "$Provider" ]; then
         if [ ! -z "$Providers" ]; then
             read -p "Identity Provider $ProviderPrompt: " Provider
