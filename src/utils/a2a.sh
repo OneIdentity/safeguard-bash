@@ -58,7 +58,7 @@ EOF
         # ignore certificate errors when using client certificate authentication. This works around that
         # problem by calling OpenSSL directly and manually formulating an HTTP request.
         #   see https://github.com/curl/curl/issues/1411
-        IFS=$'\n' read -d '' -r -a response < <(cat <<EOF | openssl s_client -connect $appliance:443 -quiet -crlf -key $pkeyfile -cert $certfile -pass pass:$pass 2>&1
+        IFS=$'\n' read -d '' -r -a response < <(cat <<EOF | openssl s_client -connect $appliance:443 -quiet -crlf -key $pkeyfile -cert $certfile -pass pass:$pass 2>"${TMPDIR:-/tmp}/.a2a_sclient_err.$$"
 $method /service/$service/v$version/$relurl HTTP/1.1
 Host: $appliance
 User-Agent: curl/7.47.0
@@ -70,6 +70,7 @@ EOF
             )
         local noclose=true
         local noempty=true
+        local contentlength=
         local length=
         local body=
         for line in "${response[@]}"; do
@@ -80,34 +81,44 @@ EOF
                     noclose=false
                 fi
             elif $noempty; then
-                # after close there should be an empty line
+                # capture Content-Length from remaining headers
+                local clval=$(echo "$line" | sed -n 's/^Content-Length: *\([0-9][0-9]*\).*/\1/p')
+                if [ ! -z "$clval" ]; then
+                    contentlength=$clval
+                fi
+                # after close there should be an empty line separating headers from body
                 if [ "$line" = "" ]; then
                     noempty=false
                 fi
-            elif [ -z "$length" ]; then
-                # after empty line should be the length of the HTTP payload
-                (( 16#$line )) 2> /dev/null
-                if [ $? -eq 0 ]; then
-                    length=$line
-                fi
             elif [ -z "$body" ]; then
-                # after length should be the body
-                body=$line
-            else
-                # after body should just be garbage
-                echo $line > /dev/null
+                if [ -z "$length" ]; then
+                    # check if this is a hex chunk length (chunked transfer encoding)
+                    (( 16#$line )) 2> /dev/null
+                    if [ $? -eq 0 ]; then
+                        length=$line
+                    else
+                        # not chunked -- this line is the body (Content-Length response)
+                        body=$line
+                    fi
+                else
+                    # had chunk length, this line is the body
+                    body=$line
+                fi
             fi
         done
-        if [ -z "$body" ]; then
-            # Coalesce all the output into a string, see if it matches other types of output, or dump error
-            output=$(printf '%s\n' "${response[@]}")
-            if grep -q "read:errno=0" <<< $output; then
-                echo "$output" | sed -n '/read:errno/,$p' | sed -e 's/\(.*\)read\:errno\=.*/\1/'
-            else
-                echo $output
+        if [ ! -z "$body" ]; then
+            # trim body to Content-Length to remove any trailing SSL errors
+            if [ ! -z "$contentlength" ]; then
+                body=${body:0:$contentlength}
             fi
-        else
+            rm -f "${TMPDIR:-/tmp}/.a2a_sclient_err.$$"
             echo "$body"
+        else
+            # No HTTP body found -- report captured stderr if available
+            if [ -s "${TMPDIR:-/tmp}/.a2a_sclient_err.$$" ]; then
+                >&2 cat "${TMPDIR:-/tmp}/.a2a_sclient_err.$$"
+            fi
+            rm -f "${TMPDIR:-/tmp}/.a2a_sclient_err.$$"
         fi
     fi
 }
