@@ -53,9 +53,9 @@ require_login_args()
 query_providers()
 {
     if [ ! -z "$(which jq 2> /dev/null)" ]; then
-        GetPrimaryProvidersRelativeURL="RSTS/UserLogin/LoginController?response_type=token&redirect_uri=urn:InstalledApplication&loginRequestStep=1"
-        Providers=$(curl -s $CABundleArg -X POST -H "Accept: application/json" "https://$Appliance/$GetPrimaryProvidersRelativeURL" \
-                         -d 'RelayState=' | jq -c '.Providers | del(.[].ForgotPasswordUrl)' 2> /dev/null)
+        Providers=$(curl -s $CABundleArg -X GET -H "Accept: application/json" \
+                         "https://$Appliance/service/core/v$Version/AuthenticationProviders" \
+                         | jq -c '[.[] | {Id: .RstsProviderId, DisplayName: .Name}]' 2> /dev/null)
         if [ -z "$Providers" ]; then
             Exists=$(curl -s -k -X GET -H "Accept: application/json" "https://$Appliance/service/notification/v2/Status")
             if [ -z "$Exists" ]; then
@@ -65,8 +65,10 @@ query_providers()
                 Providers='[{"Id":"local","DisplayName":"Local"}]'
             fi
         fi
-        # certificate provider not returned by default because it is marked as not supporting HTML forms login
-        Providers=$(echo $Providers | jq -c '. + [{"Id":"certificate","DisplayName":"Certificate"}]')
+        # certificate provider not returned by default
+        if [ -z "$(echo $Providers | jq -c '.[] | select(.Id == "certificate")' 2> /dev/null)" ]; then
+            Providers=$(echo $Providers | jq -c '. + [{"Id":"certificate","DisplayName":"Certificate"}]')
+        fi
     fi
 }
 
