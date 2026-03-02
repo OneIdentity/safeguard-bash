@@ -10,7 +10,7 @@ USAGE: show-safeguard-method.sh [-h]
   -a  Network address of the appliance
   -B  CA bundle for SSL trust validation (no checking by default)
   -v  Web API Version: 4 is default
-  -s  Service: core, appliance, cluster, notification
+  -s  Service: core, appliance, notification
   -m  HTTP Method: GET, PUT, POST, DELETE
   -U  Relative resource URL (e.g. AccessRequests)
 
@@ -46,11 +46,11 @@ require_args()
         read -p "Appliance network address: " Appliance
     fi
     if [ -z "$Service" ]; then
-        read -p "Service [core,appliance,cluster,notification]: " Service
+        read -p "Service [core,appliance,notification]: " Service
     fi
     Service=$(echo "$Service" | tr '[:upper:]' '[:lower:]')
     case $Service in
-        core|appliance|cluster|notification) ;;
+        core|appliance|notification) ;;
         *) >&2 echo "Must specify a valid Safeguard service name!"; print_usage ;;
     esac
     if [ ! -z "$Method" ]; then
@@ -98,7 +98,7 @@ fi
 
 require_args
 
-Url="https://$Appliance/service/$Service/swagger/docs/v$Version"
+Url="https://$Appliance/service/$Service/swagger/v$Version/swagger.json"
 Swagger=$(curl -s $CABundleArg -X GET -H "Accept: $Accept" $Url)
 Paths=$(echo $Swagger | jq '.paths')
 Definitions=$(echo $Swagger | jq '.definitions')
