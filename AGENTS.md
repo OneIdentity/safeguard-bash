@@ -16,6 +16,29 @@ self-contained CLI command that wraps one or more Safeguard API operations.
 The scripts are designed to run standalone on any system with bash, curl, and
 jq, or inside an Alpine-based Docker container.
 
+### Reference: safeguard-ps (PowerShell SDK)
+
+The **[OneIdentity/safeguard-ps](https://github.com/OneIdentity/safeguard-ps)**
+repository is the PowerShell equivalent of safeguard-bash. It covers the same
+Safeguard API but is significantly more mature and feature-rich.
+
+When working on safeguard-bash, consult safeguard-ps to:
+
+- **Find missing functionality** — safeguard-ps implements many commands that
+  safeguard-bash does not yet have. Look for PowerShell cmdlets that have no
+  corresponding bash script and consider adding them.
+- **Compare implementation techniques** — see how safeguard-ps handles error
+  checking, parameter validation, pagination, filtering, and edge cases.
+- **Validate API usage patterns** — safeguard-ps is a good reference for
+  correct API endpoint usage, required fields, and expected response formats.
+- **Adopt testing patterns** — safeguard-ps has a comprehensive test suite
+  (in its `test/` directory) that demonstrates thorough assertion strategies
+  and cleanup practices. The "Writing Strong Assertions" section below was
+  adapted from safeguard-ps.
+
+When proposing new scripts or features, check safeguard-ps first to see if an
+equivalent exists and use it as a guide for the bash implementation.
+
 ---
 
 ## Project Structure
