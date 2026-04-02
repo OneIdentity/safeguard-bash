@@ -320,6 +320,31 @@ auto-invokes `connect-safeguard.sh` if no login file exists.
 2. Other scripts read it via `use_login_file()`
 3. `disconnect-safeguard.sh` invalidates the token and removes the file
 
+**Correct pattern for new scripts** (explicitly reads login file when no
+token is provided):
+
+```bash
+if [ -z "$AccessToken" ]; then
+    use_login_file
+fi
+require_login_args
+```
+
+**Older pattern** (relies on `require_login_args` fallback — avoid in new
+scripts):
+
+```bash
+# Some older scripts skip use_login_file and go straight to require_login_args
+# or require_args. This works when BOTH Appliance and AccessToken are empty,
+# but fails if only one is provided (e.g. -a given without -t).
+require_args    # internally calls require_login_args
+```
+
+A few legacy scripts also pass tokens via stdin using
+`<<<$AccessToken` with `invoke-safeguard-method.sh -T` (the `-T` flag reads
+the token from stdin, and `-N` suppresses automatic login file usage). Prefer
+the explicit `use_login_file` + `require_login_args` pattern in new scripts.
+
 ### Sourcing Shared Utilities
 
 Always source relative to `ScriptDir`:
@@ -381,11 +406,66 @@ invoke-safeguard-method.sh -s core -m GET -U "Assets"
 
 # Create a user
 invoke-safeguard-method.sh -s core -m POST -U "Users" \
-    -b '{"UserName":"TestUser","PrimaryAuthenticationProvider":{"Id":-1}}'
+    -b '{"Name":"TestUser","PrimaryAuthenticationProvider":{"Id":-1}}'
 
 # Delete a user
 invoke-safeguard-method.sh -s core -m DELETE -U "Users/<id>"
 ```
+
+### Identity Provider IDs
+
+These magic IDs are used across the API:
+
+| ID   | Meaning                                |
+|------|----------------------------------------|
+| `-1` | Local identity provider                |
+| `-2` | Certificate authentication provider    |
+
+When creating a **local user**, set
+`PrimaryAuthenticationProvider.Id` to `-1`. When creating a **certificate
+user**, set it to `-2` with the SHA-1 thumbprint as the `Identity`:
+
+```bash
+# Local user
+{"Name": "MyUser", "PrimaryAuthenticationProvider": {"Id": -1}}
+
+# Certificate user (v4 API)
+{"Name": "MyCertUser",
+ "IdentityProvider": {"Id": -1},
+ "PrimaryAuthenticationProvider": {"Id": -2, "Identity": "<SHA1-THUMBPRINT>"}}
+```
+
+### Setting Passwords
+
+Set passwords on users or accounts via PUT with a bare JSON string:
+
+```bash
+# Set user password
+invoke-safeguard-method.sh -s core -m PUT -U "Users/<id>/Password" \
+    -b '"MyNewPassword1!"'
+
+# Set account password
+invoke-safeguard-method.sh -s core -m PUT -U "AssetAccounts/<id>/Password" \
+    -b '"AccountPass1!"'
+```
+
+Note the double quoting: the outer quotes are for bash, the inner quotes make
+it a valid JSON string value.
+
+### Role Requirements by Operation
+
+| Operation                           | Required Role(s)     |
+|-------------------------------------|----------------------|
+| Create/edit/delete Users            | UserAdmin            |
+| Create/edit/delete Assets           | AssetAdmin           |
+| Create/edit/delete Asset Accounts   | AssetAdmin           |
+| Create/edit/delete A2A Registrations| PolicyAdmin          |
+| Install Trusted Certificates        | ApplianceAdmin       |
+| Create Certificate Users            | UserAdmin            |
+
+The built-in Admin account only has UserAdmin and Authorizer. Tests needing
+AssetAdmin, PolicyAdmin, or ApplianceAdmin must create a temporary user with
+the appropriate roles.
 
 ### User Object Field Names
 
@@ -496,15 +576,47 @@ The full A2A setup flow:
 5. Add accounts for credential retrieval (returns an API key per account)
 6. Use `get-a2a-password.sh` with cert + key + API key to retrieve passwords
 
+Example scripted setup:
+
+```bash
+# 1. Generate self-signed cert
+openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem \
+    -days 30 -nodes -subj "/CN=MyA2ACert"
+
+# 2. Install as trusted certificate (requires ApplianceAdmin)
+cert_data=$(base64 -w 0 cert.pem)
+invoke-safeguard-method.sh -s core -m POST -U "TrustedCertificates" \
+    -b "{\"Base64CertificateData\": \"$cert_data\"}"
+
+# 3. Create certificate user (requires UserAdmin)
+thumbprint=$(openssl x509 -noout -fingerprint -sha1 -in cert.pem \
+    | cut -d= -f2 | tr -d :)
+new-certificate-user.sh -n "MyCertUser" -s "$thumbprint"
+
+# 4. Create A2A registration (requires PolicyAdmin)
+new-a2a-registration.sh -n "MyApp" -C <certUserId>
+
+# 5. Add account for credential retrieval
+add-a2a-credential-retrieval.sh -r <regId> -c <accountId>
+# Response contains the ApiKey
+
+# 6. Retrieve password via A2A (uses cert auth, not token)
+echo "" | get-a2a-password.sh -a <appliance> -c cert.pem -k key.pem \
+    -A <apiKey> -p -r
+```
+
 Key API details:
-- `TrustedCertificates` uses `Thumbprint` as identifier (no numeric `Id` field)
+- `TrustedCertificates` uses `Thumbprint` as identifier (no numeric `Id`
+  field) — use `jq -r '.Thumbprint'` not `.Id`
 - `A2ARegistrations/{id}/RetrievableAccounts` POST uses flat `{"AccountId": N}`
   (not nested — opposite of AssetAccounts!)
 - The POST response includes the `ApiKey` needed for credential retrieval
 - A2A password retrieval requires PolicyAdmin role to set up, but uses
   certificate auth (not token auth) for actual retrieval
-- `get-a2a-password.sh` prompts for "Private Key Password:" — pipe empty
-  string for passwordless keys: `echo "" | get-a2a-password.sh ...`
+- `get-a2a-password.sh` prompts for "Private Key Password:" — use `-p` flag
+  and pipe empty string for passwordless keys: `echo "" | get-a2a-password.sh -p ...`
+- The `-r` flag on `get-a2a-password.sh` strips JSON quotes for raw password output
+- To delete a trusted certificate: `DELETE TrustedCertificates/<thumbprint>`
 
 ### Well-Known Platform IDs
 
