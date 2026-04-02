@@ -74,10 +74,8 @@ if [ -z "$DisplayName" ]; then
 fi
 
 # Build JSON body for user creation
+# Note: Description is not accepted during POST -- it requires POST-then-PUT
 Body="{\"Name\":\"$UserName\",\"DisplayName\":\"$DisplayName\",\"PrimaryAuthenticationProvider\":{\"Id\":-1}"
-if [ -n "$Description" ]; then
-    Body="$Body,\"Description\":\"$Description\""
-fi
 if [ -n "$AdminRoles" ]; then
     RolesJson=$(echo "$AdminRoles" | jq -R 'split(",") | map(gsub("^ +| +$";""))' 2>/dev/null)
     if [ -z "$RolesJson" ]; then
@@ -109,6 +107,20 @@ if [ -n "$Password" ]; then
     if [ -n "$PassError" -a "$PassError" != "null" ]; then
         >&2 echo "Warning: user created but failed to set password:"
         echo "$PassResult" | jq . 2>/dev/null || echo "$PassResult"
+    fi
+fi
+
+# Update Description if provided (POST-then-PUT: not accepted during create)
+if [ -n "$Description" ]; then
+    UpdateBody=$(echo "$Result" | jq --arg desc "$Description" '.Description = $desc' 2>/dev/null)
+    UpdateResult=$("$ScriptDir/invoke-safeguard-method.sh" -a "$Appliance" -t "$AccessToken" \
+        -v "$Version" -s core -m PUT -U "Users/$UserId" -b "$UpdateBody" 2>/dev/null)
+    UpdateError=$(echo "$UpdateResult" | jq .Code 2>/dev/null)
+    if [ -n "$UpdateError" -a "$UpdateError" != "null" ]; then
+        >&2 echo "Warning: user created but failed to set description:"
+        echo "$UpdateResult" | jq . 2>/dev/null || echo "$UpdateResult"
+    else
+        Result="$UpdateResult"
     fi
 fi
 

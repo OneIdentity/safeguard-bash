@@ -109,7 +109,7 @@ The test framework (`test/framework.sh`) provides:
 - **Assertions**: `sg_assert`, `sg_assert_equal`, `sg_assert_not_null`,
   `sg_assert_contains`, `sg_skip`
 - **Cleanup registration**: `sg_register_cleanup` (LIFO execution order)
-- **Suite lifecycle**: Setup → Execute → Cleanup → Registered Cleanups
+- **Suite lifecycle**: Setup → Execute → Registered Cleanups (LIFO) → Suite Cleanup
 - **Helpers**: `sg_connect`, `sg_disconnect`, `sg_invoke`
 
 ### Writing a Test Suite
@@ -138,7 +138,7 @@ suite_execute()
     local result=$(sg_invoke -s core -m GET -U "Me")
     sg_assert_not_null "GET Me returns data" "$result"
 
-    local name=$(echo "$result" | jq -r '.UserName' 2>/dev/null)
+    local name=$(echo "$result" | jq -r '.Name' 2>/dev/null)
     sg_assert_equal "Username is correct" "$name" "$TestUser"
 }
 
@@ -151,11 +151,16 @@ suite_cleanup()
 ### Suite Lifecycle Rules
 
 1. **Setup failure** → Execute phase is skipped, Cleanup still runs
-2. **Cleanup always runs** — both the `suite_cleanup` function and all
-   registered cleanup actions execute regardless of test outcome
-3. **Registered cleanups run in LIFO order** — register immediately after
-   creating each test object
-4. **Suite functions are unloaded** between suites to prevent leakage
+2. **Cleanup always runs** — both registered cleanup actions and the
+   `suite_cleanup` function execute regardless of test outcome
+3. **Registered cleanups run FIRST, in LIFO order** — they execute while the
+   current session is still active (login file exists), then `suite_cleanup`
+   runs to restore session state for the next suite
+4. **Register cleanup immediately** after creating each test object
+5. **Suite functions are unloaded** between suites to prevent leakage
+6. **Cannot delete the currently authenticated user** — suites that create
+   their own admin user must handle deletion in `suite_cleanup()` by
+   reconnecting as the original user first
 
 ### Writing Strong Assertions
 
@@ -186,9 +191,18 @@ Follow these principles (adapted from safeguard-ps):
 The current baseline when all suites pass:
 
 ```
-Suites: N (0 failed)
-Tests:  N passed, 0 failed, 0 skipped
+Suites: 6 (0 failed)
+Tests:  94 passed, 0 failed, 0 skipped
 ```
+
+| Suite           | Tests | Description                                       |
+|-----------------|-------|---------------------------------------------------|
+| A2A             | 18    | Full A2A workflow: cert, registration, retrieval   |
+| Asset Accounts  | 17    | Account CRUD, passwords, edit, filter              |
+| Assets          | 17    | Asset CRUD, platform validation, edit, filter      |
+| Connect & Core  | 9     | Connect, login file, API calls, disconnect         |
+| Platforms       | 17    | Built-in platform validation (Windows, Linux)      |
+| Users           | 16    | User CRUD, roles, edit, filter, delete             |
 
 Update this baseline as you add suites and tests.
 
@@ -418,6 +432,89 @@ Many GET endpoints support server-side filtering via query parameters:
 invoke-safeguard-method.sh -s core -m GET \
     -U "Platforms?filter=PlatformFamily%20eq%20'Custom'"
 ```
+
+### CRUD Helper Scripts
+
+safeguard-bash includes purpose-built scripts for common CRUD operations:
+
+| Script                            | Description                              |
+|-----------------------------------|------------------------------------------|
+| `new-user.sh`                     | Create local user with roles             |
+| `remove-user.sh`                  | Delete user by ID                        |
+| `new-asset.sh`                    | Create asset with platform/address       |
+| `remove-asset.sh`                 | Delete asset by ID                       |
+| `new-asset-account.sh`            | Create account on an asset               |
+| `remove-asset-account.sh`         | Delete account by ID                     |
+| `new-a2a-registration.sh`         | Create A2A registration                  |
+| `remove-a2a-registration.sh`      | Delete A2A registration                  |
+| `add-a2a-credential-retrieval.sh` | Add account to A2A retrieval             |
+| `remove-a2a-credential-retrieval.sh` | Remove account from A2A retrieval     |
+
+### Asset Creation
+
+Assets require `AssetPartitionId` (use `-1` for Default Partition) or creation
+fails with a validation error. The `new-asset.sh` script defaults to `-1`.
+
+```bash
+new-asset.sh -n "MyAsset" -N "10.0.0.1" -P 521   # Linux (platform ID 521)
+new-asset.sh -n "MyWin"   -N "10.0.0.2" -P 547   # Windows Server (ID 547)
+```
+
+### Asset Account Creation
+
+The AssetAccount API requires a nested `Asset` object, not a flat `AssetId`:
+
+```bash
+# Correct: nested Asset.Id
+{"Name": "root", "Asset": {"Id": 123}}
+
+# Wrong: flat AssetId (will fail)
+{"Name": "root", "AssetId": 123}
+```
+
+### User Admin Roles
+
+Valid admin roles for Users: `GlobalAdmin`, `Auditor`, `AssetAdmin`,
+`ApplianceAdmin`, `PolicyAdmin`, `UserAdmin`, `HelpdeskAdmin`,
+`OperationsAdmin`, `ApplicationAuditor`, `SystemAuditor`.
+
+**Note:** `Authorizer` is NOT a valid admin role — it is a request workflow
+concept. `GlobalAdmin` automatically implies `HelpdeskAdmin`,
+`ApplicationAuditor`, and `SystemAuditor`.
+
+Admin roles ARE accepted during POST (no PUT needed). However, `Description`
+is NOT accepted during POST — requires POST-then-PUT.
+
+### A2A (Application-to-Application) Workflow
+
+The full A2A setup flow:
+
+1. Generate a client certificate (key + cert PEM files)
+2. Install the certificate as a TrustedCertificate on the appliance
+3. Create a certificate user linked to the cert thumbprint
+4. Create an A2A registration linked to the certificate user
+5. Add accounts for credential retrieval (returns an API key per account)
+6. Use `get-a2a-password.sh` with cert + key + API key to retrieve passwords
+
+Key API details:
+- `TrustedCertificates` uses `Thumbprint` as identifier (no numeric `Id` field)
+- `A2ARegistrations/{id}/RetrievableAccounts` POST uses flat `{"AccountId": N}`
+  (not nested — opposite of AssetAccounts!)
+- The POST response includes the `ApiKey` needed for credential retrieval
+- A2A password retrieval requires PolicyAdmin role to set up, but uses
+  certificate auth (not token auth) for actual retrieval
+- `get-a2a-password.sh` prompts for "Private Key Password:" — pipe empty
+  string for passwordless keys: `echo "" | get-a2a-password.sh ...`
+
+### Well-Known Platform IDs
+
+These built-in platform IDs are stable across Safeguard installations:
+
+| ID  | Platform         |
+|-----|------------------|
+| 521 | Linux            |
+| 547 | Windows Server   |
+| 548 | Windows Desktop  |
 
 ---
 

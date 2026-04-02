@@ -33,7 +33,12 @@ test/
 ├── framework.sh        # Shared test framework (assertions, cleanup, helpers)
 ├── README.md           # This file
 └── suites/             # Test suite scripts
-    └── suite-connect.sh   # Connect & core functionality tests
+    ├── suite-a2a.sh             # A2A end-to-end workflow
+    ├── suite-asset-accounts.sh  # Account CRUD tests
+    ├── suite-assets.sh          # Asset CRUD tests
+    ├── suite-connect.sh         # Connect & core functionality
+    ├── suite-platforms.sh       # Built-in platform validation
+    └── suite-users.sh           # User CRUD tests
 ```
 
 ## Writing a Test Suite
@@ -73,15 +78,23 @@ suite_cleanup() { sg_disconnect; }
 
 1. **Setup** — create test objects, register cleanups. Return non-zero to skip Execute.
 2. **Execute** — run assertions.
-3. **Cleanup** — `suite_cleanup()` runs, then registered cleanups in LIFO order.
+3. **Registered Cleanups** — run in LIFO order while session is still active.
+4. **Suite Cleanup** — `suite_cleanup()` restores session state for the next suite.
 
 Cleanup always runs, even if Setup or Execute fail.
 
 ## Test Suites
 
-| Suite | Description |
-|-------|-------------|
-| `suite-connect.sh` | Connect, login file, logged-in user, API call, disconnect |
+| Suite | Tests | Description |
+|-------|-------|-------------|
+| `suite-a2a.sh` | 18 | Full A2A workflow: cert, registration, credential retrieval |
+| `suite-asset-accounts.sh` | 17 | Account CRUD, passwords, edit, filter |
+| `suite-assets.sh` | 17 | Asset CRUD, platform validation, edit, filter |
+| `suite-connect.sh` | 9 | Connect, login file, API calls, disconnect |
+| `suite-platforms.sh` | 17 | Built-in platform validation (Windows, Linux) |
+| `suite-users.sh` | 16 | User CRUD, roles, edit, filter, delete |
+
+**Total: 94 tests across 6 suites**
 
 See [AGENTS.md](../AGENTS.md) for detailed guidance on writing tests and
 assertions.

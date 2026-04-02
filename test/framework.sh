@@ -185,7 +185,7 @@ run_registered_cleanups()
     local i
     for (( i = _CleanupCount - 1; i >= 0; i-- )); do
         echo "    Cleanup: ${_CleanupDescriptions[$i]}"
-        eval "${_CleanupActions[$i]}" 2>/dev/null || true
+        timeout 15 bash -c "${_CleanupActions[$i]}" 2>/dev/null || true
     done
 }
 
@@ -237,14 +237,14 @@ run_suite()
         fi
     fi
 
-    # Cleanup phase (always runs)
+    # Registered cleanup actions run first (while session is still active)
+    run_registered_cleanups
+
+    # Suite cleanup runs last (restores session state for next suite)
     if type suite_cleanup >/dev/null 2>&1; then
         echo -e "  ${_CLR_CYAN}Cleanup...${_CLR_RESET}"
         suite_cleanup 2>/dev/null || true
     fi
-
-    # Run registered cleanup actions (always runs, LIFO)
-    run_registered_cleanups
 
     # Unset suite functions so they don't leak into next suite
     unset -f suite_name suite_setup suite_execute suite_cleanup 2>/dev/null
