@@ -59,9 +59,6 @@ if [ -z "$AccountId" ]; then
     exit 1
 fi
 
-if [ -z "$AccessToken" ]; then
-    use_login_file
-fi
 require_login_args
 
 Body=$(jq -n --argjson id "$AccountId" '{AccountId: $id}')

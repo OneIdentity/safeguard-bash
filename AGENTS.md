@@ -317,33 +317,19 @@ auto-invokes `connect-safeguard.sh` if no login file exists.
 
 **Lifecycle:**
 1. `connect-safeguard.sh` creates the login file
-2. Other scripts read it via `use_login_file()`
+2. Other scripts read it via `use_login_file()` (called automatically by
+   `require_login_args`)
 3. `disconnect-safeguard.sh` invalidates the token and removes the file
 
-**Correct pattern for new scripts** (explicitly reads login file when no
-token is provided):
+The `require_login_args` function in `utils/loginfile.sh` handles the full
+auth resolution chain: login file → prompt → connect. Scripts just need to
+call `require_login_args` (or define a `require_args()` that calls it) after
+the getopts loop. No explicit `use_login_file` call is needed.
 
-```bash
-if [ -z "$AccessToken" ]; then
-    use_login_file
-fi
-require_login_args
-```
-
-**Older pattern** (relies on `require_login_args` fallback — avoid in new
-scripts):
-
-```bash
-# Some older scripts skip use_login_file and go straight to require_login_args
-# or require_args. This works when BOTH Appliance and AccessToken are empty,
-# but fails if only one is provided (e.g. -a given without -t).
-require_args    # internally calls require_login_args
-```
-
-A few legacy scripts also pass tokens via stdin using
-`<<<$AccessToken` with `invoke-safeguard-method.sh -T` (the `-T` flag reads
-the token from stdin, and `-N` suppresses automatic login file usage). Prefer
-the explicit `use_login_file` + `require_login_args` pattern in new scripts.
+A few legacy scripts pass tokens via stdin using `<<<$AccessToken` with
+`invoke-safeguard-method.sh -T` (the `-T` flag reads the token from stdin,
+and `-N` suppresses automatic login file usage). This is the older calling
+convention — new scripts should use `-t "$AccessToken"` instead.
 
 ### Sourcing Shared Utilities
 
