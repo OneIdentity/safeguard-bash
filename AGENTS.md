@@ -133,7 +133,10 @@ The test framework (`test/framework.sh`) provides:
   `sg_assert_contains`, `sg_skip`
 - **Cleanup registration**: `sg_register_cleanup` (LIFO execution order)
 - **Suite lifecycle**: Setup → Execute → Registered Cleanups (LIFO) → Suite Cleanup
-- **Helpers**: `sg_connect`, `sg_disconnect`, `sg_invoke`
+- **Helpers**: `sg_connect`, `sg_connect_pkce`, `sg_disconnect`, `sg_invoke`
+- **ROG management**: `sg_ensure_rog_enabled`, `sg_restore_rog` — the test
+  runner uses these to automatically enable the Resource Owner grant type
+  before tests and restore the original setting afterward
 
 ### Writing a Test Suite
 
@@ -215,7 +218,7 @@ The current baseline when all suites pass:
 
 ```
 Suites: 6 (0 failed)
-Tests:  94 passed, 0 failed, 0 skipped
+Tests:  102 passed, 0 failed, 0 skipped
 ```
 
 | Suite           | Tests | Description                                       |
@@ -223,7 +226,7 @@ Tests:  94 passed, 0 failed, 0 skipped
 | A2A             | 18    | Full A2A workflow: cert, registration, retrieval   |
 | Asset Accounts  | 17    | Account CRUD, passwords, edit, filter              |
 | Assets          | 17    | Asset CRUD, platform validation, edit, filter      |
-| Connect & Core  | 9     | Connect, login file, API calls, disconnect         |
+| Connect & Core  | 16    | Connect, PKCE, login file, API calls, disconnect   |
 | Platforms       | 17    | Built-in platform validation (Windows, Linux)      |
 | Users           | 16    | User CRUD, roles, edit, filter, delete             |
 
@@ -299,6 +302,8 @@ These flags are consistent across most scripts:
 | `-k` | Client private key file             |
 | `-t` | Access token                        |
 | `-p` | Read password from stdin            |
+| `-P` | Use PKCE authentication (connect-safeguard.sh) |
+| `-S` | Secondary password / MFA code (with `-P`) |
 
 ### Error Handling
 
@@ -332,8 +337,9 @@ fi
 Scripts share authentication state through `$HOME/.safeguard_login`, a
 key=value file created with `umask 0077` (readable only by owner).
 
-The file stores: `Appliance`, `Provider`, `AccessToken`, `CABundleArg`, and
-optionally `Cert`/`PKey` for certificate auth.
+The file stores: `Appliance`, `Provider`, `AccessToken`, `CABundleArg`,
+optionally `Cert`/`PKey` for certificate auth, and `Pkce=true` when PKCE
+authentication was used.
 
 Most scripts call `use_login_file()` from `utils/loginfile.sh`, which
 auto-invokes `connect-safeguard.sh` if no login file exists.
@@ -388,13 +394,45 @@ appliances.
 ### Authentication Methods
 
 1. **Password (Resource Owner Grant)** — username + password to a local or
-   directory identity provider
+   directory identity provider. Requires the Resource Owner grant type to be
+   enabled on the appliance (see below).
 2. **Certificate** — client certificate + private key, provider set to
    `certificate`
-3. **PKCE** — browser-based OAuth2 flow (not supported in bash scripts)
+3. **PKCE (Proof Key for Code Exchange)** — non-interactive OAuth2 flow that
+   programmatically simulates the browser-based login without launching a
+   browser. Use `connect-safeguard.sh -P`. This does **not** require the
+   Resource Owner grant type to be enabled, making it the most reliable
+   connection method.
 
-For scripting and testing, password authentication with a local admin account
-is the standard approach.
+For scripting and testing, PKCE authentication (`-P`) with a local admin
+account is the recommended approach because it works regardless of the
+appliance's grant type configuration. Password authentication is also
+supported but requires the Resource Owner grant type to be enabled.
+
+### Resource Owner Grant Type
+
+The Resource Owner password grant (`grant_type=password`) may be disabled on
+the appliance by default. The appliance setting "Allowed OAuth2 Grant Types"
+controls which grant types are permitted.
+
+To check/modify this setting programmatically:
+
+```bash
+# Read current grant types (requires an active session)
+invoke-safeguard-method.sh -s core -m GET -U "Settings" \
+    | jq '.[] | select(.Name=="Allowed OAuth2 Grant Types") | .Value'
+
+# Enable Resource Owner grant (note: URL-encode the setting name)
+invoke-safeguard-method.sh -s core -m PUT \
+    -U "Settings/Allowed%20OAuth2%20Grant%20Types" \
+    -b '{"Value":"ResourceOwner"}'
+```
+
+**Important:** The setting name contains spaces and must be URL-encoded
+(`%20`) in the URL path when using `invoke-safeguard-method.sh`.
+
+The test runner automatically handles this: it connects via PKCE, enables
+ROG if needed, runs all suites, then restores the original setting.
 
 ### SSL/TLS
 
