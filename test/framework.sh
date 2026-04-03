@@ -296,6 +296,14 @@ sg_connect()
         -a "$TestAppliance" -i local -u "$TestUser" -v "$TestVersion" -p 2>/dev/null
 }
 
+# Connect to the test appliance using PKCE and create a login file.
+# Uses the global TestAppliance, TestUser, TestPassword, TestVersion.
+sg_connect_pkce()
+{
+    echo "$TestPassword" | "$ScriptDir/../src/connect-safeguard.sh" \
+        -a "$TestAppliance" -i local -u "$TestUser" -v "$TestVersion" -P -p 2>/dev/null
+}
+
 # Disconnect from the test appliance.
 sg_disconnect()
 {
@@ -307,4 +315,96 @@ sg_disconnect()
 sg_invoke()
 {
     "$ScriptDir/../src/invoke-safeguard-method.sh" "$@" 2>/dev/null
+}
+
+# --- Resource Owner Grant (ROG) Management ---
+# The Safeguard "Allowed OAuth2 Grant Types" setting controls whether
+# password-based (Resource Owner) login is permitted. Tests that use
+# sg_connect (password auth) require ROG to be enabled. These helpers
+# detect, enable, and restore the setting so the test runner works even
+# when ROG is off by default.
+
+_OriginalGrantTypes=""
+_RogWasDisabled=false
+_GrantTypeSettingName="Allowed OAuth2 Grant Types"
+_GrantTypeSettingUrl="Settings/Allowed%20OAuth2%20Grant%20Types"
+
+# Query the current allowed grant types from the appliance.
+# Requires an active login session. Sets _OriginalGrantTypes.
+sg_get_grant_types()
+{
+    local settings
+    settings=$(sg_invoke -s core -m GET -U "Settings")
+    if [ -z "$settings" ]; then
+        >&2 echo "Warning: Failed to read appliance Settings"
+        return 1
+    fi
+    local setting_exists
+    setting_exists=$(echo "$settings" | jq -r ".[] | select(.Name==\"$_GrantTypeSettingName\") | .Name" 2>/dev/null)
+    if [ -z "$setting_exists" ]; then
+        >&2 echo "Warning: Could not find '$_GrantTypeSettingName' in Settings"
+        return 1
+    fi
+    _OriginalGrantTypes=$(echo "$settings" | jq -r ".[] | select(.Name==\"$_GrantTypeSettingName\") | .Value" 2>/dev/null)
+}
+
+# Ensure Resource Owner grant type is enabled. Must be called while
+# connected (login file exists). Saves original state for later restore.
+sg_ensure_rog_enabled()
+{
+    sg_get_grant_types || return 1
+
+    if echo "$_OriginalGrantTypes" | grep -qi "ResourceOwner"; then
+        echo "  Resource Owner grant is already enabled."
+        _RogWasDisabled=false
+        return 0
+    fi
+
+    echo "  Resource Owner grant is DISABLED -- enabling for tests..."
+    _RogWasDisabled=true
+
+    local NewValue
+    if [ -z "$_OriginalGrantTypes" ]; then
+        NewValue="ResourceOwner"
+    else
+        NewValue="$_OriginalGrantTypes, ResourceOwner"
+    fi
+    local Body
+    Body=$(jq -n --arg v "$NewValue" '{"Value": $v}')
+    local Result
+    Result=$(sg_invoke -s core -m PUT -U "$_GrantTypeSettingUrl" -b "$Body")
+    if [ -z "$Result" ]; then
+        >&2 echo "Error: Failed to enable Resource Owner grant type"
+        return 1
+    fi
+
+    echo "  Resource Owner grant enabled successfully."
+}
+
+# Restore the original grant type setting. Connects via PKCE (since ROG
+# may have just been disabled) and PUTs the original value back.
+sg_restore_rog()
+{
+    if [ "$_RogWasDisabled" != true ]; then
+        return 0
+    fi
+
+    echo ""
+    echo "Restoring original grant type setting..."
+
+    # Reconnect via PKCE for the restore (ROG-independent)
+    sg_disconnect
+    sg_connect_pkce
+
+    local Body
+    Body=$(jq -n --arg v "$_OriginalGrantTypes" '{"Value": $v}')
+    local Result
+    Result=$(sg_invoke -s core -m PUT -U "$_GrantTypeSettingUrl" -b "$Body")
+    if [ -z "$Result" ]; then
+        >&2 echo "Warning: Failed to restore original grant type setting"
+    else
+        echo "  Grant types restored to: $_OriginalGrantTypes"
+    fi
+
+    sg_disconnect
 }

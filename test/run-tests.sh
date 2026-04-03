@@ -112,6 +112,24 @@ fi
 
 echo "Found ${#SuiteFiles[@]} suite(s) to run."
 
+# --- Ensure Resource Owner Grant is enabled ---
+# Connect via PKCE first (works regardless of ROG state), check the
+# appliance grant-type setting, enable ROG if needed, then disconnect
+# so individual suites start with a clean session.
+echo ""
+echo "Connecting via PKCE to check Resource Owner grant type..."
+sg_connect_pkce
+if [ ! -f "$HOME/.safeguard_login" ]; then
+    >&2 echo "Error: PKCE connection failed. Cannot proceed."
+    exit 1
+fi
+
+sg_ensure_rog_enabled
+sg_disconnect
+
+# Guarantee ROG is restored on exit (even if tests fail or are interrupted)
+trap sg_restore_rog EXIT
+
 # Run each suite
 for suite_file in "${SuiteFiles[@]}"; do
     run_suite "$suite_file"

@@ -79,8 +79,23 @@ Just use Docker, and you won't have to worry about prerequisites!
 
 ## Getting Started
 Once safeguard-bash is installed, you can begin by running `connect-safeguard.sh`.
-Authentication in Safeguard is based on OAuth2 and `connect-safeguard.sh` uses
-the Resource Owner Grant of OAuth2.
+Authentication in Safeguard is based on OAuth2. The recommended connection method
+is PKCE (Proof Key for Code Exchange), which works regardless of the appliance's
+grant type configuration:
+
+```Bash
+$ connect-safeguard.sh -a 10.5.32.162 -i local -u Admin -P
+Password:
+A login file has been created.
+```
+
+The `-P` flag uses PKCE authentication, which programmatically simulates the
+browser-based OAuth2 flow without launching a browser. This is the most reliable
+connection method because it does not require the Resource Owner password grant
+type to be enabled on the appliance.
+
+If your appliance has the Resource Owner grant type enabled, you can also use
+direct password authentication (the classic method):
 
 ```Bash
 $ connect-safeguard.sh
@@ -90,6 +105,10 @@ Appliance Login: Admin
 Password:
 A login file has been created.
 ```
+
+> **Note:** Starting with newer Safeguard versions, the Resource Owner password
+> grant type may be disabled by default. If you receive authentication errors
+> using the classic method, use `-P` for PKCE authentication instead.
 
 The `connect-safeguard.sh` script will create a login file that includes
 your access token and connection information.  This makes it easier to call
