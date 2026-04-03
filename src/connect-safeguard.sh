@@ -481,6 +481,11 @@ Cert=$Cert
 PKey=$PKey
 EOF
     fi
+    if $Pkce; then
+        cat <<EOF >> $LoginFile
+Pkce=true
+EOF
+    fi
     umask $OldUmask
     >&2 echo "A login file has been created."
 else

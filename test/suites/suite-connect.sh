@@ -56,6 +56,34 @@ suite_execute()
     # --- Test: Disconnect ---
     sg_disconnect
     sg_assert "disconnect-safeguard.sh removes login file" test ! -f "$LoginFile"
+
+    # --- Test: Connect to appliance via PKCE ---
+    sg_connect_pkce
+    sg_assert "connect-safeguard.sh -P creates login file" test -f "$LoginFile"
+
+    # --- Test: PKCE login file contains appliance address ---
+    local pkce_appliance=$(grep "^Appliance=" "$LoginFile" 2>/dev/null | cut -d= -f2)
+    sg_assert_equal "PKCE login file stores correct appliance" "$pkce_appliance" "$TestAppliance"
+
+    # --- Test: PKCE login file contains an access token ---
+    local pkce_token=$(grep "^AccessToken=" "$LoginFile" 2>/dev/null | cut -d= -f2)
+    sg_assert_not_null "PKCE login file contains access token" "$pkce_token"
+
+    # --- Test: PKCE login file records PKCE method ---
+    local pkce_flag=$(grep "^Pkce=" "$LoginFile" 2>/dev/null | cut -d= -f2)
+    sg_assert_equal "PKCE login file records Pkce=true" "$pkce_flag" "true"
+
+    # --- Test: PKCE token can make API calls ---
+    local pkce_me_result=$(sg_invoke -s core -m GET -U "Me")
+    sg_assert_not_null "PKCE: invoke-safeguard-method.sh GET Me returns data" "$pkce_me_result"
+
+    # --- Test: PKCE logged-in user matches ---
+    local pkce_user_name=$(echo "$pkce_me_result" | jq -r '.Name' 2>/dev/null | tr '[:upper:]' '[:lower:]')
+    sg_assert_equal "PKCE: Logged-in user matches test user" "$pkce_user_name" "$expected_user"
+
+    # --- Test: Disconnect after PKCE ---
+    sg_disconnect
+    sg_assert "disconnect after PKCE removes login file" test ! -f "$LoginFile"
 }
 
 suite_cleanup()

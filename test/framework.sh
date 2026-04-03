@@ -296,6 +296,14 @@ sg_connect()
         -a "$TestAppliance" -i local -u "$TestUser" -v "$TestVersion" -p 2>/dev/null
 }
 
+# Connect to the test appliance using PKCE and create a login file.
+# Uses the global TestAppliance, TestUser, TestPassword, TestVersion.
+sg_connect_pkce()
+{
+    echo "$TestPassword" | "$ScriptDir/../src/connect-safeguard.sh" \
+        -a "$TestAppliance" -i local -u "$TestUser" -v "$TestVersion" -P -p 2>/dev/null
+}
+
 # Disconnect from the test appliance.
 sg_disconnect()
 {
