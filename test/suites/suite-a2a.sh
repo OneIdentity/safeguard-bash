@@ -122,7 +122,7 @@ suite_execute()
 
     # --- Test: Create A2A registration ---
     local reg_result=$("$ScriptDir/../src/new-a2a-registration.sh" \
-        -n "${TestPrefix}_A2AReg" -C "$certuser_id" -D "Test A2A registration" 2>/dev/null)
+        -n "${TestPrefix}_A2AReg" -C "$certuser_id" -D "Test A2A registration" -V 2>/dev/null)
     sg_assert_not_null "Create A2A registration returns data" "$reg_result"
 
     local reg_id=$(echo "$reg_result" | jq -r '.Id' 2>/dev/null)
@@ -179,6 +179,63 @@ suite_execute()
         -A "$api_key" -r 2>/dev/null)
     sg_assert_not_null "A2A password retrieval returns data" "$a2a_pw"
     sg_assert_equal "Retrieved password matches known password" "$a2a_pw" "$known_pw"
+
+    # --- Test: get-a2a-retrievable-account.sh list all (no filter) ---
+    local all_result=$(echo "" | "$ScriptDir/../src/get-a2a-retrievable-account.sh" \
+        -a "$TestAppliance" -c "$cert_file" -k "$key_file" -p 2>/dev/null)
+    sg_assert_not_null "get-a2a-retrievable-account list all returns data" "$all_result"
+
+    local all_count=$(echo "$all_result" | jq 'length' 2>/dev/null)
+    sg_assert_equal "List all returns 1 account" "$all_count" "1"
+
+    local all_acct_name=$(echo "$all_result" | jq -r '.[0].AccountName' 2>/dev/null)
+    sg_assert_not_null "List all includes AccountName" "$all_acct_name"
+
+    # --- Test: get-a2a-retrievable-account.sh with matching QueryFilter ---
+    local filter_result=$(echo "" | "$ScriptDir/../src/get-a2a-retrievable-account.sh" \
+        -a "$TestAppliance" -c "$cert_file" -k "$key_file" -p \
+        -q "AccountName eq '${TestPrefix}_A2AAccount'" 2>/dev/null)
+    sg_assert_not_null "Matching QueryFilter returns data" "$filter_result"
+
+    local filter_count=$(echo "$filter_result" | jq 'length' 2>/dev/null)
+    sg_assert_equal "Matching QueryFilter returns 1 result" "$filter_count" "1"
+
+    local filter_name=$(echo "$filter_result" | jq -r '.[0].AccountName' 2>/dev/null)
+    sg_assert_equal "Filtered AccountName matches" "$filter_name" "${TestPrefix}_A2AAccount"
+
+    # --- Test: get-a2a-retrievable-account.sh with non-matching QueryFilter ---
+    local nomatch_result=$(echo "" | "$ScriptDir/../src/get-a2a-retrievable-account.sh" \
+        -a "$TestAppliance" -c "$cert_file" -k "$key_file" -p \
+        -q "AccountName eq 'NonExistent_ZZZ_999'" 2>/dev/null)
+    local nomatch_count=$(echo "$nomatch_result" | jq 'length' 2>/dev/null)
+    sg_assert_equal "Non-matching QueryFilter returns empty" "$nomatch_count" "0"
+
+    # --- Test: get-a2a-retrievable-account.sh with Fields ---
+    local fields_result=$(echo "" | "$ScriptDir/../src/get-a2a-retrievable-account.sh" \
+        -a "$TestAppliance" -c "$cert_file" -k "$key_file" -p \
+        -f "AccountName,AccountId" 2>/dev/null)
+    sg_assert_not_null "Fields filter returns data" "$fields_result"
+
+    local fields_acct=$(echo "$fields_result" | jq -r '.[0].AccountName' 2>/dev/null)
+    sg_assert_not_null "Fields result includes AccountName" "$fields_acct"
+
+    local fields_id=$(echo "$fields_result" | jq -r '.[0].AccountId' 2>/dev/null)
+    sg_assert_not_null "Fields result includes AccountId" "$fields_id"
+
+    # --- Test: get-a2a-retrievable-account.sh with OrderBy ---
+    local orderby_result=$(echo "" | "$ScriptDir/../src/get-a2a-retrievable-account.sh" \
+        -a "$TestAppliance" -c "$cert_file" -k "$key_file" -p \
+        -o "AccountName" 2>/dev/null)
+    sg_assert_not_null "OrderBy returns data" "$orderby_result"
+
+    # --- Test: get-a2a-retrievable-account.sh with QueryFilter and Fields combined ---
+    local combined_result=$(echo "" | "$ScriptDir/../src/get-a2a-retrievable-account.sh" \
+        -a "$TestAppliance" -c "$cert_file" -k "$key_file" -p \
+        -q "AccountName eq '${TestPrefix}_A2AAccount'" -f "AccountName" 2>/dev/null)
+    sg_assert_not_null "QueryFilter with Fields combined returns data" "$combined_result"
+
+    local combined_name=$(echo "$combined_result" | jq -r '.[0].AccountName' 2>/dev/null)
+    sg_assert_equal "Combined filter+fields AccountName matches" "$combined_name" "${TestPrefix}_A2AAccount"
 
     # --- Test: Remove credential retrieval and verify ---
     "$ScriptDir/../src/remove-a2a-credential-retrieval.sh" \

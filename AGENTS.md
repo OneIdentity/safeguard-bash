@@ -218,12 +218,12 @@ The current baseline when all suites pass:
 
 ```
 Suites: 6 (0 failed)
-Tests:  102 passed, 0 failed, 0 skipped
+Tests:  114 passed, 0 failed, 0 skipped
 ```
 
 | Suite           | Tests | Description                                       |
 |-----------------|-------|---------------------------------------------------|
-| A2A             | 18    | Full A2A workflow: cert, registration, retrieval   |
+| A2A             | 31    | Full A2A workflow: cert, registration, retrieval, filtering |
 | Asset Accounts  | 17    | Account CRUD, passwords, edit, filter              |
 | Assets          | 17    | Asset CRUD, platform validation, edit, filter      |
 | Connect & Core  | 16    | Connect, PKCE, login file, API calls, disconnect   |
