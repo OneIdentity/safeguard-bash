@@ -151,6 +151,95 @@ suite_execute()
     local rb_disabled=$(echo "$reg_readback" | jq -r '.Disabled' 2>/dev/null)
     sg_assert_equal "Registration is not disabled" "$rb_disabled" "false"
 
+    # --- Test: get-a2a-registration.sh get by ID ---
+    local get_single=$("$ScriptDir/../src/get-a2a-registration.sh" -i "$reg_id" 2>/dev/null)
+    sg_assert_not_null "get-a2a-registration by ID returns data" "$get_single"
+
+    local get_single_name=$(echo "$get_single" | jq -r '.AppName' 2>/dev/null)
+    sg_assert_equal "get-a2a-registration by ID AppName matches" "$get_single_name" "${TestPrefix}_A2AReg"
+
+    local get_single_certuser=$(echo "$get_single" | jq -r '.CertificateUserId' 2>/dev/null)
+    sg_assert_equal "get-a2a-registration by ID CertificateUserId matches" "$get_single_certuser" "$certuser_id"
+
+    # --- Test: get-a2a-registration.sh list all ---
+    local get_all=$("$ScriptDir/../src/get-a2a-registration.sh" 2>/dev/null)
+    sg_assert_not_null "get-a2a-registration list all returns data" "$get_all"
+
+    local get_all_count=$(echo "$get_all" | jq 'length' 2>/dev/null)
+    sg_assert "get-a2a-registration list returns at least 1" test "$get_all_count" -ge 1
+
+    # --- Test: get-a2a-registration.sh with filter ---
+    local get_filtered=$("$ScriptDir/../src/get-a2a-registration.sh" \
+        -q "AppName eq '${TestPrefix}_A2AReg'" 2>/dev/null)
+    sg_assert_not_null "get-a2a-registration filter returns data" "$get_filtered"
+
+    local get_filt_count=$(echo "$get_filtered" | jq 'length' 2>/dev/null)
+    sg_assert_equal "get-a2a-registration filter returns 1 result" "$get_filt_count" "1"
+
+    local get_filt_name=$(echo "$get_filtered" | jq -r '.[0].AppName' 2>/dev/null)
+    sg_assert_equal "get-a2a-registration filtered AppName matches" "$get_filt_name" "${TestPrefix}_A2AReg"
+
+    # --- Test: get-a2a-registration.sh with non-matching filter ---
+    local get_nomatch=$("$ScriptDir/../src/get-a2a-registration.sh" \
+        -q "AppName eq 'NonExistent_ZZZ_999'" 2>/dev/null)
+    local get_nomatch_count=$(echo "$get_nomatch" | jq 'length' 2>/dev/null)
+    sg_assert_equal "get-a2a-registration non-matching filter returns empty" "$get_nomatch_count" "0"
+
+    # --- Test: get-a2a-registration.sh with fields ---
+    local get_fields=$("$ScriptDir/../src/get-a2a-registration.sh" \
+        -f "Id,AppName" 2>/dev/null)
+    sg_assert_not_null "get-a2a-registration fields returns data" "$get_fields"
+
+    local get_fields_name=$(echo "$get_fields" | jq -r '.[0].AppName' 2>/dev/null)
+    sg_assert_not_null "get-a2a-registration fields includes AppName" "$get_fields_name"
+
+    # --- Test: edit-a2a-registration.sh with individual flags ---
+    local edit_result=$("$ScriptDir/../src/edit-a2a-registration.sh" \
+        -i "$reg_id" -n "${TestPrefix}_A2ARegEdited" -D "Edited description" 2>/dev/null)
+    sg_assert_not_null "edit-a2a-registration returns data" "$edit_result"
+
+    local edit_name=$(echo "$edit_result" | jq -r '.AppName' 2>/dev/null)
+    sg_assert_equal "edit-a2a-registration AppName updated" "$edit_name" "${TestPrefix}_A2ARegEdited"
+
+    local edit_desc=$(echo "$edit_result" | jq -r '.Description' 2>/dev/null)
+    sg_assert_equal "edit-a2a-registration Description updated" "$edit_desc" "Edited description"
+
+    # Readback after edit to confirm persistence
+    local edit_rb=$("$ScriptDir/../src/get-a2a-registration.sh" -i "$reg_id" 2>/dev/null)
+    local edit_rb_name=$(echo "$edit_rb" | jq -r '.AppName' 2>/dev/null)
+    sg_assert_equal "edit-a2a-registration readback AppName matches" "$edit_rb_name" "${TestPrefix}_A2ARegEdited"
+
+    local edit_rb_desc=$(echo "$edit_rb" | jq -r '.Description' 2>/dev/null)
+    sg_assert_equal "edit-a2a-registration readback Description matches" "$edit_rb_desc" "Edited description"
+
+    # Verify CertificateUserId was not changed by the edit
+    local edit_rb_certuser=$(echo "$edit_rb" | jq -r '.CertificateUserId' 2>/dev/null)
+    sg_assert_equal "edit-a2a-registration CertificateUserId unchanged" "$edit_rb_certuser" "$certuser_id"
+
+    # --- Test: edit-a2a-registration.sh with -V (visible) flag ---
+    local edit_vis=$("$ScriptDir/../src/edit-a2a-registration.sh" \
+        -i "$reg_id" -V 2>/dev/null)
+    local edit_vis_val=$(echo "$edit_vis" | jq -r '.VisibleToCertificateUsers' 2>/dev/null)
+    sg_assert_equal "edit-a2a-registration -V sets visible to true" "$edit_vis_val" "true"
+
+    # --- Test: edit-a2a-registration.sh with -W (not visible) flag ---
+    local edit_invis=$("$ScriptDir/../src/edit-a2a-registration.sh" \
+        -i "$reg_id" -W 2>/dev/null)
+    local edit_invis_val=$(echo "$edit_invis" | jq -r '.VisibleToCertificateUsers' 2>/dev/null)
+    sg_assert_equal "edit-a2a-registration -W sets visible to false" "$edit_invis_val" "false"
+
+    # --- Test: edit-a2a-registration.sh with JSON body ---
+    local edit_body_json=$(echo "$edit_rb" | jq '.AppName = "'"${TestPrefix}_A2AReg"'" | .Description = "Test A2A registration"')
+    local edit_body_result=$("$ScriptDir/../src/edit-a2a-registration.sh" \
+        -i "$reg_id" -b "$edit_body_json" 2>/dev/null)
+    sg_assert_not_null "edit-a2a-registration with JSON body returns data" "$edit_body_result"
+
+    local edit_body_name=$(echo "$edit_body_result" | jq -r '.AppName' 2>/dev/null)
+    sg_assert_equal "edit-a2a-registration JSON body restored AppName" "$edit_body_name" "${TestPrefix}_A2AReg"
+
+    local edit_body_desc=$(echo "$edit_body_result" | jq -r '.Description' 2>/dev/null)
+    sg_assert_equal "edit-a2a-registration JSON body restored Description" "$edit_body_desc" "Test A2A registration"
+
     # --- Test: Add credential retrieval ---
     local cred_result=$("$ScriptDir/../src/add-a2a-credential-retrieval.sh" \
         -r "$reg_id" -c "$acct_id" 2>/dev/null)
@@ -172,6 +261,55 @@ suite_execute()
 
     local retr_acct=$(echo "$retrievable" | jq -r '.[0].AccountId' 2>/dev/null)
     sg_assert_equal "Retrievable AccountId matches" "$retr_acct" "$acct_id"
+
+    # --- Test: get-a2a-credential-retrieval.sh list all ---
+    local gcr_all=$("$ScriptDir/../src/get-a2a-credential-retrieval.sh" \
+        -r "$reg_id" 2>/dev/null)
+    sg_assert_not_null "get-a2a-credential-retrieval list all returns data" "$gcr_all"
+
+    local gcr_all_count=$(echo "$gcr_all" | jq 'length' 2>/dev/null)
+    sg_assert_equal "get-a2a-credential-retrieval list returns 1 account" "$gcr_all_count" "1"
+
+    local gcr_all_acct=$(echo "$gcr_all" | jq -r '.[0].AccountId' 2>/dev/null)
+    sg_assert_equal "get-a2a-credential-retrieval list AccountId matches" "$gcr_all_acct" "$acct_id"
+
+    # --- Test: get-a2a-credential-retrieval.sh get single by account ID ---
+    local gcr_single=$("$ScriptDir/../src/get-a2a-credential-retrieval.sh" \
+        -r "$reg_id" -c "$acct_id" 2>/dev/null)
+    sg_assert_not_null "get-a2a-credential-retrieval single returns data" "$gcr_single"
+
+    local gcr_single_acct=$(echo "$gcr_single" | jq -r '.AccountId' 2>/dev/null)
+    sg_assert_equal "get-a2a-credential-retrieval single AccountId matches" "$gcr_single_acct" "$acct_id"
+
+    local gcr_single_apikey=$(echo "$gcr_single" | jq -r '.ApiKey' 2>/dev/null)
+    sg_assert_not_null "get-a2a-credential-retrieval single has ApiKey" "$gcr_single_apikey"
+
+    # --- Test: get-a2a-credential-retrieval.sh with filter ---
+    local gcr_filter=$("$ScriptDir/../src/get-a2a-credential-retrieval.sh" \
+        -r "$reg_id" -q "AccountName eq '${TestPrefix}_A2AAccount'" 2>/dev/null)
+    sg_assert_not_null "get-a2a-credential-retrieval filter returns data" "$gcr_filter"
+
+    local gcr_filter_count=$(echo "$gcr_filter" | jq 'length' 2>/dev/null)
+    sg_assert_equal "get-a2a-credential-retrieval filter returns 1 result" "$gcr_filter_count" "1"
+
+    # --- Test: get-a2a-credential-retrieval.sh with non-matching filter ---
+    local gcr_nomatch=$("$ScriptDir/../src/get-a2a-credential-retrieval.sh" \
+        -r "$reg_id" -q "AccountName eq 'NonExistent_ZZZ_999'" 2>/dev/null)
+    local gcr_nomatch_count=$(echo "$gcr_nomatch" | jq 'length' 2>/dev/null)
+    sg_assert_equal "get-a2a-credential-retrieval non-matching filter returns empty" "$gcr_nomatch_count" "0"
+
+    # --- Test: get-a2a-credential-retrieval.sh with fields ---
+    local gcr_fields=$("$ScriptDir/../src/get-a2a-credential-retrieval.sh" \
+        -r "$reg_id" -f "AccountName,AccountId" 2>/dev/null)
+    sg_assert_not_null "get-a2a-credential-retrieval fields returns data" "$gcr_fields"
+
+    local gcr_fields_name=$(echo "$gcr_fields" | jq -r '.[0].AccountName' 2>/dev/null)
+    sg_assert_not_null "get-a2a-credential-retrieval fields includes AccountName" "$gcr_fields_name"
+
+    # --- Test: get-a2a-credential-retrieval.sh with orderby ---
+    local gcr_order=$("$ScriptDir/../src/get-a2a-credential-retrieval.sh" \
+        -r "$reg_id" -o "AccountName" 2>/dev/null)
+    sg_assert_not_null "get-a2a-credential-retrieval orderby returns data" "$gcr_order"
 
     # --- Test: Retrieve password via A2A service ---
     local a2a_pw=$(echo "" | "$ScriptDir/../src/get-a2a-password.sh" \
