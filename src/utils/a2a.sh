@@ -15,14 +15,23 @@ invoke_a2a_method()
     local relurl=$1 ; shift          #9
     local version=$1 ; shift         #10
     local usesclient=$1 ; shift      #11
+    local body=${1:-}                 #12 (optional request body)
 
     local apikeyflag="-H \"Authorization: A2A $apikey\""
+    local contenttypeflag=""
+    if [ -n "$body" ]; then
+        contenttypeflag="-H \"Content-Type: application/json\""
+    fi
     local response=""
     local error=""
 
     if ! $usesclient; then
         if [ $(curl --version | grep "libcurl" | sed -e 's,curl [0-9]*\.\([0-9]*\).* (.*,\1,') -ge 33 ]; then
             http11flag='--http1.1'
+        fi
+        local bodyargs=()
+        if [ -n "$body" ]; then
+            bodyargs=(-d "$body")
         fi
         response=$(curl -K <(cat <<EOF
 -s
@@ -34,9 +43,10 @@ $cabundlearg
 -X $method
 $http11flag
 -H "Accept: application/json"
+$contenttypeflag
 $apikeyflag
 EOF
-) "https://$appliance/service/$service/v$version/$relurl" 2>"${TMPDIR:-/tmp}/.a2a_curl_err.$$"
+) "${bodyargs[@]}" "https://$appliance/service/$service/v$version/$relurl" 2>"${TMPDIR:-/tmp}/.a2a_curl_err.$$"
        )
         local curlerr=$?
         if [ $curlerr -ne 0 ] && [ -z "$response" ]; then
@@ -58,14 +68,25 @@ EOF
         # ignore certificate errors when using client certificate authentication. This works around that
         # problem by calling OpenSSL directly and manually formulating an HTTP request.
         #   see https://github.com/curl/curl/issues/1411
+        local contentlengthheader=""
+        local contenttypeheader=""
+        local bodydata=""
+        if [ -n "$body" ]; then
+            contenttypeheader="Content-Type: application/json"
+            contentlengthheader="Content-Length: ${#body}"
+            bodydata="$body"
+        fi
         IFS=$'\n' read -d '' -r -a response < <(cat <<EOF | openssl s_client -connect $appliance:443 -quiet -crlf -key $pkeyfile -cert $certfile -pass pass:$pass 2>"${TMPDIR:-/tmp}/.a2a_sclient_err.$$"
 $method /service/$service/v$version/$relurl HTTP/1.1
 Host: $appliance
 User-Agent: curl/7.47.0
 Authorization: A2A $apikey
 Accept: application/json
-Connection: close
+${contenttypeheader:+$contenttypeheader
+}${contentlengthheader:+$contentlengthheader
+}Connection: close
 
+$bodydata
 EOF
             )
         local noclose=true

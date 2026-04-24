@@ -318,6 +318,65 @@ suite_execute()
     sg_assert_not_null "A2A password retrieval returns data" "$a2a_pw"
     sg_assert_equal "Retrieved password matches known password" "$a2a_pw" "$known_pw"
 
+    # --- Test: set-a2a-password.sh (bidirectional) ---
+    # Enable bidirectional on the registration
+    "$ScriptDir/../src/edit-a2a-registration.sh" -i "$reg_id" -b \
+        "$(sg_invoke -s core -m GET -U "A2ARegistrations/$reg_id" | jq '.BidirectionalEnabled = true')" \
+        >/dev/null 2>/dev/null
+
+    # Set a new password via A2A
+    local new_pw="A2ANewPassw0rd!"
+    local set_result=$(printf '%s\n%s\n' "" "\"$new_pw\"" | "$ScriptDir/../src/set-a2a-password.sh" \
+        -a "$TestAppliance" -c "$cert_file" -k "$key_file" \
+        -A "$api_key" 2>/dev/null)
+    # set-a2a-password returns empty on success
+    sg_assert_equal "set-a2a-password returns empty on success" "$set_result" ""
+
+    # Verify the new password by retrieving it
+    local verify_pw=$(echo "" | "$ScriptDir/../src/get-a2a-password.sh" \
+        -a "$TestAppliance" -c "$cert_file" -k "$key_file" \
+        -A "$api_key" -r 2>/dev/null)
+    sg_assert_equal "Password was changed by set-a2a-password" "$verify_pw" "$new_pw"
+
+    # Restore original password
+    printf '%s\n%s\n' "" "\"$known_pw\"" | "$ScriptDir/../src/set-a2a-password.sh" \
+        -a "$TestAppliance" -c "$cert_file" -k "$key_file" \
+        -A "$api_key" 2>/dev/null
+
+    # Verify restore
+    local restore_pw=$(echo "" | "$ScriptDir/../src/get-a2a-password.sh" \
+        -a "$TestAppliance" -c "$cert_file" -k "$key_file" \
+        -A "$api_key" -r 2>/dev/null)
+    sg_assert_equal "Password restored after set-a2a-password" "$restore_pw" "$known_pw"
+
+    # --- Test: set-a2a-privatekey.sh (bidirectional) ---
+    # Generate a test SSH key to set
+    local test_ssh_key="$cert_dir/test_ssh_key"
+    ssh-keygen -t rsa -b 2048 -f "$test_ssh_key" -N "" -q 2>/dev/null
+
+    if [ -f "$test_ssh_key" ]; then
+        # Set the SSH key via A2A
+        local set_key_result=$(echo "" | "$ScriptDir/../src/set-a2a-privatekey.sh" \
+            -a "$TestAppliance" -c "$cert_file" -k "$key_file" \
+            -A "$api_key" -K "$test_ssh_key" -p 2>/dev/null)
+        # set-a2a-privatekey returns empty on success
+        sg_assert_equal "set-a2a-privatekey returns empty on success" "$set_key_result" ""
+
+        # Verify by retrieving the key
+        local get_key_result=$(echo "" | "$ScriptDir/../src/get-a2a-privatekey.sh" \
+            -a "$TestAppliance" -c "$cert_file" -k "$key_file" \
+            -A "$api_key" -r -p 2>/dev/null)
+        sg_assert_not_null "get-a2a-privatekey returns data after set" "$get_key_result"
+
+        # Set with explicit format
+        local set_key_fmt=$(echo "" | "$ScriptDir/../src/set-a2a-privatekey.sh" \
+            -a "$TestAppliance" -c "$cert_file" -k "$key_file" \
+            -A "$api_key" -K "$test_ssh_key" -F OpenSsh -p 2>/dev/null)
+        sg_assert_equal "set-a2a-privatekey with format returns empty on success" "$set_key_fmt" ""
+    else
+        sg_skip "set-a2a-privatekey tests" "ssh-keygen not available"
+    fi
+
     # --- Test: get-a2a-retrievable-account.sh list all (no filter) ---
     local all_result=$(echo "" | "$ScriptDir/../src/get-a2a-retrievable-account.sh" \
         -a "$TestAppliance" -c "$cert_file" -k "$key_file" -p 2>/dev/null)
