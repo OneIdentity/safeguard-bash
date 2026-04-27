@@ -124,6 +124,13 @@ Password:
 A login file has been created.
 ```
 
+For non-interactive scripting, pipe the password via stdin using `-p`:
+
+```Bash
+$ echo "MyPassword" | connect-safeguard.sh -a 10.5.32.162 -i local -u Admin -P -p
+A login file has been created.
+```
+
 The `invoke-safeguard-method.sh` script will facilitate a call to the Web API.
 Safeguard hosts multiple services as part of the Web API:
 
@@ -138,6 +145,29 @@ from the list above, `-m` for the HTTP method to use (GET, PUT, POST, DELETE), a
 
 You may use `show-safeguard-method.sh` to see what methods can be called from
 which services.
+
+```Bash
+# Get information about the currently authenticated user
+$ invoke-safeguard-method.sh -s core -m GET -U "Me"
+
+# Get appliance status (anonymous -- no login required)
+$ get-appliance-status.sh -a 10.5.32.162
+
+# Create an object using POST with a JSON body (-b)
+$ invoke-safeguard-method.sh -s core -m POST -U "Users" \
+    -b '{"Name":"jsmith","PrimaryAuthenticationProvider":{"Id":-1}}'
+
+# Update an object using PUT
+$ invoke-safeguard-method.sh -s core -m PUT -U "Users/123" \
+    -b '{"Id":123,"Name":"jsmith","Description":"Updated description"}'
+
+# Delete an object
+$ invoke-safeguard-method.sh -s core -m DELETE -U "Users/123"
+
+# Filter results using SCIM-style query parameters
+$ invoke-safeguard-method.sh -s core -m GET \
+    -U "Assets?filter=PlatformId%20eq%20521"
+```
 
 If you do not have rights to access a particular portion of the Web API,
 you will be presented with an error message saying authorization is
@@ -154,6 +184,57 @@ $ invoke-safeguard-method.sh -s core -m GET -U Assets
 
 When you are finished, you can call the `disconnect-safeguard.sh` script
 to invalidate and remove your access token.
+
+## Users and Assets
+
+safeguard-bash includes purpose-built scripts for common user and asset
+management operations, so you don't always have to construct API calls manually.
+
+### Managing Users
+
+```Bash
+# Create a local user with permissions (reads password from stdin via -p)
+$ echo "MyP@ssword1" | new-user.sh -n "jsmith" -d "Service account" \
+    -R "AssetAdmin,PolicyAdmin" -p
+
+# List all users
+$ invoke-safeguard-method.sh -s core -m GET -U "Users"
+
+# Search for a user by name
+$ invoke-safeguard-method.sh -s core -m GET \
+    -U "Users?filter=Name%20eq%20'jsmith'"
+
+# Set or change a user's password
+$ invoke-safeguard-method.sh -s core -m PUT -U "Users/123/Password" \
+    -b '"NewP@ssword1"'
+
+# Delete a user by ID
+$ remove-user.sh -i 123
+```
+
+### Managing Assets and Accounts
+
+```Bash
+# Create a Linux asset (platform ID 521)
+$ new-asset.sh -n "web-server-01" -N "10.0.0.100" -P 521 -D "Production web server"
+
+# Create a Windows Server asset (platform ID 547)
+$ new-asset.sh -n "dc-01" -N "10.0.0.10" -P 547
+
+# Look up a platform ID by name
+$ get-platform.sh -n "Linux"
+
+# Create an account on an asset
+$ new-asset-account.sh -s <assetId> -n "root" -D "Root account"
+
+# Set an account password
+$ invoke-safeguard-method.sh -s core -m PUT -U "AssetAccounts/456/Password" \
+    -b '"AccountP@ss1"'
+
+# Delete an account, then the asset
+$ remove-asset-account.sh -i 456
+$ remove-asset.sh -i 354
+```
 
 ## Docker
 
