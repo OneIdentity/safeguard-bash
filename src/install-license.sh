@@ -70,7 +70,7 @@ require_args
 
 echo "Staging license file..."
 Response=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -v $Version -s core -m POST -U Licenses -N -b "{
-    \"Base64Data\": \"$(base64 $LicenseFile)\"
+    \"Base64Data\": \"$(openssl base64 -A -in $LicenseFile)\"
 }" <<<$AccessToken)
 echo $Response | jq .
 if [ -z "$Response" ]; then

@@ -65,7 +65,7 @@ done
 
 require_args
 
-Body="{\"Base64CertificateData\": \"$(base64 -w 0 "$RootCertificateFile")\"}"
+Body="{\"Base64CertificateData\": \"$(openssl base64 -A -in "$RootCertificateFile")\"}"
 
 Result=$("$ScriptDir/invoke-safeguard-method.sh" -a "$Appliance" -t "$AccessToken" \
     -v "$Version" -s core -m POST -U "TrustedCertificates" -b "$Body" 2>/dev/null)
