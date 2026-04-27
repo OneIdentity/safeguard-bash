@@ -197,6 +197,31 @@ will give you a list of all of the possible events.
 $ get-event.sh
 ```
 
+You can also discover events using the event discovery scripts:
+
+```Bash
+$ get-event-name.sh                         # List all subscribable event names
+$ get-event-name.sh -T User                 # Filter by object type
+$ get-event-category.sh                     # List event categories
+$ get-event-property.sh -n UserCreated      # Get properties for a specific event
+$ find-event.sh -Q "password"               # Search events by text
+```
+
+### Event Subscriptions
+
+Event subscriptions configure how you receive notifications for specific events.
+Subscriptions support SignalR (real-time) and email delivery:
+
+```Bash
+$ new-event-subscription.sh -d "User changes" -T Signalr -e "UserCreated,UserModified"
+$ get-event-subscription.sh                 # List all subscriptions
+$ edit-event-subscription.sh -i <id> -d "Updated" -e "UserCreated"
+$ find-event-subscription.sh -Q "user"      # Search subscriptions
+$ remove-event-subscription.sh -i <id>      # Delete a subscription
+```
+
+### Event Handlers
+
 The `listen-for-event.sh` script and the `listen-for-a2a-event.sh` script will
 connect to SignalR and dump every event received in that user's context as a JSON
 object.  These two scripts are paired with the `handle-event.sh` script and the
@@ -230,3 +255,64 @@ the Docker environment.  The source code is available from the samples directory
 [A2A Password Listener video](https://www.youtube.com/watch?v=UQFcNgYKnTI)
 
 [![A2A Password Listener](https://img.youtube.com/vi/UQFcNgYKnTI/0.jpg)](https://www.youtube.com/watch?v=UQFcNgYKnTI)
+
+## A2A (Application-to-Application)
+
+safeguard-bash provides comprehensive A2A management scripts for configuring
+and using application-to-application credential retrieval and access request
+brokering.
+
+### A2A Registration Management
+
+```Bash
+$ new-a2a-registration.sh -n "MyApp" -C <certUserId> -V   # Create registration
+$ get-a2a-registration.sh                                   # List all
+$ get-a2a-registration.sh -i <id>                           # Get by ID
+$ edit-a2a-registration.sh -i <id> -D "Updated desc"        # Edit
+$ remove-a2a-registration.sh -i <id>                        # Delete
+```
+
+### Credential Retrieval
+
+```Bash
+$ add-a2a-credential-retrieval.sh -r <regId> -c <accountId>  # Add account
+$ get-a2a-credential-retrieval.sh -i <regId>                  # List accounts
+$ get-a2a-apikey.sh -r <regId> -c <accountId>                 # Get API key
+$ reset-a2a-apikey.sh -r <regId> -c <accountId>               # Regenerate key
+
+# Retrieve credentials using cert auth
+$ echo "" | get-a2a-password.sh -a <appliance> -c cert.pem -k key.pem -A <apiKey> -p -r
+$ echo "" | get-a2a-privatekey.sh -a <appliance> -c cert.pem -k key.pem -A <apiKey> -p
+```
+
+### Bidirectional A2A (Set Credentials)
+
+```Bash
+$ echo "" | set-a2a-password.sh -a <appliance> -c cert.pem -k key.pem \
+    -A <apiKey> -P "NewPassword1!" -p
+$ echo "" | set-a2a-privatekey.sh -a <appliance> -c cert.pem -k key.pem \
+    -A <apiKey> -K keyfile.pem -p
+```
+
+### Access Request Brokering
+
+A2A registrations can be configured to broker access requests on behalf of
+other users:
+
+```Bash
+$ set-a2a-access-request-broker.sh -i <regId> \
+    -b '{"Users": [{"UserId": 45}]}'                        # Configure broker
+$ get-a2a-access-request-broker.sh -i <regId>                # Get broker config
+$ echo "" | new-a2a-access-request.sh -a <appliance> -c cert.pem -k key.pem \
+    -A <brokerApiKey> -b '{"ForUser":"jsmith","AssetName":"server1","AccessRequestType":"Password"}' -p
+$ clear-a2a-access-request-broker.sh -i <regId>              # Remove broker
+```
+
+### Certificate Management
+
+```Bash
+$ install-trusted-certificate.sh -F cert.pem                 # Install cert
+$ get-trusted-certificate.sh                                 # List all certs
+$ get-trusted-certificate.sh -t <thumbprint>                 # Get by thumbprint
+$ uninstall-trusted-certificate.sh -t <thumbprint>           # Remove cert
+```

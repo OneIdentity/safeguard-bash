@@ -217,18 +217,22 @@ Follow these principles (adapted from safeguard-ps):
 The current baseline when all suites pass:
 
 ```
-Suites: 6 (0 failed)
-Tests:  114 passed, 0 failed, 0 skipped
+Suites: 10 (0 failed)
+Tests:  268 passed, 0 failed, 0 skipped
 ```
 
-| Suite           | Tests | Description                                       |
-|-----------------|-------|---------------------------------------------------|
-| A2A             | 31    | Full A2A workflow: cert, registration, retrieval, filtering |
-| Asset Accounts  | 17    | Account CRUD, passwords, edit, filter              |
-| Assets          | 17    | Asset CRUD, platform validation, edit, filter      |
-| Connect & Core  | 16    | Connect, PKCE, login file, API calls, disconnect   |
-| Platforms       | 17    | Built-in platform validation (Windows, Linux)      |
-| Users           | 16    | User CRUD, roles, edit, filter, delete             |
+| Suite                  | Tests | Description                                       |
+|------------------------|-------|---------------------------------------------------|
+| A2A Access Req Broker  | 21    | Broker lifecycle: get/set/clear, IP restrictions, cert-auth request |
+| A2A                    | 92    | Full A2A workflow: cert, registration, retrieval, credentials, IP restrictions |
+| Asset Accounts         | 20    | Account CRUD, passwords, SSH keys, edit, filter    |
+| Assets                 | 17    | Asset CRUD, platform validation, edit, filter      |
+| Certificates           | 19    | Trusted cert install/uninstall, get, filter, fields |
+| Connect & Core         | 16    | Connect, PKCE, login file, API calls, disconnect   |
+| Event Discovery        | 25    | Event names, categories, properties, search/filter |
+| Event Subscriptions    | 25    | Subscription CRUD, edit, find, SignalR/email types  |
+| Platforms              | 17    | Built-in platform validation (Windows, Linux)      |
+| Users                  | 16    | User CRUD, roles, edit, filter, delete             |
 
 Update this baseline as you add suites and tests.
 
@@ -574,8 +578,38 @@ safeguard-bash includes purpose-built scripts for common CRUD operations:
 | `remove-asset-account.sh`         | Delete account by ID                     |
 | `new-a2a-registration.sh`         | Create A2A registration                  |
 | `remove-a2a-registration.sh`      | Delete A2A registration                  |
+| `get-a2a-registration.sh`         | List/get A2A registrations               |
+| `edit-a2a-registration.sh`        | Edit A2A registration properties         |
 | `add-a2a-credential-retrieval.sh` | Add account to A2A retrieval             |
 | `remove-a2a-credential-retrieval.sh` | Remove account from A2A retrieval     |
+| `get-a2a-credential-retrieval.sh` | List credential retrievals for a registration |
+| `get-a2a-credential-retrieval-info.sh` | Summary info across all registrations |
+| `get-a2a-apikey.sh`               | Get API key for a credential retrieval   |
+| `reset-a2a-apikey.sh`             | Regenerate API key for a credential retrieval |
+| `get-a2a-access-request-broker.sh`   | Get access request broker config      |
+| `set-a2a-access-request-broker.sh`   | Configure access request broker       |
+| `clear-a2a-access-request-broker.sh` | Remove access request broker config   |
+| `new-a2a-access-request.sh`       | Broker an access request via A2A (cert auth) |
+| `set-a2a-password.sh`             | Set account password via A2A (cert auth) |
+| `set-a2a-privatekey.sh`           | Set account SSH key via A2A (cert auth)  |
+| `get-a2a-ip-restriction.sh`       | Get IP restrictions on credential retrieval |
+| `set-a2a-ip-restriction.sh`       | Set IP restrictions                      |
+| `clear-a2a-ip-restriction.sh`     | Clear all IP restrictions                |
+| `get-a2a-service-status.sh`       | Get A2A service status (enabled/disabled) |
+| `enable-a2a-service.sh`           | Enable the A2A service                   |
+| `disable-a2a-service.sh`          | Disable the A2A service                  |
+| `install-trusted-certificate.sh`  | Install a trusted certificate            |
+| `uninstall-trusted-certificate.sh`| Remove a trusted certificate             |
+| `get-trusted-certificate.sh`      | List/get trusted certificates            |
+| `new-event-subscription.sh`       | Create event subscription (SignalR/email) |
+| `remove-event-subscription.sh`    | Delete event subscription                |
+| `get-event-subscription.sh`       | List/get event subscriptions             |
+| `edit-event-subscription.sh`      | Edit event subscription properties       |
+| `find-event-subscription.sh`      | Search event subscriptions               |
+| `get-event-name.sh`               | List subscribable event names            |
+| `get-event-category.sh`           | List event categories                    |
+| `get-event-property.sh`           | Get notification properties for an event |
+| `find-event.sh`                   | Search events by text or SCIM filter     |
 
 ### Asset Creation
 
@@ -664,6 +698,91 @@ Key API details:
   and pipe empty string for passwordless keys: `echo "" | get-a2a-password.sh -p ...`
 - The `-r` flag on `get-a2a-password.sh` strips JSON quotes for raw password output
 - To delete a trusted certificate: `DELETE TrustedCertificates/<thumbprint>`
+
+### A2A Access Request Brokering
+
+An A2A registration can also be configured as an access request broker, which
+allows an application to create access requests on behalf of other users:
+
+1. Create an A2A registration (steps 1-4 of the credential retrieval workflow)
+2. Configure the broker with authorized users/groups
+3. Use the broker API key with cert auth to create access requests
+
+```bash
+# 1. Configure broker on an existing registration (requires PolicyAdmin)
+set-a2a-access-request-broker.sh -i <regId> \
+    -b '{"Users": [{"UserId": 45}], "Groups": [{"GroupId": 10}]}'
+# Response includes the broker ApiKey
+
+# 2. Get current broker configuration
+get-a2a-access-request-broker.sh -i <regId>
+
+# 3. Broker an access request via cert auth
+echo "" | new-a2a-access-request.sh -a <appliance> -c cert.pem -k key.pem \
+    -A <brokerApiKey> -b '{
+        "ForUser": "jsmith",
+        "AssetName": "linux-server",
+        "AccountName": "root",
+        "AccessRequestType": "Password"
+    }' -p
+
+# 4. Clear broker configuration
+clear-a2a-access-request-broker.sh -i <regId>
+```
+
+Key details:
+- One broker per A2A registration (set replaces existing config)
+- Broker body uses nested objects: `{"Users": [{"UserId": N}]}` not flat arrays
+- The broker API key is separate from credential retrieval API keys
+- `new-a2a-access-request.sh` uses cert auth (same pattern as `get-a2a-password.sh`)
+- Supported AccessRequestType values: Password, SSHKey, SSH, RemoteDesktop, Telnet
+
+### Event Subscription Management
+
+Event subscriptions configure how users receive notifications for Safeguard
+events. Subscriptions can use SignalR (real-time) or email delivery:
+
+```bash
+# Create a SignalR subscription for user events
+new-event-subscription.sh -d "User changes" -T Signalr \
+    -e "UserCreated,UserModified"
+
+# List all subscriptions
+get-event-subscription.sh
+
+# Edit a subscription
+edit-event-subscription.sh -i <subId> -d "Updated description" \
+    -e "UserCreated"
+
+# Search for subscriptions
+find-event-subscription.sh -Q "user"
+
+# Delete a subscription
+remove-event-subscription.sh -i <subId>
+```
+
+### Event Discovery
+
+Event discovery scripts help find subscribable events and their properties:
+
+```bash
+# List all event names
+get-event-name.sh
+
+# Filter events by object type or category
+get-event-name.sh -T User
+get-event-name.sh -C UserAuthentication
+
+# List event categories
+get-event-category.sh
+
+# Get notification properties for a specific event
+get-event-property.sh -n UserCreated
+
+# Search events by text or SCIM filter
+find-event.sh -Q "password"
+find-event.sh -q "ObjectType eq 'Asset'"
+```
 
 ### Well-Known Platform IDs
 
