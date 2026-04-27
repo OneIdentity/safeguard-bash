@@ -311,6 +311,40 @@ suite_execute()
         -r "$reg_id" -o "AccountName" 2>/dev/null)
     sg_assert_not_null "get-a2a-credential-retrieval orderby returns data" "$gcr_order"
 
+    # --- Test: get-a2a-apikey.sh ---
+    local get_apikey=$("$ScriptDir/../src/get-a2a-apikey.sh" \
+        -r "$reg_id" -c "$acct_id" 2>/dev/null)
+    sg_assert_not_null "get-a2a-apikey returns data" "$get_apikey"
+
+    # The API returns the key as a bare JSON string (quoted)
+    local get_apikey_val=$(echo "$get_apikey" | jq -r '.' 2>/dev/null)
+    sg_assert_equal "get-a2a-apikey matches original key" "$get_apikey_val" "$api_key"
+
+    # --- Test: reset-a2a-apikey.sh ---
+    local reset_apikey=$("$ScriptDir/../src/reset-a2a-apikey.sh" \
+        -r "$reg_id" -c "$acct_id" 2>/dev/null)
+    sg_assert_not_null "reset-a2a-apikey returns data" "$reset_apikey"
+
+    local new_apikey=$(echo "$reset_apikey" | jq -r '.' 2>/dev/null)
+    sg_assert_not_null "reset-a2a-apikey returns new key" "$new_apikey"
+
+    # Verify the new key is different from the original
+    if [ "$new_apikey" != "$api_key" ]; then
+        sg_assert "reset-a2a-apikey generated a different key" true
+    else
+        sg_assert "reset-a2a-apikey generated a different key" false
+    fi
+
+    # Verify get-a2a-apikey now returns the new key
+    local verify_apikey=$("$ScriptDir/../src/get-a2a-apikey.sh" \
+        -r "$reg_id" -c "$acct_id" 2>/dev/null)
+    local verify_apikey_val=$(echo "$verify_apikey" | jq -r '.' 2>/dev/null)
+    sg_assert_equal "get-a2a-apikey returns new key after reset" "$verify_apikey_val" "$new_apikey"
+
+    # Update stored API key for subsequent tests
+    api_key="$new_apikey"
+    SuiteData[ApiKey]="$api_key"
+
     # --- Test: Retrieve password via A2A service ---
     local a2a_pw=$(echo "" | "$ScriptDir/../src/get-a2a-password.sh" \
         -a "$TestAppliance" -c "$cert_file" -k "$key_file" \
@@ -433,6 +467,38 @@ suite_execute()
 
     local combined_name=$(echo "$combined_result" | jq -r '.[0].AccountName' 2>/dev/null)
     sg_assert_equal "Combined filter+fields AccountName matches" "$combined_name" "${TestPrefix}_A2AAccount"
+
+    # --- Test: A2A service status/enable/disable ---
+    local svc_status=$("$ScriptDir/../src/get-a2a-service-status.sh" 2>/dev/null)
+    sg_assert_not_null "get-a2a-service-status returns data" "$svc_status"
+
+    # Save original state to restore later
+    local orig_a2a_enabled=$(echo "$svc_status" | jq -r '.IsEnabled // .Enabled // empty' 2>/dev/null)
+    if [ -z "$orig_a2a_enabled" ]; then
+        # Status might be a simple string; check raw output
+        orig_a2a_enabled="$svc_status"
+    fi
+
+    # Enable the service
+    "$ScriptDir/../src/enable-a2a-service.sh" 2>/dev/null
+    local after_enable=$("$ScriptDir/../src/get-a2a-service-status.sh" 2>/dev/null)
+    sg_assert_not_null "Status after enable returns data" "$after_enable"
+
+    # Disable the service
+    "$ScriptDir/../src/disable-a2a-service.sh" 2>/dev/null
+    local after_disable=$("$ScriptDir/../src/get-a2a-service-status.sh" 2>/dev/null)
+    sg_assert_not_null "Status after disable returns data" "$after_disable"
+
+    # Verify status changed between enable and disable
+    sg_assert "Enable and disable produce different status" \
+        test "$after_enable" != "$after_disable"
+
+    # Restore original state
+    if echo "$orig_a2a_enabled" | grep -qi "true\|enabled"; then
+        "$ScriptDir/../src/enable-a2a-service.sh" 2>/dev/null
+    else
+        "$ScriptDir/../src/disable-a2a-service.sh" 2>/dev/null
+    fi
 
     # --- Test: Remove credential retrieval and verify ---
     "$ScriptDir/../src/remove-a2a-credential-retrieval.sh" \
