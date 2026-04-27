@@ -500,6 +500,40 @@ suite_execute()
         "$ScriptDir/../src/disable-a2a-service.sh" 2>/dev/null
     fi
 
+    # --- Test: IP Restrictions (get/set/clear) ---
+    local ip_initial=$("$ScriptDir/../src/get-a2a-ip-restriction.sh" \
+        -r "$reg_id" -c "$acct_id" 2>/dev/null)
+    # Initial state should be null or empty array
+    local ip_init_len=$(echo "$ip_initial" | jq 'if . == null then 0 elif type == "array" then length else -1 end' 2>/dev/null)
+    sg_assert "Initial IP restrictions are null or empty" \
+        test "$ip_init_len" -eq 0
+
+    # Set IP restrictions
+    local ip_set=$("$ScriptDir/../src/set-a2a-ip-restriction.sh" \
+        -r "$reg_id" -c "$acct_id" -I "10.99.99.1,10.99.99.2" 2>/dev/null)
+    local ip_set_len=$(echo "$ip_set" | jq 'length' 2>/dev/null)
+    sg_assert_equal "Set IP restrictions returns 2 IPs" "$ip_set_len" "2"
+
+    # Readback to verify set persisted
+    local ip_readback=$("$ScriptDir/../src/get-a2a-ip-restriction.sh" \
+        -r "$reg_id" -c "$acct_id" 2>/dev/null)
+    local ip_rb_sorted=$(echo "$ip_readback" | jq -c 'sort' 2>/dev/null)
+    sg_assert_equal "Readback IP restrictions match" "$ip_rb_sorted" '["10.99.99.1","10.99.99.2"]'
+
+    # Clear IP restrictions
+    local ip_cleared=$("$ScriptDir/../src/clear-a2a-ip-restriction.sh" \
+        -r "$reg_id" -c "$acct_id" 2>/dev/null)
+    local ip_clear_len=$(echo "$ip_cleared" | jq 'if . == null then 0 elif type == "array" then length else -1 end' 2>/dev/null)
+    sg_assert "Clear IP restrictions returns null or empty" \
+        test "$ip_clear_len" -eq 0
+
+    # Readback to verify clear persisted
+    local ip_clear_rb=$("$ScriptDir/../src/get-a2a-ip-restriction.sh" \
+        -r "$reg_id" -c "$acct_id" 2>/dev/null)
+    local ip_clear_rb_len=$(echo "$ip_clear_rb" | jq 'if . == null then 0 elif type == "array" then length else -1 end' 2>/dev/null)
+    sg_assert "Readback after clear is null or empty" \
+        test "$ip_clear_rb_len" -eq 0
+
     # --- Test: Remove credential retrieval and verify ---
     "$ScriptDir/../src/remove-a2a-credential-retrieval.sh" \
         -r "$reg_id" -c "$acct_id" 2>/dev/null
