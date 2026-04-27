@@ -142,10 +142,10 @@ fi
 
 # Build JSON body safely using jq
 if [ -n "$KeyPassphrase" ]; then
-    Body=$(jq -n --arg key "$KeyData" --arg pass "$KeyPassphrase" \
+    Body=$(jq -cn --arg key "$KeyData" --arg pass "$KeyPassphrase" \
         '{Passphrase: $pass, PrivateKey: $key}')
 else
-    Body=$(jq -n --arg key "$KeyData" '{PrivateKey: $key}')
+    Body=$(jq -cn --arg key "$KeyData" '{PrivateKey: $key}')
 fi
 
 RelUrl="Credentials/SshKey"

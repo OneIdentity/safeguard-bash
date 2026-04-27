@@ -410,6 +410,7 @@ suite_execute()
 
     # --- Test: set-a2a-privatekey.sh (bidirectional) ---
     # Generate a test SSH key to set
+    local cert_dir="${SuiteData[CertDir]}"
     local test_ssh_key="$cert_dir/test_ssh_key"
     ssh-keygen -t rsa -b 2048 -f "$test_ssh_key" -N "" -q 2>/dev/null
 
