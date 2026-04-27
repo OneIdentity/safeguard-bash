@@ -181,7 +181,7 @@ case $Method in
 -s
 $CABundleArg
 -X $Method
-"${ExtraHeader[@]}"
+${ExtraHeader[@]}
 -H "Accept: $Accept"
 -H "Authorization: Bearer $AccessToken"
 EOF
@@ -192,7 +192,7 @@ EOF
 -s
 $CABundleArg
 -X $Method
-"${ExtraHeader[@]}"
+${ExtraHeader[@]}
 -H "Accept: $Accept"
 -H "Content-type: $ContentType"
 -H "Authorization: Bearer $AccessToken"

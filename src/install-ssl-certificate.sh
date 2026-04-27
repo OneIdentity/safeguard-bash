@@ -79,7 +79,7 @@ require_args
 
 echo "Uploading '$SSLCertificateFile'..."
 Response=$($ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -v $Version -s core -m POST -U SslCertificates -N -b "{
-    \"Base64CertificateData\": \"$(base64 $SSLCertificateFile)\",
+    \"Base64CertificateData\": \"$(openssl base64 -A -in $SSLCertificateFile)\",
     \"Passphrase\": \"$SSLCertificatePassword\"
 }" <<<$AccessToken)
 echo $Response | jq .

@@ -5,6 +5,7 @@ print_usage()
     cat <<EOF
 USAGE: get-a2a-retrievable-account.sh [-h]
        get-a2a-retrievable-account.sh [-a appliance] [-B cabundle] [-v version] [-c file] [-k file] [-p]
+                                      [-q filter] [-f fields] [-o orderby]
 
   -h  Show help and exit
   -a  Network address of the appliance
@@ -13,6 +14,9 @@ USAGE: get-a2a-retrievable-account.sh [-h]
   -c  File containing client certificate
   -k  File containing client private key
   -p  Read certificate password from stdin
+  -q  Query filter to pass to the API (SCIM-style, e.g. "AccountName eq 'root'")
+  -f  Comma-separated list of fields to return (e.g. AccountName,AccountId)
+  -o  Comma-separated list of fields to order by (e.g. AccountName)
 
 List which accounts are retrievable by this certificate user via the Safeguard A2A service.
 
@@ -35,8 +39,10 @@ Cert=
 PKey=
 ApiKey=
 Raw=false
-PassStdin=
 Pass=
+Filter=
+Fields=
+OrderBy=
 
 . "$ScriptDir/utils/loginfile.sh"
 . "$ScriptDir/utils/a2a.sh"
@@ -59,7 +65,7 @@ require_args()
     fi
 }
 
-while getopts ":a:B:v:c:k:A:prh" opt; do
+while getopts ":a:B:v:c:k:A:q:f:o:prh" opt; do
     case $opt in
     a)
         Appliance=$OPTARG
@@ -76,8 +82,17 @@ while getopts ":a:B:v:c:k:A:prh" opt; do
     k)
         PKey=$OPTARG
         ;;
+    q)
+        Filter=$OPTARG
+        ;;
+    f)
+        Fields=$OPTARG
+        ;;
+    o)
+        OrderBy=$OPTARG
+        ;;
     p)
-        PassStdin="-p"
+        # -p: read cert password from stdin (handled by require_args)
         ;;
     h)
         print_usage
@@ -86,6 +101,20 @@ while getopts ":a:B:v:c:k:A:prh" opt; do
 done
 
 require_args
+
+# Build query parameters for the RetrievableAccounts endpoint
+QueryParams=""
+if [ -n "$Filter" ]; then
+    QueryParams="filter=$(printf '%s' "$Filter" | sed 's/ /%20/g')"
+fi
+if [ -n "$Fields" ]; then
+    [ -n "$QueryParams" ] && QueryParams="${QueryParams}&"
+    QueryParams="${QueryParams}fields=$Fields"
+fi
+if [ -n "$OrderBy" ]; then
+    [ -n "$QueryParams" ] && QueryParams="${QueryParams}&"
+    QueryParams="${QueryParams}orderby=$OrderBy"
+fi
 
 if [[ $Version -eq 4 ]]; then
     ATTRRENAMEFILTER="jq .[]"
@@ -99,13 +128,17 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 echo $Registrations | jq -r '.[] | [.Id, .AppName, .Description // "", .Disabled, .CertificateUserId, .CertificateUser, .CertificateUserThumbPrint] | @tsv' |
-    tr '\t' '|' | # when using \t in IFS the delimiters get aggregated and it doesn't recognize empty tokens
+    tr '\t' '|' |
     while IFS='|' read -r RegId AppName RegDesc RegDisabled CertUserId CertUser CertThumbprint; do
-        invoke_a2a_method "$Appliance" "$CABundleArg" "$Cert" "$PKey" "$Pass" "NONE" core GET "A2ARegistrations/$RegId/RetrievableAccounts" $Version "" |
+        Relurl="A2ARegistrations/$RegId/RetrievableAccounts"
+        if [ -n "$QueryParams" ]; then
+            Relurl="${Relurl}?${QueryParams}"
+        fi
+        invoke_a2a_method "$Appliance" "$CABundleArg" "$Cert" "$PKey" "$Pass" "NONE" core GET "$Relurl" $Version "" |
             eval $ATTRRENAMEFILTER |
-            jq --arg AppName "$AppName" --arg RegDesc "$RegDesc" --arg CertUserId "$CertUserId" --arg CertUser "$CertUser" --arg CertThumbprint "$CertThumbprint" \
-                    '. + {AppName: $AppName, Description: $RegDesc, CertificateUserId: ($CertUserId | tonumber), CertificateUser: $CertUser, CertificateUserThumbprint: $CertThumbprint}'
-    done | jq -S --arg RegDisabled "$RegDisabled" '. + {Disabled: (.AccountDisabled != 0 and $RegDisabled)} | del(.AccountDisabled)' | jq --slurp # slurp puts things back into an array
+            jq -S --arg AppName "$AppName" --arg RegDesc "$RegDesc" --arg CertUserId "$CertUserId" --arg CertUser "$CertUser" --arg CertThumbprint "$CertThumbprint" --argjson RegDisabled "${RegDisabled:-false}" \
+                    '. + {AppName: $AppName, Description: $RegDesc, CertificateUserId: ($CertUserId | tonumber), CertificateUser: $CertUser, CertificateUserThumbprint: $CertThumbprint, Disabled: ((.AccountDisabled // 0) != 0 and $RegDisabled)} | del(.AccountDisabled)'
+    done | jq --slurp # slurp puts things back into an array
 
 
 # echo $Registrations | jq . > /dev/null 2>&1

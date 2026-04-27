@@ -38,15 +38,14 @@ use_login_file()
 require_login_args()
 {
     handle_ca_bundle_arg
-    if [[ -z "$Appliance" && -z "$AccessToken" ]]; then
+    if [ -z "$AccessToken" ]; then
         use_login_file
-    else
-        if [ -z "$Appliance" ]; then
-            read -p "Appliance network address: " Appliance
-        fi
-        if [ -z "$AccessToken" ]; then
-            AccessToken=$($ScriptDir/connect-safeguard.sh -a $Appliance -X)
-        fi
+    fi
+    if [ -z "$Appliance" ]; then
+        read -p "Appliance network address: " Appliance
+    fi
+    if [ -z "$AccessToken" ]; then
+        AccessToken=$($ScriptDir/connect-safeguard.sh -a $Appliance -X)
     fi
 }
 

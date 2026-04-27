@@ -3,8 +3,8 @@
 print_usage()
 {
     cat <<EOF
-USAGE: get-a2a-apikeysecret.sh [-h]
-       get-a2a-apikeysecret.sh [-a appliance] [-B cabundle] [-v version] [-c file] [-k file] [-A apikey] [-O] [-p] [-r]
+USAGE: set-a2a-password.sh [-h]
+       set-a2a-password.sh [-a appliance] [-B cabundle] [-v version] [-c file] [-k file] [-A apikey] [-O] [-p]
 
   -h  Show help and exit
   -a  Network address of the appliance
@@ -15,17 +15,25 @@ USAGE: get-a2a-apikeysecret.sh [-h]
   -A  A2A API token identifying the account
   -O  Use openssl s_client instead of curl for TLS client authentication problems
   -p  Read certificate password from stdin
-  -r  Raw output, i.e. remove quotes from JSON string to get just the password (requires jq)
 
-Retrieve an API key secret using the Safeguard A2A service.  More than one key may be associated with an account.
-This script returns an array of objects representing all API key secrets.
+Set an account password using the Safeguard A2A service (bidirectional). The new
+password is read from stdin (after any certificate password). The A2A registration
+must have bidirectional enabled.
+
+Requires a certificate-authenticated A2A registration with bidirectional support.
+
+EXAMPLES:
+  # Set password interactively (prompts for cert password, then new password)
+  set-a2a-password.sh -a 10.5.32.54 -c cert.pem -k key.pem -A <apikey>
+
+  # Set password non-interactively (passwordless key)
+  echo "" | set-a2a-password.sh -a 10.5.32.54 -c cert.pem -k key.pem -A <apikey> -p <<< '"NewPass1!"'
 
 EOF
     exit 0
 }
 
 ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
 
 Appliance=
 CABundleArg=
@@ -34,7 +42,6 @@ Version=4
 Cert=
 PKey=
 ApiKey=
-Raw=false
 Pass=
 UseOpenSslSclient=false
 
@@ -62,7 +69,7 @@ require_args()
     fi
 }
 
-while getopts ":a:B:v:c:k:A:pOrh" opt; do
+while getopts ":a:B:v:c:k:A:pOh" opt; do
     case $opt in
     a)
         Appliance=$OPTARG
@@ -88,9 +95,6 @@ while getopts ":a:B:v:c:k:A:pOrh" opt; do
     O)
         UseOpenSslSclient=true
         ;;
-    r)
-        Raw=true
-        ;;
     h)
         print_usage
         ;;
@@ -99,27 +103,35 @@ done
 
 require_args
 
-ATTRFILTER='cat'
+# Read the new password from stdin
+read -r NewPassword
+if [ -z "$NewPassword" ]; then
+    >&2 echo "Error: No new password provided on stdin."
+    exit 1
+fi
+
+# Ensure the password is a valid JSON string (wrap in quotes if not already)
+if ! echo "$NewPassword" | jq -e . >/dev/null 2>&1; then
+    NewPassword=$(printf '%s' "$NewPassword" | jq -Rs .)
+fi
+
 ERRORFILTER='cat'
 if [ ! -z "$(which jq 2> /dev/null)" ]; then
     ERRORFILTER='jq .'
-    if $Raw; then
-        ATTRFILTER='jq --raw-output .'
-    else
-        ATTRFILTER='jq .'
-    fi
 fi
 
-Result=$(invoke_a2a_method "$Appliance" "$CABundleArg" "$Cert" "$PKey" "$Pass" "$ApiKey" a2a GET "Credentials?type=ApiKey" $Version $UseOpenSslSclient)
-echo $Result | jq . > /dev/null 2>&1
-if [ $? -ne 0 ]; then
-    echo $Result
-else
-    Error=$(echo $Result | jq .Code 2> /dev/null)
-    if [ -z "$Error" -o "$Error" = "null" ]; then
-        echo $Result | $ATTRFILTER
+Result=$(invoke_a2a_method "$Appliance" "$CABundleArg" "$Cert" "$PKey" "$Pass" "$ApiKey" a2a PUT "Credentials/Password" $Version $UseOpenSslSclient "$NewPassword")
+if [ -n "$Result" ]; then
+    echo $Result | jq . > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        echo $Result
     else
-        echo $Result | $ERRORFILTER
-        exit 1
+        Error=$(echo $Result | jq .Code 2> /dev/null)
+        if [ -z "$Error" -o "$Error" = "null" ]; then
+            echo $Result | $ERRORFILTER
+        else
+            echo $Result | $ERRORFILTER
+            exit 1
+        fi
     fi
 fi
