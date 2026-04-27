@@ -100,6 +100,30 @@ suite_execute()
     local has_pw=$(echo "$pw_readback" | jq -r '.HasPassword' 2>/dev/null)
     sg_assert_equal "Account has password after set" "$has_pw" "true"
 
+    # --- Test: Set SSH private key ---
+    if [ -n "$(which ssh-keygen 2>/dev/null)" ]; then
+        local key_dir=$(mktemp -d)
+        ssh-keygen -t rsa -b 2048 -f "$key_dir/test_key" -N "" -q
+        local set_key_result=$("$ScriptDir/../src/set-account-privatekey.sh" \
+            -c "$acct_id" -K "$key_dir/test_key" 2>/dev/null)
+        sg_assert_not_null "set-account-privatekey returns data" "$set_key_result"
+
+        # Readback to verify SSH key is set
+        local key_readback=$(sg_invoke -s core -m GET -U "AssetAccounts/$acct_id")
+        local has_sshkey=$(echo "$key_readback" | jq -r '.HasSshKey' 2>/dev/null)
+        sg_assert_equal "Account has SSH key after set" "$has_sshkey" "true"
+
+        # Test with passphrase-protected key
+        ssh-keygen -t rsa -b 2048 -f "$key_dir/protected_key" -N "testpass123" -q
+        local set_pkey_result=$("$ScriptDir/../src/set-account-privatekey.sh" \
+            -c "$acct_id" -K "$key_dir/protected_key" -W "testpass123" 2>/dev/null)
+        sg_assert_not_null "set-account-privatekey with passphrase returns data" "$set_pkey_result"
+
+        rm -rf "$key_dir"
+    else
+        sg_skip "set-account-privatekey tests (ssh-keygen not available)"
+    fi
+
     # --- Test: Edit account via PUT ---
     local updated=$(echo "$readback" | jq '.Description = "Updated account"')
     local edit_result=$(sg_invoke -s core -m PUT -U "AssetAccounts/$acct_id" -b "$updated")

@@ -65,8 +65,16 @@ done
 
 require_args
 
-echo "Uploading '$RootCertificateFile'..."
-$ScriptDir/invoke-safeguard-method.sh -a "$Appliance" -T -v $Version -s core -m POST -U TrustedCertificates -N -b "{
-    \"Base64CertificateData\": \"$(base64 "$RootCertificateFile")\"
-}" <<<$AccessToken
+Body="{\"Base64CertificateData\": \"$(openssl base64 -A -in "$RootCertificateFile")\"}"
+
+Result=$("$ScriptDir/invoke-safeguard-method.sh" -a "$Appliance" -t "$AccessToken" \
+    -v "$Version" -s core -m POST -U "TrustedCertificates" -b "$Body" 2>/dev/null)
+Error=$(echo "$Result" | jq .Code 2>/dev/null)
+if [ -n "$Error" -a "$Error" != "null" ]; then
+    >&2 echo "Error installing trusted certificate:"
+    echo "$Result" | jq . 2>/dev/null || echo "$Result"
+    exit 1
+fi
+
+echo "$Result"
 
