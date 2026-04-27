@@ -16,7 +16,7 @@ One Identity Safeguard Bash and cURL scripting resources.
 
 One Identity open source projects are supported through [One Identity GitHub issues](https://github.com/OneIdentity/safeguard-bash/issues) and the [One Identity Community](https://www.oneidentity.com/community/). This includes all scripts, plugins, SDKs, modules, code snippets or other solutions. For assistance with any One Identity GitHub project, please raise a new Issue on the [One Identity GitHub project](https://github.com/OneIdentity/safeguard-bash/issues) page. You may also visit the [One Identity Community](https://www.oneidentity.com/community/) to ask questions.  Requests for assistance made through official One Identity Support will be referred back to GitHub and the One Identity Community forums where those requests can benefit all users.
 
-If you would like to add to add to safeguard-bash? See the [developer guide](https://github.com/OneIdentity/safeguard-bash/blob/master/src/README.md).
+If you would like to contribute to safeguard-bash, see the [developer guide](https://github.com/OneIdentity/safeguard-bash/blob/master/src/README.md).
 
 ## Default API Update
 
@@ -113,7 +113,7 @@ A login file has been created.
 The `connect-safeguard.sh` script will create a login file that includes
 your access token and connection information.  This makes it easier to call
 other scripts without having to retype connection information.  This login
-file is created in your home directory, and can only be read by the your
+file is created in your home directory, and can only be read by your
 user.
 
 Client certificate authentication is also available in `connect-safeguard.sh`.
@@ -171,7 +171,7 @@ If you don't want to run `connect-safeguard.sh` automatically when you enter the
 container, you can use the `run.sh` script to execute the `docker` binary to run
 a different entry point using `-c`.  `run.sh` may also be used to easily mount a
 local directory for use inside your running container using `-v`.  This is useful
-for when certificate files are need to connect to Safeguard.  For example:
+for when certificate files are needed to connect to Safeguard.  For example:
 
 ```Bash
 $ ./run.sh -v ~/certs -c bash
@@ -228,7 +228,7 @@ object.  These two scripts are paired with the `handle-event.sh` script and the
 `handle-a2a-password-event.sh` script respectively to provide a robust mechanism
 for listening for events and calling handler scripts.  These `handle-*` scripts
 include additional logic to make sure that SignalR remains connected even through
-through access token timeouts or connection interruptions.
+access token timeouts or connection interruptions.
 
 There are some examples in the sample directory.
 
@@ -276,7 +276,7 @@ $ remove-a2a-registration.sh -i <id>                        # Delete
 
 ```Bash
 $ add-a2a-credential-retrieval.sh -r <regId> -c <accountId>  # Add account
-$ get-a2a-credential-retrieval.sh -i <regId>                  # List accounts
+$ get-a2a-credential-retrieval.sh -r <regId>                  # List accounts
 $ get-a2a-apikey.sh -r <regId> -c <accountId>                 # Get API key
 $ reset-a2a-apikey.sh -r <regId> -c <accountId>               # Regenerate key
 
@@ -289,7 +289,7 @@ $ echo "" | get-a2a-privatekey.sh -a <appliance> -c cert.pem -k key.pem -A <apiK
 
 ```Bash
 $ echo "" | set-a2a-password.sh -a <appliance> -c cert.pem -k key.pem \
-    -A <apiKey> -P "NewPassword1!" -p
+    -A <apiKey> -p <<< "NewPassword1!"
 $ echo "" | set-a2a-privatekey.sh -a <appliance> -c cert.pem -k key.pem \
     -A <apiKey> -K keyfile.pem -p
 ```
@@ -311,8 +311,8 @@ $ clear-a2a-access-request-broker.sh -i <regId>              # Remove broker
 ### Certificate Management
 
 ```Bash
-$ install-trusted-certificate.sh -F cert.pem                 # Install cert
+$ install-trusted-certificate.sh -C cert.pem                 # Install cert
 $ get-trusted-certificate.sh                                 # List all certs
-$ get-trusted-certificate.sh -t <thumbprint>                 # Get by thumbprint
-$ uninstall-trusted-certificate.sh -t <thumbprint>           # Remove cert
+$ get-trusted-certificate.sh -s <thumbprint>                 # Get by thumbprint
+$ uninstall-trusted-certificate.sh -s <thumbprint>           # Remove cert
 ```

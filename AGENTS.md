@@ -49,7 +49,7 @@ safeguard-bash/
 │   ├── connect-safeguard.sh
 │   ├── disconnect-safeguard.sh
 │   ├── invoke-safeguard-method.sh
-│   ├── ... (35+ scripts)
+│   ├── ... (70+ scripts)
 │   └── utils/              # Shared libraries sourced by scripts
 │       ├── loginfile.sh    # Login file management ($HOME/.safeguard_login)
 │       ├── a2a.sh          # A2A (app-to-app) HTTP helpers
@@ -503,20 +503,23 @@ invoke-safeguard-method.sh -s core -m PUT -U "AssetAccounts/<id>/Password" \
 Note the double quoting: the outer quotes are for bash, the inner quotes make
 it a valid JSON string value.
 
-### Role Requirements by Operation
+### Permission Requirements by Operation
 
-| Operation                           | Required Role(s)     |
-|-------------------------------------|----------------------|
-| Create/edit/delete Users            | UserAdmin            |
-| Create/edit/delete Assets           | AssetAdmin           |
-| Create/edit/delete Asset Accounts   | AssetAdmin           |
-| Create/edit/delete A2A Registrations| PolicyAdmin          |
-| Install Trusted Certificates        | ApplianceAdmin       |
-| Create Certificate Users            | UserAdmin            |
+| Operation                           | Required Permission(s) |
+|-------------------------------------|------------------------|
+| Create/edit/delete Users            | UserAdmin              |
+| Create/edit/delete Assets           | AssetAdmin             |
+| Create/edit/delete Asset Accounts   | AssetAdmin             |
+| Create/edit/delete A2A Registrations| PolicyAdmin            |
+| Configure A2A Access Request Broker | PolicyAdmin            |
+| Install Trusted Certificates        | ApplianceAdmin         |
+| Create Certificate Users            | UserAdmin              |
+| Manage A2A Service (enable/disable) | ApplianceAdmin         |
+| Manage Event Subscriptions          | (any authenticated user) |
 
-The built-in Admin account only has UserAdmin and Authorizer. Tests needing
-AssetAdmin, PolicyAdmin, or ApplianceAdmin must create a temporary user with
-the appropriate roles.
+The built-in Admin account has limited permissions (see "Built-in Admin
+Account" below). Tests needing AssetAdmin or PolicyAdmin must create a
+temporary user with the appropriate permissions.
 
 ### User Object Field Names
 
@@ -533,12 +536,15 @@ in tests or scripts.
 
 ### Built-in Admin Account
 
-The built-in `Admin` account has **Authorizer** and **UserAdmin** roles but
-does **not** have **AssetAdmin** or **PolicyAdmin**. These roles cannot be
-added to the built-in Admin account (Safeguard returns error 50100).
+The built-in `Admin` account (Id `-2`, the "Bootstrap Administrator") has
+these permissions by default: **GlobalAdmin**, **ApplianceAdmin**,
+**UserAdmin**, **HelpdeskAdmin**, **OperationsAdmin**, **SystemAuditor**.
 
-For tests that need full admin rights, create a temporary user with all roles
-and use that for the test run.
+It does **not** have **AssetAdmin** or **PolicyAdmin**, and these permissions
+cannot be added to the built-in Admin account (Safeguard returns error 50100).
+
+For tests that need AssetAdmin or PolicyAdmin, create a temporary user with
+all required permissions and use that for the test run.
 
 ### POST-then-PUT Pattern
 
@@ -564,52 +570,152 @@ invoke-safeguard-method.sh -s core -m GET \
     -U "Platforms?filter=PlatformFamily%20eq%20'Custom'"
 ```
 
-### CRUD Helper Scripts
+### Script Reference
 
-safeguard-bash includes purpose-built scripts for common CRUD operations:
+safeguard-bash includes 77 scripts in `src/`. The core scripts and purpose-built
+helpers are listed below, organized by category.
+
+#### Connection & Core
+
+| Script                            | Description                              |
+|-----------------------------------|------------------------------------------|
+| `connect-safeguard.sh`            | Authenticate and create login file       |
+| `disconnect-safeguard.sh`         | Invalidate token and remove login file   |
+| `invoke-safeguard-method.sh`      | Generic Safeguard API call               |
+| `show-safeguard-method.sh`        | List available API methods               |
+| `get-logged-in-user.sh`           | Get info about the current user          |
+| `get-appliance-status.sh`         | Get appliance status (anonymous)         |
+| `get-appliance-verification.sh`   | Get appliance verification status        |
+
+#### Users & Assets
 
 | Script                            | Description                              |
 |-----------------------------------|------------------------------------------|
 | `new-user.sh`                     | Create local user with roles             |
 | `remove-user.sh`                  | Delete user by ID                        |
+| `new-certificate-user.sh`         | Create certificate auth user             |
 | `new-asset.sh`                    | Create asset with platform/address       |
 | `remove-asset.sh`                 | Delete asset by ID                       |
 | `new-asset-account.sh`            | Create account on an asset               |
 | `remove-asset-account.sh`         | Delete account by ID                     |
+| `set-account-password.sh`         | Set password on an asset account         |
+| `set-account-privatekey.sh`       | Set SSH key on an asset account          |
+| `get-platform.sh`                 | List/get platforms                       |
+
+#### Access Requests
+
+| Script                            | Description                              |
+|-----------------------------------|------------------------------------------|
+| `new-access-request.sh`           | Create an access request                 |
+| `get-access-request.sh`           | List/get access requests                 |
+| `edit-access-request.sh`          | Edit an access request                   |
+| `close-access-request.sh`         | Close an access request                  |
+| `get-actionable-request.sh`       | Get requests awaiting action             |
+| `get-requestable-account.sh`      | Get accounts available for request       |
+| `get-access-request-password.sh`  | Get checked-out password                 |
+| `get-access-request-privatekey.sh`| Get checked-out SSH key                  |
+| `get-access-request-favorite.sh`  | Get favorite access requests             |
+| `get-linked-account.sh`           | Get linked accounts                      |
+| `start-access-request-ssh-session.sh` | Start an SSH session via access request |
+
+#### A2A Registration Management
+
+| Script                            | Description                              |
+|-----------------------------------|------------------------------------------|
 | `new-a2a-registration.sh`         | Create A2A registration                  |
 | `remove-a2a-registration.sh`      | Delete A2A registration                  |
 | `get-a2a-registration.sh`         | List/get A2A registrations               |
 | `edit-a2a-registration.sh`        | Edit A2A registration properties         |
+
+#### A2A Credential Retrieval (Token Auth — Admin Setup)
+
+| Script                            | Description                              |
+|-----------------------------------|------------------------------------------|
 | `add-a2a-credential-retrieval.sh` | Add account to A2A retrieval             |
 | `remove-a2a-credential-retrieval.sh` | Remove account from A2A retrieval     |
 | `get-a2a-credential-retrieval.sh` | List credential retrievals for a registration |
 | `get-a2a-credential-retrieval-info.sh` | Summary info across all registrations |
+| `get-a2a-retrievable-account.sh`  | List accounts retrievable by cert user   |
 | `get-a2a-apikey.sh`               | Get API key for a credential retrieval   |
 | `reset-a2a-apikey.sh`             | Regenerate API key for a credential retrieval |
-| `get-a2a-access-request-broker.sh`   | Get access request broker config      |
-| `set-a2a-access-request-broker.sh`   | Configure access request broker       |
-| `clear-a2a-access-request-broker.sh` | Remove access request broker config   |
-| `new-a2a-access-request.sh`       | Broker an access request via A2A (cert auth) |
-| `set-a2a-password.sh`             | Set account password via A2A (cert auth) |
-| `set-a2a-privatekey.sh`           | Set account SSH key via A2A (cert auth)  |
 | `get-a2a-ip-restriction.sh`       | Get IP restrictions on credential retrieval |
 | `set-a2a-ip-restriction.sh`       | Set IP restrictions                      |
 | `clear-a2a-ip-restriction.sh`     | Clear all IP restrictions                |
+
+#### A2A Credential Operations (Cert Auth — Application Use)
+
+| Script                            | Description                              |
+|-----------------------------------|------------------------------------------|
+| `get-a2a-password.sh`             | Retrieve password via A2A cert auth      |
+| `get-a2a-privatekey.sh`           | Retrieve SSH key via A2A cert auth       |
+| `get-a2a-apikeysecret.sh`         | Retrieve API key secret via A2A cert auth|
+| `set-a2a-password.sh`             | Set account password via A2A cert auth   |
+| `set-a2a-privatekey.sh`           | Set account SSH key via A2A cert auth    |
+
+#### A2A Access Request Brokering
+
+| Script                            | Description                              |
+|-----------------------------------|------------------------------------------|
+| `get-a2a-access-request-broker.sh`   | Get access request broker config      |
+| `set-a2a-access-request-broker.sh`   | Configure access request broker       |
+| `clear-a2a-access-request-broker.sh` | Remove access request broker config   |
+| `new-a2a-access-request.sh`       | Broker an access request via A2A cert auth |
+
+#### A2A Service Management
+
+| Script                            | Description                              |
+|-----------------------------------|------------------------------------------|
 | `get-a2a-service-status.sh`       | Get A2A service status (enabled/disabled) |
 | `enable-a2a-service.sh`           | Enable the A2A service                   |
 | `disable-a2a-service.sh`          | Disable the A2A service                  |
+
+#### Certificate Management
+
+| Script                            | Description                              |
+|-----------------------------------|------------------------------------------|
 | `install-trusted-certificate.sh`  | Install a trusted certificate            |
 | `uninstall-trusted-certificate.sh`| Remove a trusted certificate             |
 | `get-trusted-certificate.sh`      | List/get trusted certificates            |
+| `get-trusted-ca-bundle.sh`        | Get trusted CA bundle                    |
+| `install-ssl-certificate.sh`      | Install SSL certificate on appliance     |
+
+#### Event Subscriptions
+
+| Script                            | Description                              |
+|-----------------------------------|------------------------------------------|
 | `new-event-subscription.sh`       | Create event subscription (SignalR/email) |
 | `remove-event-subscription.sh`    | Delete event subscription                |
 | `get-event-subscription.sh`       | List/get event subscriptions             |
 | `edit-event-subscription.sh`      | Edit event subscription properties       |
 | `find-event-subscription.sh`      | Search event subscriptions               |
+
+#### Event Discovery
+
+| Script                            | Description                              |
+|-----------------------------------|------------------------------------------|
+| `get-event.sh`                    | List all events (legacy)                 |
 | `get-event-name.sh`               | List subscribable event names            |
 | `get-event-category.sh`           | List event categories                    |
 | `get-event-property.sh`           | Get notification properties for an event |
 | `find-event.sh`                   | Search events by text or SCIM filter     |
+
+#### Event Listeners & Handlers
+
+| Script                            | Description                              |
+|-----------------------------------|------------------------------------------|
+| `listen-for-event.sh`             | Connect to SignalR and dump events       |
+| `handle-event.sh`                 | Resilient event listener with handler script |
+| `listen-for-a2a-event.sh`         | Connect to A2A SignalR events            |
+| `handle-a2a-password-event.sh`    | Handle A2A password change events        |
+| `handle-a2a-privatekey-event.sh`  | Handle A2A SSH key change events         |
+| `handle-a2a-apikeysecret-event.sh`| Handle A2A API key secret change events  |
+
+#### Appliance Administration
+
+| Script                            | Description                              |
+|-----------------------------------|------------------------------------------|
+| `install-license.sh`              | Install a license on the appliance       |
+| `get-support-bundle.sh`           | Download a support bundle                |
 
 ### Asset Creation
 
@@ -633,17 +739,17 @@ The AssetAccount API requires a nested `Asset` object, not a flat `AssetId`:
 {"Name": "root", "AssetId": 123}
 ```
 
-### User Admin Roles
+### User Permissions
 
-Valid admin roles for Users: `GlobalAdmin`, `Auditor`, `AssetAdmin`,
-`ApplianceAdmin`, `PolicyAdmin`, `UserAdmin`, `HelpdeskAdmin`,
-`OperationsAdmin`, `ApplicationAuditor`, `SystemAuditor`.
+Valid permissions for Users (set via the `AdminRoles` field): `GlobalAdmin`,
+`Auditor`, `AssetAdmin`, `ApplianceAdmin`, `PolicyAdmin`, `UserAdmin`,
+`HelpdeskAdmin`, `OperationsAdmin`, `ApplicationAuditor`, `SystemAuditor`.
 
-**Note:** `Authorizer` is NOT a valid admin role — it is a request workflow
+**Note:** `Authorizer` is NOT a permission — it is a request workflow
 concept. `GlobalAdmin` automatically implies `HelpdeskAdmin`,
 `ApplicationAuditor`, and `SystemAuditor`.
 
-Admin roles ARE accepted during POST (no PUT needed). However, `Description`
+Permissions ARE accepted during POST (no PUT needed). However, `Description`
 is NOT accepted during POST — requires POST-then-PUT.
 
 ### A2A (Application-to-Application) Workflow
