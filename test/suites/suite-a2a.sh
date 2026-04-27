@@ -345,6 +345,31 @@ suite_execute()
     api_key="$new_apikey"
     SuiteData[ApiKey]="$api_key"
 
+    # --- Test: get-a2a-credential-retrieval-info.sh ---
+    local info_result=$("$ScriptDir/../src/get-a2a-credential-retrieval-info.sh" 2>/dev/null)
+    sg_assert_not_null "get-a2a-credential-retrieval-info returns data" "$info_result"
+
+    local info_count=$(echo "$info_result" | jq 'length' 2>/dev/null)
+    sg_assert "Credential retrieval info returns at least 1 entry" test "$info_count" -gt 0
+
+    local info_app=$(echo "$info_result" | jq -r ".[] | select(.AssetName != null) | select(.AccountName == \"${TestPrefix}_A2AAccount\") | .AppName" 2>/dev/null)
+    sg_assert_contains "Info entry AppName contains test prefix" "$info_app" "${TestPrefix}_"
+
+    local info_apikey=$(echo "$info_result" | jq -r ".[] | select(.AccountName == \"${TestPrefix}_A2AAccount\") | .ApiKey" 2>/dev/null)
+    sg_assert_not_null "Info entry has ApiKey" "$info_apikey"
+
+    # Filter by account name
+    local info_filtered=$("$ScriptDir/../src/get-a2a-credential-retrieval-info.sh" \
+        -N "${TestPrefix}_A2AAccount" 2>/dev/null)
+    local info_filtered_count=$(echo "$info_filtered" | jq 'length' 2>/dev/null)
+    sg_assert_equal "Info filtered by account name returns 1" "$info_filtered_count" "1"
+
+    # Non-matching filter
+    local info_nomatch=$("$ScriptDir/../src/get-a2a-credential-retrieval-info.sh" \
+        -N "NonExistent_ZZZ_999" 2>/dev/null)
+    local info_nomatch_count=$(echo "$info_nomatch" | jq 'length' 2>/dev/null)
+    sg_assert_equal "Info non-matching filter returns empty" "$info_nomatch_count" "0"
+
     # --- Test: Retrieve password via A2A service ---
     local a2a_pw=$(echo "" | "$ScriptDir/../src/get-a2a-password.sh" \
         -a "$TestAppliance" -c "$cert_file" -k "$key_file" \
