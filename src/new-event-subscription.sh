@@ -87,7 +87,6 @@ if [ -z "$Body" ]; then
     fi
     Body=$(jq -n \
         --arg type "$Type" \
-        --arg desc "$Description" \
         --argjson subs "$Subscriptions" \
         '{Type: $type, Subscriptions: $subs}')
     if [ -n "$Description" ]; then

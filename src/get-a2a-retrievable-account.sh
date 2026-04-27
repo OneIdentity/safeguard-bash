@@ -39,7 +39,6 @@ Cert=
 PKey=
 ApiKey=
 Raw=false
-PassStdin=
 Pass=
 Filter=
 Fields=
@@ -93,7 +92,7 @@ while getopts ":a:B:v:c:k:A:q:f:o:prh" opt; do
         OrderBy=$OPTARG
         ;;
     p)
-        PassStdin="-p"
+        # -p: read cert password from stdin (handled by require_args)
         ;;
     h)
         print_usage

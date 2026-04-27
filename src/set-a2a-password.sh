@@ -42,7 +42,6 @@ Version=4
 Cert=
 PKey=
 ApiKey=
-PassStdin=
 Pass=
 UseOpenSslSclient=false
 
@@ -88,7 +87,7 @@ while getopts ":a:B:v:c:k:A:pOh" opt; do
         PKey=$OPTARG
         ;;
     p)
-        PassStdin="-p"
+        # -p: read cert password from stdin (handled by require_args)
         ;;
     A)
         ApiKey=$OPTARG
