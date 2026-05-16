@@ -3,7 +3,7 @@ steps:
   inputs:
     targetType: 'filePath'
     failOnStderr: true
-    filePath: '$(System.DefaultWorkingDirectory)/versionnumber.sh'
+    filePath: '$(System.DefaultWorkingDirectory)/pipeline-templates/versionnumber.sh'
     arguments: $(version) $(Build.BuildId) $(Build.SourceBranchName) $(isTagBuild)
   displayName: 'Setting build version'
 
@@ -18,7 +18,7 @@ steps:
     targetType: inline
     failOnStderr: true
     script: |
-      $(System.DefaultWorkingDirectory)/build.sh $(VersionString) $(Build.SourceVersion)
+      $(System.DefaultWorkingDirectory)/docker/build.sh $(VersionString) $(Build.SourceVersion)
       docker tag oneidentity/safeguard-bash:$(VersionString)-alpine oneidentity/safeguard-bash:latest
   displayName: 'Building Zip and Docker image'
 

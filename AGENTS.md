@@ -29,10 +29,13 @@ safeguard-bash/
 │   ├── framework.sh        # Test framework library
 │   └── suites/             # Test suite scripts (suite-*.sh)
 ├── samples/                # Example integrations
-├── pipeline-templates/     # Azure DevOps CI/CD YAML
-├── build.sh / run.sh       # Docker packaging (not dev workflow)
+├── pipeline-templates/     # Azure DevOps CI/CD YAML + versionnumber.sh
+├── docker/                 # Docker packaging
+│   ├── Dockerfile          # Alpine container definition
+│   ├── build.sh            # Build Docker image + create zip artifact
+│   ├── run.sh              # Run Docker container locally
+│   └── .bashrc             # Container shell config
 ├── install-local.sh        # Install scripts to $HOME/scripts
-└── Dockerfile              # Alpine container definition
 ```
 
 ---

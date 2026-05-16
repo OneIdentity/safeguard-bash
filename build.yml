@@ -56,7 +56,7 @@ jobs:
         target: '$(Build.SourceVersion)'
         tagSource: 'userSpecifiedTag'
         tag: '$(ReleaseTag)'
-        title: '$(VersionString)'
+        title: '$(ReleaseTag)'
         isPreRelease: ${{ not(startsWith(variables['Build.SourceBranch'], 'refs/tags/')) }}
         changeLogCompareToRelease: 'lastFullRelease'
         changeLogType: 'commitBased'

@@ -25,8 +25,8 @@ if [ "$isTagBuild" = "True" ] || [ "$isTagBuild" = "true" ]; then
 else
     buildNumber=$(expr $buildId - 103500) # shrink shared build number appropriately
     echo "buildNumber = ${buildNumber}"
-    versionString="$verNum.$buildNumber"
-    releaseTag="dev/v$versionString"
+    versionString="$verNum"
+    releaseTag="dev/v${verNum}-pre${buildNumber}"
     echo "Dev build"
 fi
 
