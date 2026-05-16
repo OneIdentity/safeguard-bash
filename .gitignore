@@ -292,3 +292,4 @@ __pycache__/
 
 # vi swap files
 .*.swp
+.worktrees/
