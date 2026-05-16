@@ -15,7 +15,7 @@ echo "isTagBuild = $isTagBuild"
 
 if [ "$isTagBuild" = "True" ] || [ "$isTagBuild" = "true" ]; then
     # Validate tag format: must be v<major>.<minor>.<patch>
-    if ! echo "$tagName" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+'; then
+    if ! echo "$tagName" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
         >&2 echo "ERROR: Tag '$tagName' does not match expected format 'v<major>.<minor>.<patch>'. Aborting release build."
         exit 1
     fi
