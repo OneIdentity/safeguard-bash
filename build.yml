@@ -4,20 +4,31 @@ variables:
 trigger:
   branches:
     include:
+      - main
       - master
       - release-*
+  tags:
+    include:
+      - 'v*'
   paths:
     exclude:
-      - README.md
+      - '**/*.md'
+      - LICENSE
+      - docs/
+      - .github/CODEOWNERS
 
 pr:
   branches:
     include:
+      - main
       - master
       - release-*
   paths:
     exclude:
-      - README.md
+      - '**/*.md'
+      - LICENSE
+      - docs/
+      - .github/CODEOWNERS
 
 jobs:
 # Job 1: PR Validation - runs only on pull requests
@@ -44,9 +55,9 @@ jobs:
         action: 'create'
         target: '$(Build.SourceVersion)'
         tagSource: 'userSpecifiedTag'
-        tag: 'release-$(VersionString)'
+        tag: '$(ReleaseTag)'
         title: '$(VersionString)'
-        isPreRelease: $(isPrerelease)
+        isPreRelease: ${{ not(startsWith(variables['Build.SourceBranch'], 'refs/tags/')) }}
         changeLogCompareToRelease: 'lastFullRelease'
         changeLogType: 'commitBased'
         assets: $(Build.ArtifactStagingDirectory)/*.zip

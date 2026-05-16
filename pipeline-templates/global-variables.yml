@@ -1,7 +1,9 @@
 variables:
   - name: version
     value: "8.2"
+  - name: isTagBuild
+    value: ${{ startsWith(variables['Build.SourceBranch'], 'refs/tags/') }}
   - name: isPrerelease
-    value: ${{ true }}
+    value: ${{ not(startsWith(variables['Build.SourceBranch'], 'refs/tags/')) }}
   - name: shouldPublishDocker
-    value: $[ eq( variables.isPrerelease, false ) ]
+    value: $[ startsWith(variables['Build.SourceBranch'], 'refs/tags/') ]
