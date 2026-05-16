@@ -16,6 +16,7 @@ if [ -z "$Version" ]; then
 fi
 
 ScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+RepoRoot="$(dirname "$ScriptDir")"
 
 if [ -z "$(which docker)" ]; then
     >&2 echo "You must install docker to use this build script"
@@ -30,8 +31,9 @@ docker build \
     --no-cache \
     --build-arg BUILD_VERSION=$Version \
     --build-arg COMMIT_ID=$CommitId \
+    -f $ScriptDir/Dockerfile \
     -t "oneidentity/safeguard-bash:${DockerVersionStr}alpine" \
-    $ScriptDir 2>&1
+    $RepoRoot 2>&1
 docker tag "oneidentity/safeguard-bash:${DockerVersionStr}alpine" "oneidentity/safeguard-bash:latest"
 
 echo "Creating zip file artifact ..."
@@ -42,7 +44,7 @@ if [ -f "$ZipFileName" ]; then
     rm -f $ZipFileName
 fi
 CurDir=`pwd`
-cd $ScriptDir
+cd $RepoRoot
 mkdir $ZipFolderName
 cp install-local.sh $ZipFolderName
 cp -r src $ZipFolderName

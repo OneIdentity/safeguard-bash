@@ -36,7 +36,7 @@ RUN apk -U --no-cache add \
 COPY src/ /scripts/
 COPY samples/ /samples/
 COPY test/ /test/
-COPY .bashrc /home/safeguard/
+COPY docker/.bashrc /home/safeguard/
 
 USER safeguard
 WORKDIR /home/safeguard
