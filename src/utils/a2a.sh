@@ -1,6 +1,9 @@
 #!/bin/bash
 # This is a script to support calling the a2a service across multiple scripts.
 # It shouldn't be called directly.
+
+. "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/redact-sensitive.sh"
+
 invoke_a2a_method()
 {
     local appliance=$1 ; shift       #1
@@ -24,6 +27,10 @@ invoke_a2a_method()
     fi
     local response=""
     local error=""
+    local CurlErrFile SclientErrFile PassFile
+    CurlErrFile=$(mktemp 2>/dev/null) || CurlErrFile="${TMPDIR:-/tmp}/.a2a_curl_err.$$.$RANDOM"
+    SclientErrFile=$(mktemp 2>/dev/null) || SclientErrFile="${TMPDIR:-/tmp}/.a2a_sclient_err.$$.$RANDOM"
+    trap 'rm -f "$CurlErrFile" "$SclientErrFile" "$PassFile" 2>/dev/null' RETURN
 
     if ! $usesclient; then
         if [ $(curl --version | grep "libcurl" | sed -e 's,curl [0-9]*\.\([0-9]*\).* (.*,\1,') -ge 33 ]; then
@@ -46,15 +53,13 @@ $http11flag
 $contenttypeflag
 $apikeyflag
 EOF
-) "${bodyargs[@]}" "https://$appliance/service/$service/v$version/$relurl" 2>"${TMPDIR:-/tmp}/.a2a_curl_err.$$"
+) "${bodyargs[@]}" "https://$appliance/service/$service/v$version/$relurl" 2>"$CurlErrFile"
        )
         local curlerr=$?
         if [ $curlerr -ne 0 ] && [ -z "$response" ]; then
-            >&2 cat "${TMPDIR:-/tmp}/.a2a_curl_err.$$"
-            rm -f "${TMPDIR:-/tmp}/.a2a_curl_err.$$"
+            >&2 printf '%s\n' "$(redact_sensitive < "$CurlErrFile")"
             return 1
         fi
-        rm -f "${TMPDIR:-/tmp}/.a2a_curl_err.$$"
         if [ -z "$(which jq 2> /dev/null)" ]; then
             error=$(echo $response | grep '"Code":60108')
         else
@@ -76,7 +81,8 @@ EOF
             contentlengthheader="Content-Length: ${#body}"
             bodydata="$body"
         fi
-        IFS=$'\n' read -d '' -r -a response < <(cat <<EOF | openssl s_client -connect $appliance:443 -quiet -crlf -key $pkeyfile -cert $certfile -pass pass:$pass 2>"${TMPDIR:-/tmp}/.a2a_sclient_err.$$"
+        PassFile=$(write_pass_file "$pass")
+        IFS=$'\n' read -d '' -r -a response < <(cat <<EOF | openssl s_client -connect $appliance:443 -quiet -crlf -key $pkeyfile -cert $certfile -pass "file:$PassFile" 2>"$SclientErrFile"
 $method /service/$service/v$version/$relurl HTTP/1.1
 Host: $appliance
 User-Agent: curl/7.47.0
@@ -132,14 +138,12 @@ EOF
             if [ ! -z "$contentlength" ]; then
                 body=${body:0:$contentlength}
             fi
-            rm -f "${TMPDIR:-/tmp}/.a2a_sclient_err.$$"
             echo "$body"
         else
             # No HTTP body found -- report captured stderr if available
-            if [ -s "${TMPDIR:-/tmp}/.a2a_sclient_err.$$" ]; then
-                >&2 cat "${TMPDIR:-/tmp}/.a2a_sclient_err.$$"
+            if [ -s "$SclientErrFile" ]; then
+                >&2 printf '%s\n' "$(redact_sensitive < "$SclientErrFile")"
             fi
-            rm -f "${TMPDIR:-/tmp}/.a2a_sclient_err.$$"
         fi
     fi
 }

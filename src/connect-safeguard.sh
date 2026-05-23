@@ -56,6 +56,7 @@ AccessToken=
 StoreLoginFile=true
 
 . "$ScriptDir/utils/loginfile.sh"
+. "$ScriptDir/utils/redact-sensitive.sh"
 
 get_rsts_token()
 {
@@ -86,7 +87,10 @@ EOF
             # ignore certificate errors when using client certificate authentication. This works around that
             # problem by calling OpenSSL directly and manually formulating an HTTP request.
             #   see https://github.com/curl/curl/issues/1411
-            StsResponse=$(cat <<EOF | openssl s_client -connect $Appliance:443 -quiet -crlf -key $PKey -cert $Cert -pass pass:$Pass 2>&1
+            local PassFile
+            PassFile=$(write_pass_file "$Pass")
+            trap 'rm -f "$PassFile"' RETURN
+            StsResponse=$(cat <<EOF | openssl s_client -connect $Appliance:443 -quiet -crlf -key $PKey -cert $Cert -pass "file:$PassFile" 2>&1
 POST /RSTS/oauth2/token HTTP/1.1
 Host: $Appliance
 User-Agent: curl/7.47.0
@@ -98,10 +102,12 @@ Content-Length: 84
 {"grant_type":"client_credentials","scope":"rsts:sts:primaryproviderid:certificate"}
 EOF
             )
+            rm -f "$PassFile"
+            trap - RETURN
         fi
         if [ $? -ne 0 ]; then
             >&2 echo "Failed to get access token from appliance token service"
-            >&2 echo "$StsResponse"
+            >&2 printf '%s\n' "$(printf '%s' "$StsResponse" | redact_sensitive)"
             exit 1
         fi
     else
@@ -124,13 +130,14 @@ EOF
         )
         if [ $? -ne 0 ]; then
             >&2 echo "Failed to get access token from appliance token service"
-            >&2 echo "$StsResponse"
+            >&2 printf '%s\n' "$(printf '%s' "$StsResponse" | redact_sensitive)"
             exit 1
         fi
     fi
     StsAccessToken=$(echo $StsResponse | sed -n 's/.*"access_token":"\([-0-9A-Za-z_\.]*\)",.*/\1/p')
     if [ -z "$StsAccessToken" ]; then
-        >&2 echo -e "Failed to get access token from appliance\n$StsResponse"
+        >&2 echo -e "Failed to get access token from appliance"
+        >&2 printf '%s\n' "$(printf '%s' "$StsResponse" | redact_sensitive)"
         exit 1
     fi
 }
@@ -280,7 +287,7 @@ EOF
         MfaResponse=$(echo "$MfaResponse" | sed '$d')
         if [ "$MfaHttpCode" = "203" ]; then
             >&2 echo "PKCE: Secondary authentication failed"
-            >&2 echo "$MfaResponse"
+            >&2 printf '%s\n' "$(printf '%s' "$MfaResponse" | redact_sensitive)"
             exit 1
         fi
         if [ $? -ne 0 ]; then
@@ -317,7 +324,7 @@ EOF
 
     if [ -z "$RelyingPartyUrl" ]; then
         >&2 echo "PKCE: rSTS response did not contain a RelyingPartyUrl"
-        >&2 echo "$ClaimsResponse"
+        >&2 printf '%s\n' "$(printf '%s' "$ClaimsResponse" | redact_sensitive)"
         exit 1
     fi
 
@@ -348,13 +355,14 @@ EOF
     )
     if [ $? -ne 0 ]; then
         >&2 echo "PKCE: Failed to exchange authorization code for RSTS token"
-        >&2 echo "$StsResponse"
+        >&2 printf '%s\n' "$(printf '%s' "$StsResponse" | redact_sensitive)"
         exit 1
     fi
 
     StsAccessToken=$(echo $StsResponse | sed -n 's/.*"access_token":"\([-0-9A-Za-z_\.]*\)",.*/\1/p')
     if [ -z "$StsAccessToken" ]; then
-        >&2 echo -e "PKCE: Failed to get access token from RSTS\n$StsResponse"
+        >&2 echo "PKCE: Failed to get access token from RSTS"
+        >&2 printf '%s\n' "$(printf '%s' "$StsResponse" | redact_sensitive)"
         exit 1
     fi
 }
@@ -378,22 +386,26 @@ EOF
 EOF
         )
         if [ $? -ne 0 ]; then
-            >&2 echo -e "Failed to get login response from appliance:\n$LoginResponse"
+            >&2 echo "Failed to get login response from appliance:"
+            >&2 printf '%s\n' "$(printf '%s' "$LoginResponse" | redact_sensitive)"
             exit 1
         fi
         Status=$(echo $LoginResponse | sed -n 's/.*"Status":"\([A-Za-z]*\)",.*/\1/p')
         if [ -z "$Status" ]; then
-            >&2 echo -e "Failed to get status from login response:\n$LoginResponse"
+            >&2 echo "Failed to get status from login response:"
+            >&2 printf '%s\n' "$(printf '%s' "$LoginResponse" | redact_sensitive)"
             exit 1
         fi
         if [[ $Status =~ .*Success* ]]; then
             AccessToken=$(echo $LoginResponse | sed -n 's/.*"UserToken":"\([-0-9A-Za-z_\.]*\)",.*/\1/p')
             if [ -z "$AccessToken" ]; then
-                >&2 echo -e "Failed to get user token from appliance:\n$LoginResponse"
+                >&2 echo "Failed to get user token from appliance:"
+                >&2 printf '%s\n' "$(printf '%s' "$LoginResponse" | redact_sensitive)"
                 exit 1
             fi
         elif [[ $Status =~ .*Unauthorized* ]]; then
-            >&2 echo -e "Failure result from login response:\n$LoginResponse"
+            >&2 echo "Failure result from login response:"
+            >&2 printf '%s\n' "$(printf '%s' "$LoginResponse" | redact_sensitive)"
             exit 1
         else
             >&2 echo "Unable to handle status '$(echo $Status | sed -e 's/^.*:.*"\(.*\)",/\1/')'"
