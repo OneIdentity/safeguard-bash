@@ -101,6 +101,12 @@ echo -e "${YELLOW}\nLogging out as user admin ($Provider/$AdminUser)...${NC}"
 $SafeguardDir/disconnect-safeguard.sh
 
 echo -e "${YELLOW}\nLogging in as certificate user ($UserName)...${NC}"
+# SECURITY: This sample omits -B "$CABundle", which makes the underlying
+# curl/openssl s_client invocations skip TLS verification (the -k fallback
+# documented in the project README's "TLS Verification" section). That is
+# acceptable for self-signed test appliances only -- for production, pass
+# -B "$CABundle" to every invocation. See samples/README.md > "Security
+# Notes" for the full recipe.
 $SafeguardDir/connect-safeguard.sh -a $Appliance -i certificate -c $ClientCertFile -k $ClientKeyFile -p <<<"$ClientCertPassword"
 
 echo -e "${YELLOW}\nLogged in user info...${NC}"

@@ -45,5 +45,11 @@ fi
 echo "Executing a2a event listener..."
 SampleHandlerScript=$SafeguardDir/../samples/event-handling/a2a-event-handling/a2a-password-event-handler.sh
 >&2 echo "SampleHandlerScript=$SampleHandlerScript"
+# SECURITY: This sample omits -B "$CABundle", so the underlying SignalR
+# poller and curl invocations skip TLS verification (the -k fallback
+# documented in the project README's "TLS Verification" section). That is
+# acceptable for self-signed test appliances only -- for production, pass
+# -B "$CABundle" to handle-a2a-password-event.sh. See samples/README.md >
+# "Security Notes" for the full recipe.
 $SafeguardDir/handle-a2a-password-event.sh -a $SG_APPLIANCE -c $VolumeDir/$SG_CERTFILE -k $VolumeDir/$SG_KEYFILE -A $SG_APIKEY -O -S $SampleHandlerScript -p <<<$SG_KEYFILE_PASSWORD
 

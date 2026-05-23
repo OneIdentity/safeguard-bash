@@ -5,6 +5,36 @@ Sample scripts based on safeguard-bash. These scripts are meant
 to give ideas about how safeguard-bash may be used to solve
 problems.
 
+## Security Notes
+
+The samples in this directory are written for **developer and CI
+convenience**, not for production deployment. In particular:
+
+- None of them pass `-B <ca-bundle>` to `connect-safeguard.sh` or
+  `invoke-safeguard-method.sh`. Without that flag the underlying
+  `curl` and `openssl s_client` invocations fall back to `-k`
+  (skip TLS verification), which is appropriate for the self-signed
+  certificates that lab and test appliances ship with by default.
+- The `-k` fallback is **not safe for production**. A network
+  attacker between the runner and the appliance can inject a forged
+  certificate, intercept the bearer token, and impersonate the
+  caller.
+- Before re-using one of these samples against a production
+  appliance you must (a) obtain the trusted CA bundle for that
+  appliance (see `get-trusted-ca-bundle.sh`), (b) export it as the
+  `CABundle` environment variable, and (c) pass `-B "$CABundle"` to
+  every SDK script invocation in the sample.
+
+See the project root `README.md` section "TLS Verification" for the
+full recipe, including a `curl` / `openssl s_client` workflow for
+extracting the certificate from an appliance.
+
+The samples also do not set `SAFEGUARD_ALLOW_LOCALHOST=1`, which
+means they will refuse to connect to loopback, link-local, or
+RFC1918 private IP addresses as appliance hosts. Export
+`SAFEGUARD_ALLOW_LOCALHOST=1` if you are intentionally pointing the
+sample at a local test appliance.
+
 ## Sample Scripts
 - **[certificate-login](certificate-login)**
 
