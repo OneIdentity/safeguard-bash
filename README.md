@@ -77,6 +77,94 @@ better with jq due to the pretty output.
 
 Just use Docker, and you won't have to worry about prerequisites!
 
+## TLS Verification
+
+**Default behaviour.** For backwards compatibility with every existing
+customer integration, every safeguard-bash script defaults to
+`CABundleArg="-k"` (passes `-k` / `--insecure` to cURL, which skips TLS
+certificate verification). This is implemented in
+`src/utils/loginfile.sh::handle_ca_bundle_arg` and applies to
+`connect-safeguard.sh`, `invoke-safeguard-method.sh`, `get-trusted-ca-bundle.sh`,
+the A2A flows in `src/utils/a2a.sh`, and every other script that uses
+`-K <(cat <<EOF...)` curl config.
+
+**This default is insecure.** A network attacker between you and the
+appliance can intercept the TLS connection and read or modify Safeguard
+API traffic (including bearer tokens, A2A API keys, and credential
+material). We are not flipping this default in the current release line
+because doing so would silently break every shipping integration; the
+default flip is tracked for the next major version. **For any production
+or shared-network deployment, follow the secure-by-default recipe below.**
+
+### Secure-by-default recipe
+
+1. **Bootstrap the appliance's CA bundle once.** From a workstation with
+   network access to the appliance, use the bundled
+   `get-trusted-ca-bundle.sh` to download the issuing chain (this script
+   ships with safeguard-bash and writes `<appliance-name>.ca-bundle.crt`
+   to the current directory):
+
+   ```Bash
+   $ connect-safeguard.sh -a 10.5.32.162 -i local -u Admin -P
+   $ get-trusted-ca-bundle.sh -a 10.5.32.162
+   Saving SSL certificate issuers to spp-prod-01.ca-bundle.crt
+   ```
+
+   Alternatively, if the appliance is self-signed and you trust the
+   network you are running this initial fetch from, you can extract the
+   leaf certificate with OpenSSL:
+
+   ```Bash
+   $ openssl s_client -showcerts -connect 10.5.32.162:443 </dev/null \
+       2>/dev/null \
+       | sed -n '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' \
+       > spp-prod-01.ca-bundle.crt
+   ```
+
+   Verify the fingerprint of the resulting bundle out-of-band (through
+   the appliance web UI, a trusted operator, or an existing certificate
+   inventory) before trusting it.
+
+2. **Export `$CABundle` in every shell that runs safeguard-bash
+   scripts.** `handle_ca_bundle_arg` consults `$CABundle` before falling
+   back to `-k`; setting it to an absolute path causes every subsequent
+   call to pass `--cacert <path>` to cURL, which enforces TLS
+   verification:
+
+   ```Bash
+   $ export CABundle="$PWD/spp-prod-01.ca-bundle.crt"
+   $ connect-safeguard.sh -a 10.5.32.162 -i local -u Admin -P
+   ```
+
+   You can also pass the bundle per-invocation with `-B`:
+
+   ```Bash
+   $ connect-safeguard.sh -a 10.5.32.162 -B "$PWD/spp-prod-01.ca-bundle.crt" \
+                          -i local -u Admin -P
+   ```
+
+3. **Persist the export** (`.bash_profile`, systemd unit `Environment=`,
+   container `ENV CABundle=...`, scheduled-task wrapper, etc.) so every
+   shell that invokes a safeguard-bash script picks it up automatically.
+
+### Trust-on-first-use (TOFU) caveat
+
+The bootstrap call to `get-trusted-ca-bundle.sh` (or to
+`openssl s_client -showcerts`) itself runs over an unverified TLS
+connection, because the CA bundle does not yet exist locally. This is
+the standard TOFU pattern. Mitigations:
+
+- Perform the bootstrap from a trusted network segment (an admin
+  workstation directly attached to the appliance management VLAN).
+- Verify the downloaded certificate fingerprint against the appliance
+  web UI ("Certificates → SSL Certificate") or an out-of-band record
+  before exporting `$CABundle`.
+- Rotate / re-bootstrap whenever the appliance SSL certificate is
+  reissued.
+
+After the bundle is in place, all subsequent script invocations validate
+the appliance certificate chain and are not subject to MITM.
+
 ## Getting Started
 Once safeguard-bash is installed, you can begin by running `connect-safeguard.sh`.
 Authentication in Safeguard is based on OAuth2. The recommended connection method
