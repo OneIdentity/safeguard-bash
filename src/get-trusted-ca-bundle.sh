@@ -31,6 +31,7 @@ AccessToken=
 Version=4
 
 . "$ScriptDir/utils/loginfile.sh"
+. "$ScriptDir/utils/common.sh"
 
 while getopts ":t:a:v:h" opt; do
     case $opt in
@@ -50,6 +51,13 @@ while getopts ":t:a:v:h" opt; do
 done
 
 require_login_args
+
+# F-bash-006 (FP-safeguard-bash-005): SSRF defence.
+if [ "${SAFEGUARD_ALLOW_LOCALHOST:-0}" = "1" ]; then
+    validate_appliance_host --allow-localhost "$Appliance" || exit 1
+else
+    validate_appliance_host "$Appliance" || exit 1
+fi
 
 Response=$("$ScriptDir/invoke-safeguard-method.sh" -a "$Appliance" -T -v $Version -s appliance -m GET -U "ApplianceStatus" -N <<<$AccessToken)
 Error=$(echo $Response | jq .Code 2> /dev/null)

@@ -65,6 +65,7 @@ Body=
 FilterNulls=false
 
 . "$ScriptDir/utils/loginfile.sh"
+. "$ScriptDir/utils/common.sh"
 
 require_args()
 {
@@ -178,6 +179,13 @@ if [ "$Accept" = "application/json" ]; then
 fi
 
 require_args
+
+# F-bash-006 (FP-safeguard-bash-005): SSRF defence.
+if [ "${SAFEGUARD_ALLOW_LOCALHOST:-0}" = "1" ]; then
+    validate_appliance_host --allow-localhost "$Appliance" || exit 1
+else
+    validate_appliance_host "$Appliance" || exit 1
+fi
 
 # F-safeguard-bash-007 (FP-safeguard-bash-004): cap the response body size
 # so a hostile or runaway appliance cannot exhaust local memory/disk via

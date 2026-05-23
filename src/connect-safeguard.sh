@@ -57,6 +57,7 @@ StoreLoginFile=true
 
 . "$ScriptDir/utils/loginfile.sh"
 . "$ScriptDir/utils/redact-sensitive.sh"
+. "$ScriptDir/utils/common.sh"
 
 get_rsts_token()
 {
@@ -458,6 +459,15 @@ while getopts ":a:B:v:i:u:c:k:phPS:X" opt; do
 done
 
 require_connect_args
+
+# F-bash-006 (FP-safeguard-bash-005): refuse to send a bearer-token-bound
+# request to loopback / link-local / RFC1918 endpoints unless the operator
+# explicitly opts in with SAFEGUARD_ALLOW_LOCALHOST=1.
+if [ "${SAFEGUARD_ALLOW_LOCALHOST:-0}" = "1" ]; then
+    validate_appliance_host --allow-localhost "$Appliance" || exit 1
+else
+    validate_appliance_host "$Appliance" || exit 1
+fi
 
 Scope="rsts:sts:primaryproviderid:$Provider"
 
