@@ -12,6 +12,28 @@ suite_name()
     echo "A2A"
 }
 
+suite_get_a2a_service_enabled()
+{
+    local status
+    status=$(sg_invoke -s appliance -m GET -U "A2AService/Status") || return 1
+    echo "$status" | jq -r '.IsRunning // .IsEnabled // .Enabled // false' 2>/dev/null
+}
+
+suite_ensure_a2a_service_enabled()
+{
+    local enabled
+    enabled=$(suite_get_a2a_service_enabled) || return 1
+    SuiteData[A2aPreviousEnabled]="$enabled"
+    SuiteData[A2aSuiteSetEnabled]="false"
+
+    if [ "$enabled" != "true" ]; then
+        sg_invoke -s appliance -m POST -U "A2AService/Enable" >/dev/null
+        SuiteData[A2aSuiteSetEnabled]="true"
+        sg_register_cleanup "Restore A2A service disabled state" \
+            "$ScriptDir/../src/invoke-safeguard-method.sh -s appliance -m POST -U A2AService/Disable >/dev/null"
+        sleep 2
+    fi
+}
 suite_setup()
 {
     sg_connect
@@ -32,6 +54,10 @@ suite_setup()
     sg_disconnect
     echo "A2ATest1!" | "$ScriptDir/../src/connect-safeguard.sh" \
         -a "$TestAppliance" -i local -u "${TestPrefix}_A2AAdmin" -v "$TestVersion" -p 2>/dev/null
+
+    # The appliance-wide A2A service may be disabled in shared live environments.
+    # Enable it for credential retrieval tests and restore the prior state in cleanup.
+    suite_ensure_a2a_service_enabled || return 1
 
     # Generate self-signed certificate for A2A
     local cert_dir=$(mktemp -d)
@@ -584,9 +610,13 @@ suite_cleanup()
         rm -rf "$cert_dir"
     fi
 
-    # Reconnect as original user to delete the suite admin
+    # Reconnect as original user to verify service restoration and delete the suite admin
     sg_disconnect
     sg_connect
+    if [ "${SuiteData[A2aSuiteSetEnabled]}" = "true" ]; then
+        local restored_enabled=$(suite_get_a2a_service_enabled 2>/dev/null)
+        sg_assert_equal "A2A service restored to disabled state" "$restored_enabled" "false"
+    fi
     local admin_id="${SuiteData[AdminId]}"
     if [ -n "$admin_id" ]; then
         "$ScriptDir/../src/remove-user.sh" -i "$admin_id" 2>/dev/null
