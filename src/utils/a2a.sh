@@ -81,8 +81,14 @@ EOF
             contentlengthheader="Content-Length: ${#body}"
             bodydata="$body"
         fi
-        PassFile=$(write_pass_file "$pass")
-        IFS=$'\n' read -d '' -r -a response < <(cat <<EOF | openssl s_client -connect $appliance:443 -quiet -crlf -key $pkeyfile -cert $certfile -pass "file:$PassFile" 2>"$SclientErrFile"
+        local PassArgs=()
+        if [ -n "$pass" ]; then
+            PassFile=$(write_pass_file "$pass")
+            PassArgs=(-pass "file:$PassFile")
+        else
+            PassArgs=(-pass "pass:")
+        fi
+        IFS=$'\n' read -d '' -r -a response < <(cat <<EOF | openssl s_client -connect $appliance:443 -quiet -crlf -key $pkeyfile -cert $certfile "${PassArgs[@]}" 2>"$SclientErrFile"
 $method /service/$service/v$version/$relurl HTTP/1.1
 Host: $appliance
 User-Agent: curl/7.47.0

@@ -89,9 +89,15 @@ EOF
             # problem by calling OpenSSL directly and manually formulating an HTTP request.
             #   see https://github.com/curl/curl/issues/1411
             local PassFile
-            PassFile=$(write_pass_file "$Pass")
+            local PassArgs=()
+            if [ -n "$Pass" ]; then
+                PassFile=$(write_pass_file "$Pass")
+                PassArgs=(-pass "file:$PassFile")
+            else
+                PassArgs=(-pass "pass:")
+            fi
             trap 'rm -f "$PassFile"' RETURN
-            StsResponse=$(cat <<EOF | openssl s_client -connect $Appliance:443 -quiet -crlf -key $PKey -cert $Cert -pass "file:$PassFile" 2>&1
+            StsResponse=$(cat <<EOF | openssl s_client -connect $Appliance:443 -quiet -crlf -key $PKey -cert $Cert "${PassArgs[@]}" 2>&1
 POST /RSTS/oauth2/token HTTP/1.1
 Host: $Appliance
 User-Agent: curl/7.47.0

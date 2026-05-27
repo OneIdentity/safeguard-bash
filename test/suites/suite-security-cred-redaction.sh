@@ -263,4 +263,39 @@ suite_execute()
         "Test 5 (TRIPWIRE) no REDACTED marker in product-field-only JSON" \
         "REDACTED" \
         echo "$product_out"
+
+    # ---- Test 6: empty certificate passwords use OpenSSL's pass: source ----
+    # Regression guard for FP-safeguard-bash-002 follow-up: an empty pass file
+    # makes openssl fail, while '-pass pass:' is equivalent to the original
+    # no-password behavior and does not expose a real secret on argv.
+    local a2a_file="$SuiteScriptDir/../../src/utils/a2a.sh"
+    local test_tmp="$SuiteScriptDir/../.security-cred-redaction-tmp"
+    mkdir -p "$test_tmp"
+    local a2a_out
+    a2a_out=$(TMPDIR="$test_tmp" bash -c '
+        . "$1"
+        write_pass_file() { echo "write_pass_file unexpectedly called for empty pass" >&2; return 99; }
+        openssl() {
+            local body="$*"
+            printf "HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Length: %d\r\n\r\n%s\r\n" "${#body}" "$body"
+        }
+        invoke_a2a_method "appliance.example" "-k" "cert.pem" "key.pem" "" "api-key" "a2a" "GET" "Credentials/1" "4" true
+    ' _ "$a2a_file")
+    rm -rf "$test_tmp"
+    if echo "$a2a_out" | grep -q -- '-pass pass:'; then
+        _SuitePass=$((_SuitePass + 1))
+        echo -e "    ${_CLR_GREEN}PASS${_CLR_RESET}: Test 6 A2A empty cert pass dispatches -pass pass:"
+    else
+        _SuiteFail=$((_SuiteFail + 1))
+        _SuiteErrors="${_SuiteErrors}    FAIL: Test 6 A2A empty cert pass did not dispatch -pass pass:\n"
+        echo -e "    ${_CLR_RED}FAIL${_CLR_RESET}: Test 6 A2A empty cert pass did not dispatch -pass pass:"
+    fi
+    if echo "$a2a_out" | grep -q -- '-pass file:'; then
+        _SuiteFail=$((_SuiteFail + 1))
+        _SuiteErrors="${_SuiteErrors}    FAIL: Test 6 A2A empty cert pass used pass file\n"
+        echo -e "    ${_CLR_RED}FAIL${_CLR_RESET}: Test 6 A2A empty cert pass used pass file"
+    else
+        _SuitePass=$((_SuitePass + 1))
+        echo -e "    ${_CLR_GREEN}PASS${_CLR_RESET}: Test 6 A2A empty cert pass avoids pass file"
+    fi
 }
