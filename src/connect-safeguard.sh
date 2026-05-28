@@ -57,7 +57,6 @@ StoreLoginFile=true
 
 . "$ScriptDir/utils/loginfile.sh"
 . "$ScriptDir/utils/redact-sensitive.sh"
-. "$ScriptDir/utils/common.sh"
 
 get_rsts_token()
 {
@@ -114,7 +113,7 @@ EOF
         fi
         if [ $? -ne 0 ]; then
             >&2 echo "Failed to get access token from appliance token service"
-            >&2 printf '%s\n' "$(printf '%s' "$StsResponse" | redact_sensitive)"
+            >&2 echo "$StsResponse"
             exit 1
         fi
     else
@@ -137,14 +136,13 @@ EOF
         )
         if [ $? -ne 0 ]; then
             >&2 echo "Failed to get access token from appliance token service"
-            >&2 printf '%s\n' "$(printf '%s' "$StsResponse" | redact_sensitive)"
+            >&2 echo "$StsResponse"
             exit 1
         fi
     fi
     StsAccessToken=$(echo $StsResponse | sed -n 's/.*"access_token":"\([-0-9A-Za-z_\.]*\)",.*/\1/p')
     if [ -z "$StsAccessToken" ]; then
-        >&2 echo -e "Failed to get access token from appliance"
-        >&2 printf '%s\n' "$(printf '%s' "$StsResponse" | redact_sensitive)"
+        >&2 echo -e "Failed to get access token from appliance\n$StsResponse"
         exit 1
     fi
 }
@@ -294,7 +292,7 @@ EOF
         MfaResponse=$(echo "$MfaResponse" | sed '$d')
         if [ "$MfaHttpCode" = "203" ]; then
             >&2 echo "PKCE: Secondary authentication failed"
-            >&2 printf '%s\n' "$(printf '%s' "$MfaResponse" | redact_sensitive)"
+            >&2 echo "$MfaResponse"
             exit 1
         fi
         if [ $? -ne 0 ]; then
@@ -331,7 +329,7 @@ EOF
 
     if [ -z "$RelyingPartyUrl" ]; then
         >&2 echo "PKCE: rSTS response did not contain a RelyingPartyUrl"
-        >&2 printf '%s\n' "$(printf '%s' "$ClaimsResponse" | redact_sensitive)"
+        >&2 echo "$ClaimsResponse"
         exit 1
     fi
 
@@ -362,14 +360,13 @@ EOF
     )
     if [ $? -ne 0 ]; then
         >&2 echo "PKCE: Failed to exchange authorization code for RSTS token"
-        >&2 printf '%s\n' "$(printf '%s' "$StsResponse" | redact_sensitive)"
+        >&2 echo "$StsResponse"
         exit 1
     fi
 
     StsAccessToken=$(echo $StsResponse | sed -n 's/.*"access_token":"\([-0-9A-Za-z_\.]*\)",.*/\1/p')
     if [ -z "$StsAccessToken" ]; then
-        >&2 echo "PKCE: Failed to get access token from RSTS"
-        >&2 printf '%s\n' "$(printf '%s' "$StsResponse" | redact_sensitive)"
+        >&2 echo -e "PKCE: Failed to get access token from RSTS\n$StsResponse"
         exit 1
     fi
 }
@@ -393,26 +390,22 @@ EOF
 EOF
         )
         if [ $? -ne 0 ]; then
-            >&2 echo "Failed to get login response from appliance:"
-            >&2 printf '%s\n' "$(printf '%s' "$LoginResponse" | redact_sensitive)"
+            >&2 echo -e "Failed to get login response from appliance:\n$LoginResponse"
             exit 1
         fi
         Status=$(echo $LoginResponse | sed -n 's/.*"Status":"\([A-Za-z]*\)",.*/\1/p')
         if [ -z "$Status" ]; then
-            >&2 echo "Failed to get status from login response:"
-            >&2 printf '%s\n' "$(printf '%s' "$LoginResponse" | redact_sensitive)"
+            >&2 echo -e "Failed to get status from login response:\n$LoginResponse"
             exit 1
         fi
         if [[ $Status =~ .*Success* ]]; then
             AccessToken=$(echo $LoginResponse | sed -n 's/.*"UserToken":"\([-0-9A-Za-z_\.]*\)",.*/\1/p')
             if [ -z "$AccessToken" ]; then
-                >&2 echo "Failed to get user token from appliance:"
-                >&2 printf '%s\n' "$(printf '%s' "$LoginResponse" | redact_sensitive)"
+                >&2 echo -e "Failed to get user token from appliance:\n$LoginResponse"
                 exit 1
             fi
         elif [[ $Status =~ .*Unauthorized* ]]; then
-            >&2 echo "Failure result from login response:"
-            >&2 printf '%s\n' "$(printf '%s' "$LoginResponse" | redact_sensitive)"
+            >&2 echo -e "Failure result from login response:\n$LoginResponse"
             exit 1
         else
             >&2 echo "Unable to handle status '$(echo $Status | sed -e 's/^.*:.*"\(.*\)",/\1/')'"
@@ -465,15 +458,6 @@ while getopts ":a:B:v:i:u:c:k:phPS:X" opt; do
 done
 
 require_connect_args
-
-# F-bash-006 (FP-safeguard-bash-005): refuse to send a bearer-token-bound
-# request to loopback / link-local / RFC1918 endpoints unless the operator
-# explicitly opts in with SAFEGUARD_ALLOW_LOCALHOST=1.
-if [ "${SAFEGUARD_ALLOW_LOCALHOST:-0}" = "1" ]; then
-    validate_appliance_host --allow-localhost "$Appliance" || exit 1
-else
-    validate_appliance_host "$Appliance" || exit 1
-fi
 
 Scope="rsts:sts:primaryproviderid:$Provider"
 

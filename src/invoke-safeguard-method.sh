@@ -34,11 +34,6 @@ anonymous authentication or the -a and -t options to specify an access token.
 
 NOTE: Install jq to get pretty-printed JSON output.
 
-NOTE: Response bodies are capped at 10 MiB by default to mitigate DoS
-risk from a hostile or runaway appliance. Override with the
-SAFEGUARD_MAX_RESPONSE_SIZE environment variable (bytes; max 100 MiB).
-A response larger than the cap fails with exit code 63.
-
 EOF
     exit 0
 }
@@ -65,7 +60,6 @@ Body=
 FilterNulls=false
 
 . "$ScriptDir/utils/loginfile.sh"
-. "$ScriptDir/utils/common.sh"
 
 require_args()
 {
@@ -180,47 +174,23 @@ fi
 
 require_args
 
-# F-bash-006 (FP-safeguard-bash-005): SSRF defence.
-if [ "${SAFEGUARD_ALLOW_LOCALHOST:-0}" = "1" ]; then
-    validate_appliance_host --allow-localhost "$Appliance" || exit 1
-else
-    validate_appliance_host "$Appliance" || exit 1
-fi
-
-# F-safeguard-bash-007 (FP-safeguard-bash-004): cap the response body size
-# so a hostile or runaway appliance cannot exhaust local memory/disk via
-# unbounded streaming. Default 10 MiB; override with
-# $SAFEGUARD_MAX_RESPONSE_SIZE (max 100 MiB enforced for sanity).
-MaxResponseSize="${SAFEGUARD_MAX_RESPONSE_SIZE:-10485760}"
-if ! [[ "$MaxResponseSize" =~ ^[0-9]+$ ]]; then
-    >&2 echo "SAFEGUARD_MAX_RESPONSE_SIZE must be a positive integer (bytes); got '$MaxResponseSize'."
-    exit 1
-fi
-if [ "$MaxResponseSize" -gt 104857600 ]; then
-    >&2 echo "SAFEGUARD_MAX_RESPONSE_SIZE=$MaxResponseSize exceeds the 100 MiB safety cap."
-    exit 1
-fi
-
 Url="https://$Appliance/service/$Service/v$Version/$RelativeUrl"
 case $Method in
     GET|DELETE)
         curl -K <(cat <<EOF
 -s
 $CABundleArg
---max-filesize $MaxResponseSize
 -X $Method
 ${ExtraHeader[@]}
 -H "Accept: $Accept"
 -H "Authorization: Bearer $AccessToken"
 EOF
 ) "$Url" | $PRETTYPRINT
-    CurlStatus=${PIPESTATUS[0]}
     ;;
     PUT|POST)
         curl -K <(cat <<EOF
 -s
 $CABundleArg
---max-filesize $MaxResponseSize
 -X $Method
 ${ExtraHeader[@]}
 -H "Accept: $Accept"
@@ -230,13 +200,7 @@ EOF
 ) -d @- "$Url" <<EOF | $PRETTYPRINT
 $Body
 EOF
-    CurlStatus=${PIPESTATUS[0]}
     ;;
 esac
 
-if [ "${CurlStatus:-0}" -eq 63 ]; then
-    >&2 echo "Response size exceeded limit ($MaxResponseSize bytes). Set SAFEGUARD_MAX_RESPONSE_SIZE to increase (max 104857600 / 100 MiB)."
-    exit 63
-fi
-exit "${CurlStatus:-0}"
 

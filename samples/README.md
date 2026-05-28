@@ -29,12 +29,6 @@ See the project root `README.md` section "TLS Verification" for the
 full recipe, including a `curl` / `openssl s_client` workflow for
 extracting the certificate from an appliance.
 
-The samples also do not set `SAFEGUARD_ALLOW_LOCALHOST=1`, which
-means they will refuse to connect to loopback, link-local, or
-RFC1918 private IP addresses as appliance hosts. Export
-`SAFEGUARD_ALLOW_LOCALHOST=1` if you are intentionally pointing the
-sample at a local test appliance.
-
 ## Sample Scripts
 - **[certificate-login](certificate-login)**
 

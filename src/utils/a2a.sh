@@ -57,7 +57,7 @@ EOF
        )
         local curlerr=$?
         if [ $curlerr -ne 0 ] && [ -z "$response" ]; then
-            >&2 printf '%s\n' "$(redact_sensitive < "$CurlErrFile")"
+            >&2 cat "$CurlErrFile"
             return 1
         fi
         if [ -z "$(which jq 2> /dev/null)" ]; then
@@ -148,7 +148,7 @@ EOF
         else
             # No HTTP body found -- report captured stderr if available
             if [ -s "$SclientErrFile" ]; then
-                >&2 printf '%s\n' "$(redact_sensitive < "$SclientErrFile")"
+                >&2 cat "$SclientErrFile"
             fi
         fi
     fi

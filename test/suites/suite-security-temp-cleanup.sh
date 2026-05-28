@@ -1,7 +1,7 @@
 #!/bin/bash
 # test/suites/suite-security-temp-cleanup.sh
 #
-# F-safeguard-bash-003 regression suite.
+# Regression suite for temp-file cleanup.
 #
 # Asserts that helpers which write secrets or response bytes to disk:
 #   - use mktemp (or equivalent random-suffix paths), not predictable .$$
