@@ -317,14 +317,17 @@ sg_invoke()
     "$ScriptDir/../src/invoke-safeguard-method.sh" "$@" 2>/dev/null
 }
 
-# --- Resource Owner Grant (ROG) Management ---
-# The Safeguard "Allowed OAuth2 Grant Types" setting controls whether
-# password-based (Resource Owner) login is permitted. Tests that use
-# sg_connect (password auth) require ROG to be enabled. These helpers
-# detect, enable, and restore the setting so the test runner works even
-# when ROG is off by default.
+# --- OAuth2 Grant Type Management ---
+# The Safeguard "Allowed OAuth2 Grant Types" setting is a comma-separated
+# list controlling which login flows are permitted (e.g. ResourceOwner,
+# AuthorizationCode, DeviceCode). Tests that exercise a specific flow need
+# to read, mutate, and restore this setting. These generic helpers operate
+# on any grant type; the Resource Owner (ROG) wrappers below are kept for
+# backward compatibility with the test runner.
 
 _OriginalGrantTypes=""
+_SavedGrantTypes=""
+_GrantTypesSaved=false
 _RogWasDisabled=false
 _GrantTypeSettingName="Allowed OAuth2 Grant Types"
 _GrantTypeSettingUrl="Settings/Allowed%20OAuth2%20Grant%20Types"
@@ -348,11 +351,119 @@ sg_get_grant_types()
     _OriginalGrantTypes=$(echo "$settings" | jq -r ".[] | select(.Name==\"$_GrantTypeSettingName\") | .Value" 2>/dev/null)
 }
 
+# PUT a raw grant-type value string back to the appliance.
+# Requires an active login session. Usage: sg_put_grant_types "<value>"
+sg_put_grant_types()
+{
+    local value="$1"
+    local Body Result
+    Body=$(jq -n --arg v "$value" '{"Value": $v}')
+    Result=$(sg_invoke -s core -m PUT -U "$_GrantTypeSettingUrl" -b "$Body")
+    if [ -z "$Result" ]; then
+        return 1
+    fi
+}
+
+# Enable or disable a single grant type while preserving the others.
+# Requires an active login session.
+# Usage: sg_set_grant_type_enabled "DeviceCode" true|false
+sg_set_grant_type_enabled()
+{
+    local grant_type="$1"
+    local desired="$2"
+
+    sg_get_grant_types || return 1
+
+    local new_value=""
+    local found=false
+    local token trimmed
+    local old_ifs="$IFS"
+    IFS=','
+    for token in $_OriginalGrantTypes; do
+        trimmed=$(echo "$token" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+        [ -z "$trimmed" ] && continue
+        if echo "$trimmed" | grep -qi "^${grant_type}$"; then
+            found=true
+            if [ "$desired" = true ]; then
+                if [ -z "$new_value" ]; then new_value="$trimmed"; else new_value="$new_value, $trimmed"; fi
+            fi
+        else
+            if [ -z "$new_value" ]; then new_value="$trimmed"; else new_value="$new_value, $trimmed"; fi
+        fi
+    done
+    IFS="$old_ifs"
+
+    if [ "$desired" = true ] && [ "$found" != true ]; then
+        if [ -z "$new_value" ]; then new_value="$grant_type"; else new_value="$new_value, $grant_type"; fi
+    fi
+
+    # Nothing to change if the type is already in the desired state.
+    if [ "$desired" = true ] && [ "$found" = true ]; then
+        return 0
+    fi
+    if [ "$desired" != true ] && [ "$found" != true ]; then
+        return 0
+    fi
+
+    if ! sg_put_grant_types "$new_value"; then
+        >&2 echo "Error: Failed to set grant type '$grant_type' enabled=$desired"
+        return 1
+    fi
+}
+
+# Ensure a grant type is enabled. Must be called while connected.
+# Usage: sg_ensure_grant_type_enabled "DeviceCode"
+sg_ensure_grant_type_enabled()
+{
+    local grant_type="$1"
+    sg_get_grant_types || return 1
+    if echo "$_OriginalGrantTypes" | grep -qi "$grant_type"; then
+        return 0
+    fi
+    sg_set_grant_type_enabled "$grant_type" true
+}
+
+# Save the current grant-type setting once for an exact restore later.
+# Requires an active login session.
+sg_save_grant_types()
+{
+    sg_get_grant_types || return 1
+    if [ "$_GrantTypesSaved" != true ]; then
+        _SavedGrantTypes="$_OriginalGrantTypes"
+        _GrantTypesSaved=true
+    fi
+}
+
+# Restore the exact grant-type string captured by sg_save_grant_types.
+# Reconnects via PKCE (grant-type-independent) before writing.
+sg_restore_grant_types()
+{
+    if [ "$_GrantTypesSaved" != true ]; then
+        return 0
+    fi
+
+    sg_disconnect
+    sg_connect_pkce
+
+    if sg_put_grant_types "$_SavedGrantTypes"; then
+        echo "  Grant types restored to: $_SavedGrantTypes"
+    else
+        >&2 echo "Warning: Failed to restore original grant type setting"
+    fi
+
+    sg_disconnect
+}
+
+# --- Resource Owner Grant (ROG) compatibility wrappers ---
+# The test runner relies on these names. They delegate to the generic
+# grant-type helpers above so password (Resource Owner) login works even
+# when ROG is off by default.
+
 # Ensure Resource Owner grant type is enabled. Must be called while
 # connected (login file exists). Saves original state for later restore.
 sg_ensure_rog_enabled()
 {
-    sg_get_grant_types || return 1
+    sg_save_grant_types || return 1
 
     if echo "$_OriginalGrantTypes" | grep -qi "ResourceOwner"; then
         echo "  Resource Owner grant is already enabled."
@@ -363,17 +474,7 @@ sg_ensure_rog_enabled()
     echo "  Resource Owner grant is DISABLED -- enabling for tests..."
     _RogWasDisabled=true
 
-    local NewValue
-    if [ -z "$_OriginalGrantTypes" ]; then
-        NewValue="ResourceOwner"
-    else
-        NewValue="$_OriginalGrantTypes, ResourceOwner"
-    fi
-    local Body
-    Body=$(jq -n --arg v "$NewValue" '{"Value": $v}')
-    local Result
-    Result=$(sg_invoke -s core -m PUT -U "$_GrantTypeSettingUrl" -b "$Body")
-    if [ -z "$Result" ]; then
+    if ! sg_set_grant_type_enabled "ResourceOwner" true; then
         >&2 echo "Error: Failed to enable Resource Owner grant type"
         return 1
     fi
@@ -381,8 +482,7 @@ sg_ensure_rog_enabled()
     echo "  Resource Owner grant enabled successfully."
 }
 
-# Restore the original grant type setting. Connects via PKCE (since ROG
-# may have just been disabled) and PUTs the original value back.
+# Restore the original grant type setting if ROG was enabled for tests.
 sg_restore_rog()
 {
     if [ "$_RogWasDisabled" != true ]; then
@@ -391,20 +491,5 @@ sg_restore_rog()
 
     echo ""
     echo "Restoring original grant type setting..."
-
-    # Reconnect via PKCE for the restore (ROG-independent)
-    sg_disconnect
-    sg_connect_pkce
-
-    local Body
-    Body=$(jq -n --arg v "$_OriginalGrantTypes" '{"Value": $v}')
-    local Result
-    Result=$(sg_invoke -s core -m PUT -U "$_GrantTypeSettingUrl" -b "$Body")
-    if [ -z "$Result" ]; then
-        >&2 echo "Warning: Failed to restore original grant type setting"
-    else
-        echo "  Grant types restored to: $_OriginalGrantTypes"
-    fi
-
-    sg_disconnect
+    sg_restore_grant_types
 }
