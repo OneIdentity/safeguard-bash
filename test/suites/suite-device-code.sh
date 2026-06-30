@@ -40,6 +40,13 @@ suite_setup()
     fi
     SuiteData[OrigGrantTypes]="$_OriginalGrantTypes"
 
+    # The runner's EXIT trap only restores Resource Owner grant; suite_cleanup is
+    # what restores the full captured set, but it does not run if the operator
+    # interrupts (Ctrl+C / SIGTERM) mid-execute -- which would leave DeviceCode
+    # disabled after Test 2. Arm a signal trap so the restore still runs; it is
+    # disarmed at the top of suite_cleanup for the normal path.
+    trap 'suite_cleanup; exit 130' INT TERM
+
     # Ensure DeviceCode is enabled for the baseline/E2E cases.
     sg_ensure_grant_type_enabled "DeviceCode"
 
@@ -182,6 +189,10 @@ suite_execute()
 suite_cleanup()
 {
     local LoginFile="$HOME/.safeguard_login"
+
+    # Disarm the interrupt trap armed in setup so it cannot re-enter this cleanup
+    # or leak into a subsequent suite.
+    trap - INT TERM
 
     # Always restore the EXACT original grant-type value captured at setup,
     # even if the test body failed. Reconnect via PKCE (grant-type-independent)
