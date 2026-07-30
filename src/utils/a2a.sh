@@ -33,7 +33,16 @@ invoke_a2a_method()
     trap 'rm -f "$CurlErrFile" "$SclientErrFile" "$PassFile" 2>/dev/null' RETURN
 
     if ! $usesclient; then
-        if [ $(curl --version | grep "libcurl" | sed -e 's,curl [0-9]*\.\([0-9]*\).* (.*,\1,') -ge 33 ]; then
+        # Force HTTP/1.1 for client-certificate auth. HTTP/2 forbids the TLS
+        # renegotiation / post-handshake exchange the A2A cert auth relies on, so
+        # letting curl negotiate h2 (via ALPN) breaks cert auth with a 60094.
+        # curl supports --http1.1 since 7.33. Parse major.minor robustly -- the old
+        # single-field parse read the MINOR digit (e.g. "5" from curl 8.5.0) and
+        # wrongly compared it against 33, dropping the flag on curl >= 8.x.
+        _curlver=$(curl --version | sed -n '1s/^curl \([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\1.\2/p')
+        _curlmajor=${_curlver%%.*}
+        _curlminor=${_curlver##*.}
+        if [ "${_curlmajor:-0}" -gt 7 ] || { [ "${_curlmajor:-0}" -eq 7 ] && [ "${_curlminor:-0}" -ge 33 ]; }; then
             http11flag='--http1.1'
         fi
         local bodyargs=()
