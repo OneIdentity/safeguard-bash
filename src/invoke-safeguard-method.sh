@@ -60,6 +60,9 @@ Body=
 FilterNulls=false
 
 . "$ScriptDir/utils/loginfile.sh"
+. "$ScriptDir/utils/common.sh"
+
+set_tls_version_flags
 
 require_args()
 {
@@ -180,6 +183,7 @@ case $Method in
         curl -K <(cat <<EOF
 -s
 $CABundleArg
+$tlsflags
 -X $Method
 ${ExtraHeader[@]}
 -H "Accept: $Accept"
@@ -191,6 +195,7 @@ EOF
         curl -K <(cat <<EOF
 -s
 $CABundleArg
+$tlsflags
 -X $Method
 ${ExtraHeader[@]}
 -H "Accept: $Accept"

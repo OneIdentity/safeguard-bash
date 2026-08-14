@@ -30,6 +30,9 @@ CABundle=
 CABundleArg=
 
 . "$ScriptDir/utils/loginfile.sh"
+. "$ScriptDir/utils/common.sh"
+
+set_tls_version_flags
 
 if [ ! -z "$(which gsed)" ]; then
     SED=gsed
@@ -40,7 +43,7 @@ fi
 get_connection_token()
 {
     # this call does not require an authorization header
-    curl -s $CABundleArg "https://$Appliance/service/event/signalr/negotiate?negotiateVersion=1" -d '' \
+    curl -s $CABundleArg $tlsflags "https://$Appliance/service/event/signalr/negotiate?negotiateVersion=1" -d '' \
         | $SED -n -e 's/\+/%2B/g;s/\//%2F/g;s/.*"connectionToken":"\([^"]*\)".*/\1/p'
 }
 
@@ -81,6 +84,7 @@ Body=$(echo -e "{\"protocol\":\"json\",\"version\":1}\x1E") # \x1E is record sep
 curl -K <(cat <<EOF
 -s
 $CABundleArg
+$tlsflags
 -H "Authorization: Bearer $AccessToken"
 EOF
 ) -d "$Body" "$Url$Params"
@@ -88,6 +92,7 @@ EOF
 curl -N -K <(cat <<EOF
 -s
 $CABundleArg
+$tlsflags
 -H "Authorization: Bearer $AccessToken"
 EOF
 ) -H 'Accept: text/event-stream' "$Url$Params" | $SED -u -e '/^:.*$/d;/^\s*$/d;s/^data: \(.*\)$/\1/g' |
