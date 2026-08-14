@@ -165,6 +165,75 @@ the standard TOFU pattern. Mitigations:
 After the bundle is in place, all subsequent script invocations validate
 the appliance certificate chain and are not subject to MITM.
 
+## TLS Version and HTTP/1.1 (SPP 9.0 / TLS 1.3)
+
+Safeguard for Privileged Passwords (SPP) **9.0 enables TLS 1.3**. The scripts
+work against 9.0 with no configuration changes — libcurl negotiates the
+protocol automatically — but two behaviors are worth understanding, especially
+for certificate-based authentication.
+
+### HTTP/1.1 is forced for certificate / A2A auth
+
+Client-certificate authentication requires **HTTP/1.1**. HTTP/2 forbids the
+post-handshake certificate exchange (RFC 8740) that cert auth relies on, so if
+curl negotiates HTTP/2 (via ALPN — the default on curl 8.x) the certificate is
+never presented and the appliance rejects the request with `60094 Authorization
+is denied`.
+
+Every certificate and A2A curl call therefore passes `--http1.1` when the
+installed curl supports it (curl **>= 7.33**). This covers `connect-safeguard.sh
+-i certificate`, all A2A credential retrieval (`get-a2a-*`, `set-a2a-*`), and
+the A2A event flows (`listen-for-a2a-event.sh`, `handle-a2a-*-event.sh`).
+Requests that authenticate with a bearer access token are unaffected and keep
+the negotiated HTTP version.
+
+### Optional TLS version enforcement
+
+By default the TLS version is negotiated (including TLS 1.3). To pin the allowed
+range, export either environment variable before running any script. Both are
+opt-in and accept `1.0`, `1.1`, `1.2`, or `1.3`:
+
+| Variable | Effect | curl flag |
+|----------|--------|-----------|
+| `SAFEGUARD_TLS_MIN` | Minimum acceptable TLS version (floor) | `--tlsvX.Y` |
+| `SAFEGUARD_TLS_MAX` | Maximum acceptable TLS version (ceiling) | `--tls-max X.Y` |
+
+```Bash
+# Require TLS 1.3 (reject anything lower)
+$ export SAFEGUARD_TLS_MIN=1.3
+
+# Pin to exactly TLS 1.3 (floor and ceiling)
+$ export SAFEGUARD_TLS_MIN=1.3
+$ export SAFEGUARD_TLS_MAX=1.3
+
+# Allow only TLS 1.2 or 1.3
+$ export SAFEGUARD_TLS_MIN=1.2
+$ export SAFEGUARD_TLS_MAX=1.3
+```
+
+### curl gotchas for TLS 1.3
+
+- **`--tlsv1.3` is a *minimum*, not an exact version.** `curl --tlsv1.3` means
+  "1.3 or higher," so it does **not** by itself reject a 1.4 in the future. To
+  pin exactly to 1.3, set both `SAFEGUARD_TLS_MIN=1.3` **and**
+  `SAFEGUARD_TLS_MAX=1.3` (`--tlsv1.3 --tls-max 1.3`).
+- **Your curl's TLS backend must support 1.3.** TLS 1.3 in curl requires a
+  modern backend: **OpenSSL >= 1.1.1**, GnuTLS >= 3.6.5, or equivalent. The
+  system curl on older/legacy platforms (e.g. OpenSSL 1.0.2, or macOS system
+  curl built on SecureTransport/LibreSSL) may lack 1.3; there `SAFEGUARD_TLS_MIN=1.3`
+  makes curl fail with an error like `TLS 1.3 not supported by libcurl`. Check
+  with `curl -V` (look at the reported SSL library).
+- **Minimum curl versions for the flags:** `--tlsv1.3` requires curl **>=
+  7.52.0**; `--tls-max` requires curl **>= 7.54.0**. On curl older than 7.54 the
+  scripts ignore `SAFEGUARD_TLS_MAX` with a warning rather than failing.
+- **Invalid values fail fast.** A `SAFEGUARD_TLS_MIN`/`MAX` value outside
+  `1.0`–`1.3` causes the script to exit with an error *before* it connects.
+- **openssl s_client fallback (`-O`).** The A2A scripts offer `-O` to route cert
+  auth through `openssl s_client` on platforms where curl's TLS backend
+  mishandles client certificates. The same min/max is applied there on a
+  best-effort basis via `-min_protocol` / `-max_protocol` (or an exact
+  `-tls1_3`-style flag on older openssl).
+
 ## Getting Started
 Once safeguard-bash is installed, you can begin by running `connect-safeguard.sh`.
 Authentication in Safeguard is based on OAuth2. The recommended connection method
