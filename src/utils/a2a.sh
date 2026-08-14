@@ -3,6 +3,7 @@
 # It shouldn't be called directly.
 
 . "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/redact-sensitive.sh"
+. "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/common.sh"
 
 invoke_a2a_method()
 {
@@ -32,19 +33,14 @@ invoke_a2a_method()
     SclientErrFile=$(mktemp 2>/dev/null) || SclientErrFile="${TMPDIR:-/tmp}/.a2a_sclient_err.$$.$RANDOM"
     trap 'rm -f "$CurlErrFile" "$SclientErrFile" "$PassFile" 2>/dev/null' RETURN
 
+    set_openssl_tls_args
+
     if ! $usesclient; then
         # Force HTTP/1.1 for client-certificate auth. HTTP/2 forbids the TLS
         # renegotiation / post-handshake exchange the A2A cert auth relies on, so
         # letting curl negotiate h2 (via ALPN) breaks cert auth with a 60094.
-        # curl supports --http1.1 since 7.33. Parse major.minor robustly -- the old
-        # single-field parse read the MINOR digit (e.g. "5" from curl 8.5.0) and
-        # wrongly compared it against 33, dropping the flag on curl >= 8.x.
-        _curlver=$(curl --version | sed -n '1s/^curl \([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\1.\2/p')
-        _curlmajor=${_curlver%%.*}
-        _curlminor=${_curlver##*.}
-        if [ "${_curlmajor:-0}" -gt 7 ] || { [ "${_curlmajor:-0}" -eq 7 ] && [ "${_curlminor:-0}" -ge 33 ]; }; then
-            http11flag='--http1.1'
-        fi
+        set_http11_flag
+        set_tls_version_flags
         local bodyargs=()
         if [ -n "$body" ]; then
             bodyargs=(-d "$body")
@@ -58,6 +54,7 @@ $cabundlearg
 --pass $pass
 -X $method
 $http11flag
+$tlsflags
 -H "Accept: application/json"
 $contenttypeflag
 $apikeyflag
@@ -97,7 +94,7 @@ EOF
         else
             PassArgs=(-pass "pass:")
         fi
-        IFS=$'\n' read -d '' -r -a response < <(cat <<EOF | openssl s_client -connect $appliance:443 -quiet -crlf -key $pkeyfile -cert $certfile "${PassArgs[@]}" 2>"$SclientErrFile"
+        IFS=$'\n' read -d '' -r -a response < <(cat <<EOF | openssl s_client -connect $appliance:443 -quiet -crlf -key $pkeyfile -cert $certfile "${PassArgs[@]}" "${OpenSslTlsArgs[@]}" 2>"$SclientErrFile"
 $method /service/$service/v$version/$relurl HTTP/1.1
 Host: $appliance
 User-Agent: curl/7.47.0
@@ -165,12 +162,16 @@ EOF
 
 get_a2a_connection_token()
 {
+    set_http11_flag
+    set_tls_version_flags
     curl -K <(cat <<EOF
 -s
 $CABundleArg
 --key $PKey
 --cert $Cert
 --pass $Pass
+$http11flag
+$tlsflags
 EOF
 ) "https://$Appliance/service/event/signalr/negotiate?_=$NUM" \
             | sed -n -e 's/\+/%2B/g;s/\//%2F/g;s/.*"ConnectionToken":"\([^"]*\)".*/\1/p'
