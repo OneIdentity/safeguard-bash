@@ -317,6 +317,16 @@ sg_invoke()
     "$ScriptDir/../src/invoke-safeguard-method.sh" "$@" 2>/dev/null
 }
 
+# Return 0 when the appliance negotiates TLS 1.3, non-zero otherwise. Lets TLS
+# version tests adapt 1.3-specific expectations, since SPP 9.0 supports TLS 1.3
+# while 8.x tops out at TLS 1.2.
+sg_appliance_supports_tls13()
+{
+    local appliance="${1:-$TestAppliance}"
+    echo | openssl s_client -connect "${appliance}:443" -tls1_3 2>/dev/null \
+        | grep -q "TLSv1.3"
+}
+
 # --- OAuth2 Grant Type Management ---
 # The Safeguard "Allowed OAuth2 Grant Types" setting is a comma-separated
 # list controlling which login flows are permitted (e.g. ResourceOwner,

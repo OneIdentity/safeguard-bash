@@ -232,7 +232,11 @@ $ export SAFEGUARD_TLS_MAX=1.3
   auth through `openssl s_client` on platforms where curl's TLS backend
   mishandles client certificates. The same min/max is applied there on a
   best-effort basis via `-min_protocol` / `-max_protocol` (or an exact
-  `-tls1_3`-style flag on older openssl).
+  `-tls1_3`-style flag on older openssl). Note that `openssl s_client` cannot
+  perform client-certificate auth over **TLS 1.3** (it has no post-handshake
+  certificate exchange, which TLS 1.3 requires), so the `-O` path only
+  authenticates over TLS 1.2 and below. Cert auth over TLS 1.3 goes through the
+  default curl path (`--http1.1` post-handshake auth), which does support it.
 
 ## Getting Started
 Once safeguard-bash is installed, you can begin by running `connect-safeguard.sh`.

@@ -71,6 +71,15 @@ EOF
         else
             error=$(echo $response | jq .Code 2> /dev/null)
         fi
+        # A successful request returns no error Code, including an empty body from a
+        # write (HTTP 204). Treat that as success here instead of falling through to
+        # the openssl s_client fallback below, which cannot do client-certificate auth
+        # over TLS 1.3 (no post-handshake auth) and would return a spurious 60094 even
+        # though the curl request already succeeded.
+        if [ -z "$error" -o "$error" = "null" ]; then
+            echo "$response"
+            return 0
+        fi
     fi
     if [ ! -z "$response" ] && [ -z "$error" -o "$error" = "null" ]; then
         echo "$response"

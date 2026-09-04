@@ -38,6 +38,7 @@ test/
     ├── suite-assets.sh          # Asset CRUD tests
     ├── suite-connect.sh         # Connect & core functionality
     ├── suite-platforms.sh       # Built-in platform validation
+    ├── suite-tls-version.sh     # TLS version pinning (SAFEGUARD_TLS_MIN/MAX)
     └── suite-users.sh           # User CRUD tests
 ```
 
@@ -92,6 +93,7 @@ Cleanup always runs, even if Setup or Execute fail.
 | `suite-assets.sh` | 17 | Asset CRUD, platform validation, edit, filter |
 | `suite-connect.sh` | 9 | Connect, login file, API calls, disconnect |
 | `suite-platforms.sh` | 17 | Built-in platform validation (Windows, Linux) |
+| `suite-tls-version.sh` | 4 | TLS version floor/ceiling pinning, fail-closed on unsupported, invalid-value rejection |
 | `suite-users.sh` | 16 | User CRUD, roles, edit, filter, delete |
 
 **Total: 94 tests across 6 suites**
