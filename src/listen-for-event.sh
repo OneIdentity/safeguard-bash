@@ -32,7 +32,7 @@ CABundleArg=
 . "$ScriptDir/utils/loginfile.sh"
 . "$ScriptDir/utils/common.sh"
 
-set_tls_version_flags
+set_tls_version_flags || exit 1
 
 if [ ! -z "$(which gsed)" ]; then
     SED=gsed
