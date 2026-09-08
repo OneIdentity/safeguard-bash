@@ -716,7 +716,7 @@ fi
 
 Scope="rsts:sts:primaryproviderid:$Provider"
 
-set_tls_version_flags
+set_tls_version_flags || exit 1
 set_openssl_tls_args
 
 if $DeviceCode; then

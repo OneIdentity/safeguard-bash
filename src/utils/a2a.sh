@@ -40,7 +40,7 @@ invoke_a2a_method()
         # renegotiation / post-handshake exchange the A2A cert auth relies on, so
         # letting curl negotiate h2 (via ALPN) breaks cert auth with a 60094.
         set_http11_flag
-        set_tls_version_flags
+        set_tls_version_flags || return 1
         local bodyargs=()
         if [ -n "$body" ]; then
             bodyargs=(-d "$body")
@@ -81,29 +81,30 @@ EOF
             return 0
         fi
     fi
-    if [ ! -z "$response" ] && [ -z "$error" -o "$error" = "null" ]; then
-        echo "$response"
+    # Reaching here means the curl attempt did not already succeed: either usesclient
+    # was set (curl path skipped) or curl returned an error Code. Fall back to openssl
+    # s_client, which works around a bug in some Debian-based platforms where curl
+    # linked to GnuTLS doesn't properly ignore certificate errors during client
+    # certificate authentication (see https://github.com/curl/curl/issues/1411) by
+    # calling OpenSSL directly and manually formulating an HTTP request. Note this
+    # fallback cannot do client-certificate auth over TLS 1.3 (no post-handshake auth);
+    # that is acceptable because it only runs when the curl path did not already succeed.
+    local contentlengthheader=""
+    local contenttypeheader=""
+    local bodydata=""
+    if [ -n "$body" ]; then
+        contenttypeheader="Content-Type: application/json"
+        contentlengthheader="Content-Length: ${#body}"
+        bodydata="$body"
+    fi
+    local PassArgs=()
+    if [ -n "$pass" ]; then
+        PassFile=$(write_pass_file "$pass")
+        PassArgs=(-pass "file:$PassFile")
     else
-        # There is a bug in some Debian-based platforms with curl linked to GnuTLS where it doesn't properly
-        # ignore certificate errors when using client certificate authentication. This works around that
-        # problem by calling OpenSSL directly and manually formulating an HTTP request.
-        #   see https://github.com/curl/curl/issues/1411
-        local contentlengthheader=""
-        local contenttypeheader=""
-        local bodydata=""
-        if [ -n "$body" ]; then
-            contenttypeheader="Content-Type: application/json"
-            contentlengthheader="Content-Length: ${#body}"
-            bodydata="$body"
-        fi
-        local PassArgs=()
-        if [ -n "$pass" ]; then
-            PassFile=$(write_pass_file "$pass")
-            PassArgs=(-pass "file:$PassFile")
-        else
-            PassArgs=(-pass "pass:")
-        fi
-        IFS=$'\n' read -d '' -r -a response < <(cat <<EOF | openssl s_client -connect $appliance:443 -quiet -crlf -key $pkeyfile -cert $certfile "${PassArgs[@]}" "${OpenSslTlsArgs[@]}" 2>"$SclientErrFile"
+        PassArgs=(-pass "pass:")
+    fi
+    IFS=$'\n' read -d '' -r -a response < <(cat <<EOF | openssl s_client -connect $appliance:443 -quiet -crlf -key $pkeyfile -cert $certfile "${PassArgs[@]}" "${OpenSslTlsArgs[@]}" 2>"$SclientErrFile"
 $method /service/$service/v$version/$relurl HTTP/1.1
 Host: $appliance
 User-Agent: curl/7.47.0
@@ -115,56 +116,55 @@ ${contenttypeheader:+$contenttypeheader
 
 $bodydata
 EOF
-            )
-        local noclose=true
-        local noempty=true
-        local contentlength=
-        local length=
-        local body=
-        for line in "${response[@]}"; do
-            line=$(echo $line | tr -d '\r')
-            if $noclose; then
-                # need to find the connection close marker
-                if [ "$line" = "Connection: close" ]; then
-                    noclose=false
-                fi
-            elif $noempty; then
-                # capture Content-Length from remaining headers
-                local clval=$(echo "$line" | sed -n 's/^Content-Length: *\([0-9][0-9]*\).*/\1/p')
-                if [ ! -z "$clval" ]; then
-                    contentlength=$clval
-                fi
-                # after close there should be an empty line separating headers from body
-                if [ "$line" = "" ]; then
-                    noempty=false
-                fi
-            elif [ -z "$body" ]; then
-                if [ -z "$length" ]; then
-                    # check if this is a hex chunk length (chunked transfer encoding)
-                    (( 16#$line )) 2> /dev/null
-                    if [ $? -eq 0 ]; then
-                        length=$line
-                    else
-                        # not chunked -- this line is the body (Content-Length response)
-                        body=$line
-                    fi
+        )
+    local noclose=true
+    local noempty=true
+    local contentlength=
+    local length=
+    local body=
+    for line in "${response[@]}"; do
+        line=$(echo $line | tr -d '\r')
+        if $noclose; then
+            # need to find the connection close marker
+            if [ "$line" = "Connection: close" ]; then
+                noclose=false
+            fi
+        elif $noempty; then
+            # capture Content-Length from remaining headers
+            local clval=$(echo "$line" | sed -n 's/^Content-Length: *\([0-9][0-9]*\).*/\1/p')
+            if [ ! -z "$clval" ]; then
+                contentlength=$clval
+            fi
+            # after close there should be an empty line separating headers from body
+            if [ "$line" = "" ]; then
+                noempty=false
+            fi
+        elif [ -z "$body" ]; then
+            if [ -z "$length" ]; then
+                # check if this is a hex chunk length (chunked transfer encoding)
+                (( 16#$line )) 2> /dev/null
+                if [ $? -eq 0 ]; then
+                    length=$line
                 else
-                    # had chunk length, this line is the body
+                    # not chunked -- this line is the body (Content-Length response)
                     body=$line
                 fi
+            else
+                # had chunk length, this line is the body
+                body=$line
             fi
-        done
-        if [ ! -z "$body" ]; then
-            # trim body to Content-Length to remove any trailing SSL errors
-            if [ ! -z "$contentlength" ]; then
-                body=${body:0:$contentlength}
-            fi
-            echo "$body"
-        else
-            # No HTTP body found -- report captured stderr if available
-            if [ -s "$SclientErrFile" ]; then
-                >&2 cat "$SclientErrFile"
-            fi
+        fi
+    done
+    if [ ! -z "$body" ]; then
+        # trim body to Content-Length to remove any trailing SSL errors
+        if [ ! -z "$contentlength" ]; then
+            body=${body:0:$contentlength}
+        fi
+        echo "$body"
+    else
+        # No HTTP body found -- report captured stderr if available
+        if [ -s "$SclientErrFile" ]; then
+            >&2 cat "$SclientErrFile"
         fi
     fi
 }
@@ -172,7 +172,7 @@ EOF
 get_a2a_connection_token()
 {
     set_http11_flag
-    set_tls_version_flags
+    set_tls_version_flags || return 1
     curl -K <(cat <<EOF
 -s
 $CABundleArg

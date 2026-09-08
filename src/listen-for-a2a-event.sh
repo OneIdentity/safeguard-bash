@@ -52,7 +52,7 @@ fi
 . "$ScriptDir/utils/common.sh"
 
 set_http11_flag
-set_tls_version_flags
+set_tls_version_flags || exit 1
 set_openssl_tls_args
 
 require_args()

@@ -54,6 +54,8 @@ set_http11_flag()
 # Opt-in TLS version pinning driven by SAFEGUARD_TLS_MIN / SAFEGUARD_TLS_MAX
 # (values 1.0, 1.1, 1.2, 1.3). Default (both unset) leaves negotiation unchanged.
 # Populates the newline-separated $tlsflags for use inside curl -K config blocks.
+# Returns non-zero (leaving $tlsflags unusable) on an invalid value so callers can
+# abort; callers must guard the call (e.g. 'set_tls_version_flags || exit 1').
 set_tls_version_flags()
 {
     tlsflags=''
@@ -66,14 +68,14 @@ set_tls_version_flags()
             1.1) flag='--tlsv1.1' ;;
             1.2) flag='--tlsv1.2' ;;
             1.3) flag='--tlsv1.3' ;;
-            *) >&2 echo "Invalid SAFEGUARD_TLS_MIN='$min' (expected 1.0, 1.1, 1.2, or 1.3)"; exit 1 ;;
+            *) >&2 echo "Invalid SAFEGUARD_TLS_MIN='$min' (expected 1.0, 1.1, 1.2, or 1.3)"; return 1 ;;
         esac
         tlsflags="$flag"
     fi
     if [ -n "$max" ]; then
         case "$max" in
             1.0|1.1|1.2|1.3) ;;
-            *) >&2 echo "Invalid SAFEGUARD_TLS_MAX='$max' (expected 1.0, 1.1, 1.2, or 1.3)"; exit 1 ;;
+            *) >&2 echo "Invalid SAFEGUARD_TLS_MAX='$max' (expected 1.0, 1.1, 1.2, or 1.3)"; return 1 ;;
         esac
         # curl grew --tls-max in 7.54.0
         if curl_version_ge 7 54; then
