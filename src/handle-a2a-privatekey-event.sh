@@ -43,10 +43,6 @@ HandlerScript=
 OpenSslSclientFlag=
 KeyFormat=
 
-if [ $(curl --version | grep "libcurl" | sed -e 's,curl [0-9]*\.\([0-9]*\).* (.*,\1,') -ge 33 ]; then
-    http11flag='--http1.1'
-fi
-
 . "$ScriptDir/utils/loginfile.sh"
 . "$ScriptDir/utils/common.sh"
 

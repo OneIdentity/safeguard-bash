@@ -121,7 +121,7 @@ if [[ $Version -eq 4 ]]; then
 else
     ATTRRENAMEFILTER="jq '.[] | . + {AssetId: .SystemId, AssetName: .SystemName, AssetDescription: .SystemDescription} | delpaths([[\"SystemId\"], [\"SystemName\"], [\"SystemDescription\"]])'"
 fi
-Registrations=$(invoke_a2a_method "$Appliance" "$CABundleArg" "$Cert" "$PKey" "$Pass" "NONE" core GET "A2ARegistrations" $Version "")
+Registrations=$(invoke_a2a_method "$Appliance" "$CABundleArg" "$Cert" "$PKey" "$Pass" "NONE" core GET "A2ARegistrations" $Version "false")
 echo "$Registrations" | jq . > /dev/null 2>&1
 if [ $? -ne 0 ]; then
     >&2 echo "$Registrations"
@@ -134,7 +134,7 @@ echo $Registrations | jq -r '.[] | [.Id, .AppName, .Description // "", .Disabled
         if [ -n "$QueryParams" ]; then
             Relurl="${Relurl}?${QueryParams}"
         fi
-        invoke_a2a_method "$Appliance" "$CABundleArg" "$Cert" "$PKey" "$Pass" "NONE" core GET "$Relurl" $Version "" |
+        invoke_a2a_method "$Appliance" "$CABundleArg" "$Cert" "$PKey" "$Pass" "NONE" core GET "$Relurl" $Version "false" |
             eval $ATTRRENAMEFILTER |
             jq -S --arg AppName "$AppName" --arg RegDesc "$RegDesc" --arg CertUserId "$CertUserId" --arg CertUser "$CertUser" --arg CertThumbprint "$CertThumbprint" --argjson RegDisabled "${RegDisabled:-false}" \
                     '. + {AppName: $AppName, Description: $RegDesc, CertificateUserId: ($CertUserId | tonumber), CertificateUser: $CertUser, CertificateUserThumbprint: $CertThumbprint, Disabled: ((.AccountDisabled // 0) != 0 and $RegDisabled)} | del(.AccountDisabled)'

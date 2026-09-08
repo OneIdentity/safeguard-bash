@@ -47,12 +47,13 @@ else
     SED=sed
 fi
 
-if [ $(curl --version | grep "libcurl" | $SED -e 's,curl [0-9]*\.\([0-9]*\).* (.*,\1,') -ge 33 ]; then
-    http11flag='--http1.1'
-fi
-
 . "$ScriptDir/utils/loginfile.sh"
 . "$ScriptDir/utils/redact-sensitive.sh"
+. "$ScriptDir/utils/common.sh"
+
+set_http11_flag
+set_tls_version_flags
+set_openssl_tls_args
 
 require_args()
 {
@@ -88,7 +89,7 @@ get_connection_token()
             _PassArgs=(-pass "pass:")
         fi
         trap 'rm -f "$_PassFile" 2>/dev/null' RETURN
-        TokenResponse=$(cat <<EOF | openssl s_client -connect $Appliance:443 -quiet -crlf -key $PKey -cert $Cert "${_PassArgs[@]}" 2>&1
+        TokenResponse=$(cat <<EOF | openssl s_client -connect $Appliance:443 -quiet -crlf -key $PKey -cert $Cert "${_PassArgs[@]}" "${OpenSslTlsArgs[@]}" 2>&1
 POST /service/a2a/signalr/negotiate?negotiateVersion=1 HTTP/1.1
 Host: $Appliance
 User-Agent: curl/7.47.0
@@ -106,6 +107,8 @@ EOF
         curl -K <(cat <<EOF
 -s
 $CABundleArg
+$tlsflags
+$http11flag
 --key $PKey
 --cert $Cert
 --pass $Pass
@@ -127,7 +130,7 @@ negotiate_connection()
             _PassArgs=(-pass "pass:")
         fi
         trap 'rm -f "$_PassFile" 2>/dev/null' RETURN
-        NegotiateResponse=$(cat <<EOF | openssl s_client -connect $Appliance:443 -quiet -crlf -key $PKey -cert $Cert "${_PassArgs[@]}" 2>&1
+        NegotiateResponse=$(cat <<EOF | openssl s_client -connect $Appliance:443 -quiet -crlf -key $PKey -cert $Cert "${_PassArgs[@]}" "${OpenSslTlsArgs[@]}" 2>&1
 POST /service/a2a/signalr$Params HTTP/1.1
 Host: $Appliance
 User-Agent: curl/7.47.0
@@ -144,6 +147,8 @@ EOF
         curl -K <(cat <<EOF
 -s
 $CABundleArg
+$tlsflags
+$http11flag
 --key $PKey
 --cert $Cert
 --pass $Pass
@@ -215,7 +220,7 @@ if $UseOpenSslSclient; then
         ListenPassArgs=(-pass "pass:")
     fi
     trap 'rm -f "$ListenPassFile" 2>/dev/null' EXIT
-    cat <<EOF | stdbuf -o0 -e0 openssl s_client -connect $Appliance:443 -crlf -quiet -key $PKey -cert $Cert "${ListenPassArgs[@]}" 2>&1 \
+    cat <<EOF | stdbuf -o0 -e0 openssl s_client -connect $Appliance:443 -crlf -quiet -key $PKey -cert $Cert "${ListenPassArgs[@]}" "${OpenSslTlsArgs[@]}" 2>&1 \
         | $SED -u -e '/{.*}/!d' | while read line; do echo $line | $PRETTYPRINT ; done
 GET /service/a2a/signalr$Params HTTP/1.1
 Host: $Appliance
@@ -229,6 +234,7 @@ else
     curl -N -K <(cat <<EOF
 -s
 $CABundleArg
+$tlsflags
 --key $PKey
 --cert $Cert
 --pass $Pass

@@ -403,6 +403,21 @@ suite_execute()
     sg_assert_not_null "A2A password retrieval returns data" "$a2a_pw"
     sg_assert_equal "Retrieved password matches known password" "$a2a_pw" "$known_pw"
 
+    # --- Test: Retrieve password with a TLS 1.3 floor (cert auth over TLS 1.3) ---
+    # curl + OpenSSL can perform client-certificate auth over TLS 1.3 on the
+    # standard binding via HTTP/1.1 post-handshake auth, so pinning the floor to
+    # 1.3 must still retrieve the credential on a 1.3-capable appliance.
+    if sg_appliance_supports_tls13; then
+        local a2a_pw_tls13=$(echo "" | SAFEGUARD_TLS_MIN=1.3 \
+            "$ScriptDir/../src/get-a2a-password.sh" \
+            -a "$TestAppliance" -c "$cert_file" -k "$key_file" \
+            -A "$api_key" -r 2>/dev/null)
+        sg_assert_equal "A2A password retrieval over TLS 1.3 matches known password" \
+            "$a2a_pw_tls13" "$known_pw"
+    else
+        sg_skip "A2A password retrieval over TLS 1.3" "appliance does not support TLS 1.3"
+    fi
+
     # --- Test: set-a2a-password.sh (bidirectional) ---
     # Enable bidirectional on the registration
     "$ScriptDir/../src/edit-a2a-registration.sh" -i "$reg_id" -b \

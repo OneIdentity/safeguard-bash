@@ -66,16 +66,16 @@ StoreLoginFile=true
 
 . "$ScriptDir/utils/loginfile.sh"
 . "$ScriptDir/utils/redact-sensitive.sh"
+. "$ScriptDir/utils/common.sh"
 
 get_rsts_token()
 {
     if [ "$Provider" = "certificate" ]; then
-        if [ $(curl --version | grep "libcurl" | sed -e 's,curl [0-9]*\.\([0-9]*\).* (.*,\1,') -ge 33 ]; then
-            http11flag='--http1.1'
-        fi
+        set_http11_flag
         StsResponse=$(curl -K <(cat <<EOF
 -s
 $CABundleArg
+$tlsflags
 --key $PKey
 --cert $Cert
 --pass $Pass
@@ -105,7 +105,7 @@ EOF
                 PassArgs=(-pass "pass:")
             fi
             trap 'rm -f "$PassFile"' RETURN
-            StsResponse=$(cat <<EOF | openssl s_client -connect $Appliance:443 -quiet -crlf -key $PKey -cert $Cert "${PassArgs[@]}" 2>&1
+            StsResponse=$(cat <<EOF | openssl s_client -connect $Appliance:443 -quiet -crlf -key $PKey -cert $Cert "${PassArgs[@]}" "${OpenSslTlsArgs[@]}" 2>&1
 POST /RSTS/oauth2/token HTTP/1.1
 Host: $Appliance
 User-Agent: curl/7.47.0
@@ -130,6 +130,7 @@ EOF
 -s
 -S
 $CABundleArg
+$tlsflags
 -X POST
 -H "Accept: application/json"
 -H "Content-type: application/json"
@@ -209,6 +210,7 @@ get_rsts_token_with_pkce()
 -s
 -S
 $CABundleArg
+$tlsflags
 -X POST
 -H "Accept: application/json"
 -H "Content-Type: application/x-www-form-urlencoded"
@@ -227,6 +229,7 @@ EOF
 -s
 -S
 $CABundleArg
+$tlsflags
 -X POST
 -H "Accept: application/json"
 -H "Content-Type: application/x-www-form-urlencoded"
@@ -259,6 +262,7 @@ EOF
 -s
 -S
 $CABundleArg
+$tlsflags
 -X POST
 -H "Accept: application/json"
 -H "Content-Type: application/x-www-form-urlencoded"
@@ -289,6 +293,7 @@ EOF
 -s
 -S
 $CABundleArg
+$tlsflags
 -X POST
 -H "Accept: application/json"
 -H "Content-Type: application/x-www-form-urlencoded"
@@ -316,6 +321,7 @@ EOF
 -s
 -S
 $CABundleArg
+$tlsflags
 -X POST
 -H "Accept: application/json"
 -H "Content-Type: application/x-www-form-urlencoded"
@@ -354,6 +360,7 @@ EOF
 -s
 -S
 $CABundleArg
+$tlsflags
 -X POST
 -H "Accept: application/json"
 -H "Content-type: application/json"
@@ -403,6 +410,7 @@ get_rsts_token_with_device_code()
 -s
 -S
 $CABundleArg
+$tlsflags
 -X POST
 -H "Accept: application/json"
 -H "Content-type: application/json"
@@ -526,6 +534,7 @@ EOF
 -s
 -S
 $CABundleArg
+$tlsflags
 -X POST
 -H "Accept: application/json"
 -H "Content-type: application/json"
@@ -600,6 +609,7 @@ get_safeguard_token()
 -s
 -S
 $CABundleArg
+$tlsflags
 -X POST
 -H "Accept: application/json"
 -H "Content-type: application/json"
@@ -705,6 +715,9 @@ else
 fi
 
 Scope="rsts:sts:primaryproviderid:$Provider"
+
+set_tls_version_flags
+set_openssl_tls_args
 
 if $DeviceCode; then
     get_rsts_token_with_device_code
